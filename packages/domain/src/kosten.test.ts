@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { STANDARD_GEWERKEPLAN } from "./gewerkeplan.js";
 import {
   auftragsrahmen,
+  budgetPruefung,
   HandwerkervertragEingabe,
   freistellungGueltig,
   gewerkeplanAusVorlage,
@@ -116,5 +117,39 @@ describe("auftragsrahmen", () => {
     expect(auftragsrahmen("60000", "50000", n).text).toMatch(/Auch die angebotenen Nachträge \(3\.000,00 €\) reichen nicht/);
     expect(auftragsrahmen("60000", "50000", []).text).toMatch(/kein Nachtrag vor/);
     expect(auftragsrahmen("100", "0", []).text).toMatch(/keine Auftragssumme hinterlegt/);
+  });
+});
+
+describe("budgetPruefung", () => {
+  const st = (geschaetzt: string, summeVergeben: string, berechnet = "0", angeboten = "0") => ({ geschaetzt, summeVergeben, berechnet, angeboten });
+  it("ruhig ohne Vertrag und unter der Schwelle", () => {
+    expect(budgetPruefung(st("100000", "0")).stufe).toBe("ok");
+    expect(budgetPruefung(st("100000", "85000"))).toMatchObject({ stufe: "ok", auslastungProzent: 85, text: null });
+  });
+  it("Hinweis ab Schwelle, einstellbar", () => {
+    expect(budgetPruefung(st("100000", "92000"))).toMatchObject({ stufe: "nahe", auslastungProzent: 92 });
+    expect(budgetPruefung(st("100000", "92000"), 95).stufe).toBe("ok");
+    expect(budgetPruefung(st("100000", "80000"), 80).stufe).toBe("nahe");
+  });
+  it("Warnung bei Überschreitung, höherer berechneter Stand zählt", () => {
+    const b = budgetPruefung(st("100000", "90000", "104000"));
+    expect(b).toMatchObject({ stufe: "ueber", gebunden: "104000.00", ueberschreitung: "4000.00", auslastungProzent: 104 });
+    expect(b.text).toContain("überschritten");
+  });
+  it("angebotene Nachträge, die das Budget sprengen würden", () => {
+    const b = budgetPruefung(st("100000", "70000", "0", "35000"));
+    expect(b.stufe).toBe("nahe");
+    expect(b.text).toContain("angebotenen Nachträgen");
+    expect(budgetPruefung(st("100000", "70000", "0", "10000")).stufe).toBe("ok");
+  });
+  it("ohne Budget, aber vergeben", () => {
+    expect(budgetPruefung(st("0", "5000"))).toMatchObject({ stufe: "ueber", auslastungProzent: null });
+  });
+});
+
+describe("kostenstand – Trend", () => {
+  it("höherer geprüfter Rechnungsstand geht in den Trend ein", () => {
+    const k = kostenstand("20000", [{ vertragBrutto: "18500", nachtraege: [{ betragBrutto: "4000", status: "angeboten" }], berechnet: "21420", abgegolten: "0" }]);
+    expect(k).toMatchObject({ trend: "21420.00", abweichung: "-1420.00", angeboten: "4000.00" });
   });
 });

@@ -281,6 +281,23 @@ export class CockpitService {
         link: `/partner/${x.id}#bankverbindung`,
       });
 
+    // ---------------------------------------------------------------- Budget je Gewerk
+    for (const pr of projekte) {
+      const k = await this.kosten.kostenkontrolle(pr.id);
+      for (const x of k.gewerke) {
+        if (x.budget.stufe === "ok") continue;
+        aufgaben.push({
+          bereich: "kosten",
+          dringlichkeit: x.budget.stufe === "ueber" ? "mittel" : "info",
+          titel: `${x.budget.stufe === "ueber" ? "Budget überschritten" : "Budget fast ausgeschöpft"}: ${x.nr} ${x.bezeichnung}`,
+          text: x.budget.text ?? "",
+          betrag: x.budget.stufe === "ueber" ? x.budget.ueberschreitung : null,
+          projekt: projektName.get(pr.id) ?? null,
+          link: `/gewerke/${x.id}?projekt=${pr.id}`,
+        });
+      }
+    }
+
     // ---------------------------------------------------------------- Rechnungseingang
     const [eingang] = await this.db
       .select({ anzahl: sql<number>`count(*)::int`, aeltester: sql<string | null>`min(${schema.belegeingang.empfangenAm})::date::text` })

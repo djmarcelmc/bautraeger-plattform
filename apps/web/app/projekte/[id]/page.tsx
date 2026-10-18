@@ -9,6 +9,7 @@ import { deDatum, deZahl } from "@/lib/format";
 import type { Gesellschaft, KaufvertragListe, Kostenkontrolle, MangelListe, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
 import { MangelStatus } from "@/components/MangelStatus";
 import { Abweichung } from "../../kosten/Abweichung";
+import { BudgetBadge, BudgetHinweis } from "../../kosten/Budget";
 import { gewerkAnlegen, gewerkeplanAnlegen } from "../../kosten/aktionen";
 import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "../../verkauf/aktionen";
 import { EinheitFelder } from "../../einheiten/EinheitFelder";
@@ -413,6 +414,7 @@ async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nur
           <small>{Number(s.abweichung) >= 0 ? "Einsparung gegenüber Schätzung" : "Mehrkosten gegenüber Schätzung"}</small>
         </div>
       </div>
+      <BudgetHinweis gewerke={k.gewerke} schwelle={k.budgetSchwelleProzent} />
       <div className="segment" style={{ marginBottom: 12 }}>
         <a href="?reiter=kosten" className={nurVergeben ? undefined : "aktiv"}>
           Alle Gewerke ({k.gewerke.length})
@@ -449,6 +451,7 @@ async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nur
                       <a href={`/gewerke/${g.id}?projekt=${projektId}`} className="zeilenlink">
                         {g.bezeichnung}
                       </a>
+                      {g.budget.stufe !== "ok" ? <BudgetBadge b={g.budget} /> : null}
                       {g.vertraege.length ? (
                         <div className="hint">
                           {g.vertraege.map((v) => v.handwerker?.firma ?? v.handwerker?.nachname ?? v.handwerker?.suchcode).join(", ")}

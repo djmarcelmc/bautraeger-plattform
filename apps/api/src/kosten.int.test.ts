@@ -156,4 +156,27 @@ describe.skipIf(!url)("Kosten (Integration)", () => {
     expect((await als(http.post(`/api/eingangsrechnungen/${r2}/pruefen`)).send({ geprueftKumuliert: "9500" })).body.auftragsrahmen).toMatchObject({ stufe: "nahe", auslastungProzent: 95 });
     expect((await als(http.post(`/api/eingangsrechnungen/${r2}/freigeben`))).status).toBe(201);
   });
+
+  it("warnt je Gewerk vor Budgetüberschreitung – Kostenkontrolle, Rechnung und Cockpit, Schwelle einstellbar", async () => {
+    const gw = (await als(http.post(`/api/projekte/${ids.p}/gewerke`)).send({ nr: 999, bezeichnung: "Außenanlagen Test", geschaetztBrutto: "50000" })).body.id;
+    const v = (await als(http.post("/api/handwerkervertraege")).send({ gewerkId: gw, handwerkerId: ids.hw, vertragBrutto: "46000" })).body.id;
+    const zeile = async () => (await http.get(`/api/projekte/${ids.p}/kosten`)).body.gewerke.find((x: { id: string }) => x.id === gw);
+    expect((await zeile()).budget).toMatchObject({ stufe: "nahe", auslastungProzent: 92, gebunden: "46000.00" });
+    const cockpit = (await http.get("/api/cockpit")).body.aufgaben as { titel: string; link: string }[];
+    expect(cockpit.find((a) => a.titel === "Budget fast ausgeschöpft: 999 Außenanlagen Test")?.link).toBe(`/gewerke/${gw}?projekt=${ids.p}`);
+
+    // Rechnung über Budget: Vorschau zählt den kumulierten Betrag bereits vor der Prüfung
+    const r = (await als(http.post("/api/eingangsrechnungen")).send({ handwerkervertragId: v, rechnungsnr: "B-1", rechnungsdatum: "2026-10-01", eingangAm: "2026-10-01", betragBrutto: "53000" })).body.id;
+    const d = (await http.get(`/api/eingangsrechnungen/${r}`)).body;
+    expect(d.budget).toMatchObject({ stufe: "ueber", ueberschreitung: "3000.00", auslastungProzent: 106 });
+    expect(d.budget.text).toMatch(/Budget um 3\.000 € überschritten/);
+    expect((await zeile()).budget.stufe).toBe("nahe"); // ungeprüft noch nicht im Stand
+
+    // Schwelle anheben → kein Hinweis mehr; ungültige Werte werden abgelehnt
+    expect((await http.get("/api/einstellungen/kosten")).body).toEqual({ budgetSchwelleProzent: 90 });
+    expect((await als(http.put("/api/einstellungen/kosten")).send({ budgetSchwelleProzent: 30 })).status).toBe(400);
+    expect((await als(http.put("/api/einstellungen/kosten")).send({ budgetSchwelleProzent: "95" })).body).toEqual({ budgetSchwelleProzent: 95 });
+    expect((await zeile()).budget.stufe).toBe("ok");
+    expect((await http.get(`/api/projekte/${ids.p}/kosten`)).body.budgetSchwelleProzent).toBe(95);
+  });
 });

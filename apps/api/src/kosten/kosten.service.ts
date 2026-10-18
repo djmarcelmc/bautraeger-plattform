@@ -2,6 +2,8 @@ import { ConflictException, Inject, Injectable, NotFoundException } from "@nestj
 import { schema, type DbOderTx } from "@bt/db";
 import {
   auftragsrahmen,
+  budgetPruefung,
+  KostenEinstellung,
   type EingangsrechnungEingabe,
   freistellungGueltig,
   kostenstand,
@@ -21,6 +23,8 @@ import { DB, type Db } from "../db.provider.js";
 
 const { gewerk: gw, handwerkervertrag: hv, projekt: p, gesellschaft: g, eingangsrechnung: er, zahlungsausgang: za, nachtrag: nt } = schema;
 
+const EINSTELLUNG = "kosten";
+
 const heute = () => new Date().toISOString().slice(0, 10);
 
 @Injectable()
@@ -29,6 +33,49 @@ export class KostenService {
     @Inject(DB) private readonly db: Db,
     @Inject(KontextService) private readonly kontext: KontextService,
   ) {}
+
+  async einstellung(): Promise<KostenEinstellung> {
+    const [x] = await this.db
+      .select({ wert: schema.einstellung.wert })
+      .from(schema.einstellung)
+      .where(and(eq(schema.einstellung.mandantId, await this.kontext.mandantId()), eq(schema.einstellung.schluessel, EINSTELLUNG)));
+    const e = KostenEinstellung.safeParse(x?.wert ?? {});
+    return e.success ? e.data : KostenEinstellung.parse({});
+  }
+
+  async einstellungSpeichern(wert: KostenEinstellung, benutzer: string) {
+    const mandantId = await this.kontext.mandantId();
+    const alt = await this.einstellung();
+    await this.db.transaction(async (tx) => {
+      const [x] = await tx
+        .insert(schema.einstellung)
+        .values({ mandantId, schluessel: EINSTELLUNG, wert })
+        .onConflictDoUpdate({ target: [schema.einstellung.mandantId, schema.einstellung.schluessel], set: { wert, geaendertAm: new Date() } })
+        .returning({ id: schema.einstellung.id });
+      await protokollieren(tx, { tabelle: "einstellung", id: x!.id, aktion: "update", alt, neu: wert, benutzer });
+    });
+    return this.einstellung();
+  }
+
+  /**
+   * Budgetstand eines Gewerks; optional mit dem kumulierten Betrag einer Rechnung, die noch nicht im geprüften
+   * Stand enthalten ist (Vorschau bei Prüfung und Freigabe).
+   */
+  async gewerkBudget(gewerkId: string, rechnung?: { vertragId: string; kumuliert: string }, schwelle?: number) {
+    const [x] = await this.db.select().from(gw).where(eq(gw.id, gewerkId));
+    if (!x) throw new NotFoundException("Gewerk nicht gefunden");
+    const vertraege = await this.db.select({ id: hv.id, vertragBrutto: hv.vertragBrutto }).from(hv).where(eq(hv.gewerkId, gewerkId));
+    const kennzahlen = await this.vertragsKennzahlen(vertraege.map((v) => v.id));
+    const stand = kostenstand(
+      x.geschaetztBrutto,
+      vertraege.map((v) => {
+        const k = kennzahlen.get(v.id)!;
+        const berechnet = rechnung?.vertragId === v.id && money(rechnung.kumuliert).gt(k.berechnet) ? rechnung.kumuliert : k.berechnet;
+        return { ...k, berechnet, vertragBrutto: v.vertragBrutto };
+      }),
+    );
+    return budgetPruefung(stand, schwelle ?? (await this.einstellung()).budgetSchwelleProzent);
+  }
 
   async gewerk(id: string) {
     const [r] = await this.db
@@ -80,7 +127,7 @@ export class KostenService {
           .leftJoin(schema.geschaeftspartner, eq(hv.handwerkerId, schema.geschaeftspartner.id))
           .where(inArray(hv.gewerkId, gewerke.map((x) => x.id)))
       : [];
-    const kennzahlen = await this.vertragsKennzahlen(vertraege.map((v) => v.vertrag.id));
+    const [kennzahlen, { budgetSchwelleProzent }] = await Promise.all([this.vertragsKennzahlen(vertraege.map((v) => v.vertrag.id)), this.einstellung()]);
     const zeilen = gewerke.map((x) => {
       const eigene = vertraege.filter((v) => v.vertrag.gewerkId === x.id);
       const stand = kostenstand(
@@ -90,6 +137,7 @@ export class KostenService {
       return {
         ...x,
         stand,
+        budget: budgetPruefung(stand, budgetSchwelleProzent),
         vertraege: eigene.map((v) => ({
           id: v.vertrag.id,
           nrIntern: v.vertrag.nrIntern,
@@ -99,7 +147,7 @@ export class KostenService {
         })),
       };
     });
-    return { gewerke: zeilen, summe: kostenstandSumme(zeilen.map((z) => z.stand)) };
+    return { gewerke: zeilen, summe: kostenstandSumme(zeilen.map((z) => z.stand)), budgetSchwelleProzent };
   }
 
   /** Vertrag mit Gewerk, Handwerker, Nachträgen, Rechnungen, Zahlungen und Summen. */
@@ -181,6 +229,8 @@ export class KostenService {
     const skontoFristBis = v.skontoFristTage !== null && v.skontoFristTage !== undefined ? datumPlusTage(x.eingangAm, v.skontoFristTage) : null;
     return {
       auftragsrahmen: auftragsrahmen(x.geprueftKumuliert ?? x.betragBrutto, v.vertragBrutto, v.nachtraege, x.schlussrechnung),
+      // Bezahlte Rechnungen sind im Stand enthalten; offene zählen mit ihrem kumulierten Betrag als Vorschau
+      budget: await this.gewerkBudget(v.gewerk.id, x.status === "bezahlt" ? undefined : { vertragId: v.id, kumuliert: x.geprueftKumuliert ?? x.betragBrutto }),
       ...x,
       maengel: v.maengel,
       vertrag: { id: v.id, nrIntern: v.nrIntern, projekt: v.projekt, gewerk: { id: v.gewerk.id, nr: v.gewerk.nr, bezeichnung: v.gewerk.bezeichnung }, handwerker: v.handwerker, skontoProzent: v.skontoProzent, zahlungsfristTage: v.zahlungsfristTage },

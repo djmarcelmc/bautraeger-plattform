@@ -83,3 +83,7 @@ export async function rechnungFreigeben(id: string, fd?: FormData) {
 export async function rechnungBezahlen(id: string, fd: FormData) {
   return ausfuehren(() => api(`/eingangsrechnungen/${id}/zahlung`, { method: "POST", body: formularDaten(fd) }), rechnungPfade(id), "Zahlung gebucht.");
 }
+
+export async function kostenEinstellungSpeichern(fd: FormData) {
+  return ausfuehren(() => api("/einstellungen/kosten", { method: "PUT", body: formularDaten(fd) }), ["/einstellungen"], "Budgetschwelle gespeichert.");
+}

@@ -139,7 +139,7 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       {
         title: "Kostenstand eines Projekts",
         description:
-          "Kostenkontrolle je Projekt: Summen (geschätzt, vergeben inkl. Nachträge, berechnet, bezahlt, Trend, Abweichung), die vergebenen Gewerke mit Vertragspartnern sowie Eingangsrechnungen, die auf Prüfung, Freigabe oder Zahlung warten.",
+          "Kostenkontrolle je Projekt: Summen (geschätzt, vergeben inkl. Nachträge, berechnet, bezahlt, Trend, Abweichung), die vergebenen Gewerke mit Vertragspartnern, Budgetwarnungen je Gewerk sowie Eingangsrechnungen, die auf Prüfung, Freigabe oder Zahlung warten.",
         inputSchema: { projektNr: z.number().int() },
         annotations: { readOnlyHint: true },
       },
@@ -151,7 +151,7 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
         const [k, rechnungen] = await Promise.all([
           apiGet<{
             summe: Stand;
-            gewerke: { nr: number; bezeichnung: string; stand: Stand; vertraege: { handwerker: { firma: string | null; nachname: string | null; suchcode: string } | null }[] }[];
+            gewerke: { nr: number; bezeichnung: string; stand: Stand; budget?: { stufe: string; text: string | null }; vertraege: { handwerker: { firma: string | null; nachname: string | null; suchcode: string } | null }[] }[];
           }>(`/projekte/${projekt.id}/kosten`),
           apiGet<{ rechnungsnr: string; status: string; handwerker: string | null; gewerk: string; betragBrutto: string; geprueftKumuliert: string | null; eingangAm: string }[]>(
             `/eingangsrechnungen?projektId=${projekt.id}&status=erfasst,sachlich_geprueft,rechnerisch_geprueft,freigegeben`,
@@ -172,7 +172,9 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
               berechnet: euro(g.stand.berechnet!),
               bezahlt: euro(g.stand.bezahlt!),
               abweichung: euro(g.stand.abweichung!),
+              budgetwarnung: g.budget?.text ?? null,
             })),
+          budgetwarnungen: k.gewerke.filter((g) => g.budget && g.budget.stufe !== "ok").map((g) => `${g.nr} ${g.bezeichnung}: ${g.budget!.text}`),
           offeneRechnungen: rechnungen.map((r) => ({
             rechnung: r.rechnungsnr,
             handwerker: r.handwerker,

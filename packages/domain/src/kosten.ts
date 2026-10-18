@@ -118,8 +118,8 @@ export interface VertragKosten {
 }
 
 /**
- * Kostenstand eines Gewerks. Trendkosten: sobald vergeben, zählt die Auftragssumme inkl. beauftragter Nachträge,
- * sonst die Schätzung. Abweichung = geschätzt − Trend (positiv = Einsparung).
+ * Kostenstand eines Gewerks. Trendkosten: sobald vergeben, zählt die Auftragssumme inkl. beauftragter Nachträge
+ * (bzw. der höhere geprüfte Rechnungsstand), sonst die Schätzung. Abweichung = geschätzt − Trend (positiv = Einsparung).
  */
 export function kostenstand(geschaetztBrutto: string, vertraege: VertragKosten[]) {
   const geschaetzt = money(geschaetztBrutto);
@@ -127,26 +127,80 @@ export function kostenstand(geschaetztBrutto: string, vertraege: VertragKosten[]
   const nachtraege = summe(
     vertraege.flatMap((v) => v.nachtraege.filter((n) => n.status === "beauftragt" || n.status === "abgerechnet").map((n) => money(n.betragBrutto))),
   );
+  const angeboten = summe(vertraege.flatMap((v) => v.nachtraege.filter((n) => n.status === "angeboten").map((n) => money(n.betragBrutto))));
   const summeVergeben = vergeben.plus(nachtraege);
-  const trend = vertraege.length ? summeVergeben : geschaetzt;
+  const berechnet = summe(vertraege.map((v) => money(v.berechnet)));
+  // Geprüft berechnet über dem Auftrag (z. B. Nachtrag noch nicht beauftragt) → der höhere Stand ist der Trend
+  const trend = vertraege.length ? (berechnet.gt(summeVergeben) ? berechnet : summeVergeben) : geschaetzt;
   const f = (m: Money) => m.toFixed(2);
   return {
     geschaetzt: f(geschaetzt),
     vergeben: f(vergeben),
     nachtraege: f(nachtraege),
     summeVergeben: f(summeVergeben),
-    berechnet: f(summe(vertraege.map((v) => money(v.berechnet)))),
+    berechnet: f(berechnet),
     bezahlt: f(summe(vertraege.map((v) => money(v.abgegolten)))),
     trend: f(trend),
     abweichung: f(geschaetzt.minus(trend)),
+    /** Angebotene, noch nicht beauftragte Nachträge (Risiko, nicht im Trend). */
+    angeboten: f(angeboten),
   };
 }
 export type Kostenstand = ReturnType<typeof kostenstand>;
 
 /** Summiert Kostenstände (z. B. für die Projektsumme). */
 export function kostenstandSumme(liste: Kostenstand[]): Kostenstand {
-  const felder = ["geschaetzt", "vergeben", "nachtraege", "summeVergeben", "berechnet", "bezahlt", "trend", "abweichung"] as const;
+  const felder = ["geschaetzt", "vergeben", "nachtraege", "summeVergeben", "berechnet", "bezahlt", "trend", "abweichung", "angeboten"] as const;
   return Object.fromEntries(felder.map((k) => [k, liste.reduce((s, x) => s.plus(x[k]), ZERO).toFixed(2)])) as Kostenstand;
+}
+
+export const BUDGET_SCHWELLE_STANDARD = 90;
+
+/** Mandantenweite Einstellungen der Kostenkontrolle. */
+export const KostenEinstellung = z.object({
+  budgetSchwelleProzent: z.coerce.number().int("Ganze Prozentzahl").min(50, "Mindestens 50 %").max(100, "Höchstens 100 %").default(BUDGET_SCHWELLE_STANDARD),
+});
+export type KostenEinstellung = z.infer<typeof KostenEinstellung>;
+
+export interface BudgetStand {
+  stufe: "ok" | "nahe" | "ueber";
+  budget: string;
+  /** Gebundene Kosten: Auftrag inkl. beauftragter Nachträge bzw. höher berechneter Stand. */
+  gebunden: string;
+  angeboten: string;
+  ueberschreitung: string;
+  auslastungProzent: number | null;
+  text: string | null;
+}
+
+/**
+ * Budgetwarnung je Gewerk: gebundene Kosten (max. aus Auftrag inkl. beauftragter Nachträge und geprüft berechnet)
+ * gegen die Schätzung. Ab der Schwelle (Standard 90 %) Hinweis, über 100 % Warnung. Angebotene Nachträge, die das
+ * Budget sprengen würden, lösen ebenfalls einen Hinweis aus. Gewerke ohne Vertrag und ohne Rechnung bleiben ruhig.
+ */
+export function budgetPruefung(stand: Pick<Kostenstand, "geschaetzt" | "summeVergeben" | "berechnet" | "angeboten">, schwelleProzent = BUDGET_SCHWELLE_STANDARD): BudgetStand {
+  const budget = money(stand.geschaetzt);
+  const vergeben = money(stand.summeVergeben);
+  const berechnet = money(stand.berechnet);
+  const gebunden = berechnet.gt(vergeben) ? berechnet : vergeben;
+  const angeboten = money(stand.angeboten ?? "0");
+  const f = (m: Money) => m.toFixed(2);
+  const de = (m: Money) => `${m.toNumber().toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} €`;
+  const ueber = gebunden.minus(budget);
+  const auslastung = budget.gt(0) ? Math.round(gebunden.div(budget).toNumber() * 100) : null;
+  const basis = { budget: f(budget), gebunden: f(gebunden), angeboten: f(angeboten), ueberschreitung: f(ueber.gt(0) ? ueber : ZERO), auslastungProzent: auslastung };
+  if (gebunden.isZero() && angeboten.isZero()) return { ...basis, stufe: "ok", text: null };
+  const mitAngebot = angeboten.gt(0) ? gebunden.plus(angeboten) : null;
+  const angebotText = mitAngebot && mitAngebot.gt(budget) ? ` Mit den angebotenen Nachträgen (${de(angeboten)}) wären es ${de(mitAngebot)}.` : "";
+  if (ueber.gt(0))
+    return {
+      ...basis,
+      stufe: "ueber",
+      text: budget.isZero() ? `Kein Budget geschätzt, gebunden sind ${de(gebunden)}.` : `Budget um ${de(ueber)} überschritten (${auslastung} %: ${de(gebunden)} von ${de(budget)}).${angebotText}`,
+    };
+  if ((auslastung !== null && auslastung >= schwelleProzent) || angebotText)
+    return { ...basis, stufe: "nahe", text: `Budget zu ${auslastung} % gebunden (${de(gebunden)} von ${de(budget)}).${angebotText}` };
+  return { ...basis, stufe: "ok", text: null };
 }
 
 export interface Auftragsrahmen {

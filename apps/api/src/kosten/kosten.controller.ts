@@ -11,6 +11,7 @@ import {
   RechnungPruefen,
   RechnungZahlung,
   gewerkeplanAusVorlage,
+  KostenEinstellung,
   money,
 } from "@bt/domain";
 import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
@@ -47,6 +48,16 @@ export class KostenController {
   async kostenkontrolle(@Param("id", ParseUUIDPipe) projektId: string) {
     await this.verkauf.projekt(projektId);
     return this.kosten.kostenkontrolle(projektId);
+  }
+
+  @Get("einstellungen/kosten")
+  einstellung() {
+    return this.kosten.einstellung();
+  }
+
+  @Put("einstellungen/kosten")
+  einstellungSpeichern(@Body() body: unknown, @Benutzer() benutzer: string) {
+    return this.kosten.einstellungSpeichern(pruefe(KostenEinstellung, body), benutzer);
   }
 
   /** Legt den Gewerkeplan aus der Standardvorlage an (nur, solange das Projekt noch keine Gewerke hat). */
