@@ -23,3 +23,13 @@ export async function kontierungZuruecksetzen(gesellschaftId: string): Promise<A
   revalidatePath("/buchhaltung");
   return { meldung: "Standardkonten des Kontenrahmens wiederhergestellt." };
 }
+
+export async function stapelSenden(gesellschaftId: string, stapel: string, erneut: boolean): Promise<AktionsErgebnis> {
+  try {
+    const r = await api<{ an: string }>(`/buchhaltung/stapel/${stapel}/senden`, { method: "POST", body: { gesellschaftId, erneut } });
+    revalidatePath("/buchhaltung");
+    return { meldung: `Stapel an ${r.an} in den Postausgang gestellt.` };
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+}

@@ -219,3 +219,54 @@ export const SchreibenVersandEingabe = z.object({
 /** Briefanrede aus Anrede und Nachname. */
 export const briefAnrede = (p?: { anrede?: string | null; nachname?: string | null } | null) =>
   p?.anrede === "Frau" && p.nachname ? `Sehr geehrte Frau ${p.nachname}` : p?.anrede === "Herr" && p.nachname ? `Sehr geehrter Herr ${p.nachname}` : "Sehr geehrte Damen und Herren";
+
+// ---------------------------------------------------------------- DATEV-Export an den Steuerberater
+
+export interface DatevExportMailDaten {
+  gesellschaft: string;
+  beraternr: number;
+  mandantennr: number;
+  stapel: string;
+  von: string;
+  bis: string;
+  anzahl: number;
+  dateiname: string;
+  /** ZIP mit Stapel, Belegen und Belegliste */
+  belegeLink: string;
+  /** Übersicht für den Steuerberater (Saldenliste, Bauabzugsteuer) */
+  uebersichtLink: string;
+  /** Erneuter Versand eines früheren Stapels */
+  erneut?: boolean;
+}
+
+/** An den Steuerberater: Buchungsstapel (EXTF) im Anhang, Belege als Link. */
+export function mailDatevExport(d: DatevExportMailDaten): Mail {
+  const zeitraum = `${de(d.von)} – ${de(d.bis)}`;
+  const paare: [string, string | null | undefined][] = [
+    ["Gesellschaft", d.gesellschaft],
+    ["Berater / Mandant", `${d.beraternr} / ${d.mandantennr}`],
+    ["Zeitraum", zeitraum],
+    ["Buchungen", String(d.anzahl)],
+    ["Stapel", d.stapel],
+    ["Anhang", d.dateiname],
+  ];
+  const einleitung = `${d.erneut ? "erneut " : ""}anbei der Buchungsstapel aus der Bauträger-Plattform im DATEV-Format (EXTF) zum Import in DATEV Rechnungswesen.`;
+  const belege = "Die Belege (Rechnungsscans, Zahlungsanforderungen, Bauabzug-Abrechnungen) mit Belegliste stehen als ZIP-Datei zum Herunterladen bereit";
+  const festgeschrieben = "Die Buchungen sind mit dem Export festgeschrieben; spätere Änderungen kommen als Storno- und Neubuchung im nächsten Stapel.";
+  return {
+    betreff: `DATEV-Buchungsstapel ${d.gesellschaft}: ${zeitraum} (${d.anzahl} Buchungen)${d.erneut ? " – erneut" : ""}`,
+    text: `Guten Tag,\n\n${einleitung}\n\n${textZeilen(paare)}\n\n${belege}:\n${d.belegeLink}\n\n${festgeschrieben}\n\nSaldenliste, offene Posten und Bauabzugsteuer: ${d.uebersichtLink}`,
+    html: huelle(
+      `DATEV-Buchungsstapel ${d.gesellschaft}`,
+      [
+        p(`Guten Tag,`),
+        p(esc(einleitung)),
+        zeilen(paare),
+        p(`${esc(belege)}: <a href="${esc(d.belegeLink)}" style="color:#2563eb">ZIP mit Belegen herunterladen</a>`),
+        p(esc(festgeschrieben)),
+        p(`<a href="${esc(d.uebersichtLink)}" style="color:#2563eb">Saldenliste, offene Posten und Bauabzugsteuer</a>`),
+      ],
+      `${d.gesellschaft} · automatischer Versand der Bauträger-Plattform`,
+    ),
+  };
+}

@@ -227,7 +227,7 @@ export class BuchhaltungService {
     const stornoVon = new Set(zeilen.filter((z) => z.stornoVon).map((z) => z.stornoVon!));
     const { verweise, ohnePartner, ...stand } = abgleich;
     return {
-      gesellschaft: { id: ges.id, nr: ges.nr, name: ges.name, skr: ges.skr, sachkontenlaenge: ges.sachkontenlaenge, datevBereit: !!(ges.datevBeraternr && ges.datevMandantennr) },
+      gesellschaft: { id: ges.id, nr: ges.nr, name: ges.name, skr: ges.skr, sachkontenlaenge: ges.sachkontenlaenge, datevBereit: !!(ges.datevBeraternr && ges.datevMandantennr), steuerberaterEmail: ges.steuerberaterEmail },
       kontierung: kontierungFuer(ges),
       kontierungGespeichert: !!ges.kontierung,
       abgleich: stand,

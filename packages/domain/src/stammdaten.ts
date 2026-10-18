@@ -35,6 +35,14 @@ const bicFeld = () =>
 
 // ---------------------------------------------------------------- Gesellschaft
 
+const emailFeld = () =>
+  z
+    .string()
+    .trim()
+    .transform((s) => (s === "" ? null : s))
+    .pipe(z.email("Ungültige E-Mail-Adresse").nullable())
+    .nullish();
+
 export const GesellschaftEingabe = z.object({
   nr: ganzzahl().positive(),
   name: pflichttext(),
@@ -47,6 +55,7 @@ export const GesellschaftEingabe = z.object({
   iban: ibanFeld(),
   bic: bicFeld(),
   steuernummer: text(30),
+  steuerberaterEmail: emailFeld(),
 });
 export type GesellschaftEingabe = z.infer<typeof GesellschaftEingabe>;
 
@@ -73,12 +82,7 @@ export const PartnerEingabe = z
     strasse: text(),
     plz: text(10),
     ort: text(100),
-    email: z
-      .string()
-      .trim()
-      .transform((s) => (s === "" ? null : s))
-      .pipe(z.email("Ungültige E-Mail-Adresse").nullable())
-      .nullish(),
+    email: emailFeld(),
     telefon: text(50),
     iban: ibanFeld(),
     bic: bicFeld(),

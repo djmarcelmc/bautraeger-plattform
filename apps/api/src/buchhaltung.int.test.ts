@@ -124,6 +124,28 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect((await exportieren(false)).status).toBe(201);
   });
 
+  it("sendet einen Stapel an den Steuerberater (Postausgang, Anhang, Link zu den Belegen)", async () => {
+    const [s] = (await http.get(`/api/buchhaltung/stapel?gesellschaftId=${ids.g}`)).body;
+    expect(s.versand).toBeNull();
+    const ohne = await als(http.post(`/api/buchhaltung/stapel/${s.stapel}/senden`)).send({ gesellschaftId: ids.g });
+    expect(ohne.status).toBe(409);
+    expect(ohne.body.message).toMatch(/keine E-Mail-Adresse des Steuerberaters/);
+    expect((await als(http.put(`/api/gesellschaften/${ids.g}`)).send({ nr: 1, name: "Muster Wohnbau GmbH", datevBeraternr: 1234567, datevMandantennr: 42, steuerberaterEmail: "kein-mail" })).status).toBe(400);
+    await als(http.put(`/api/gesellschaften/${ids.g}`)).send({ nr: 1, name: "Muster Wohnbau GmbH", datevBeraternr: 1234567, datevMandantennr: 42, steuerberaterEmail: "kanzlei@stb.example" });
+    const r = await als(http.post(`/api/buchhaltung/stapel/${s.stapel}/senden`)).send({ gesellschaftId: ids.g });
+    expect(r.status).toBe(201);
+    expect(r.body).toMatchObject({ an: "kanzlei@stb.example", anzahl: s.anzahl, dateiname: expect.stringMatching(new RegExp(`^${s.stapel}_1_`)) });
+    const post = (await http.get("/api/benachrichtigungen")).body.postausgang as { id: string; anlass: string; an: string[]; betreff: string }[];
+    const m = post.find((x) => x.id === r.body.nachrichtId)!;
+    expect(m).toMatchObject({ anlass: "datev_export", an: ["kanzlei@stb.example"] });
+    expect(m.betreff).toMatch(new RegExp(`^DATEV-Buchungsstapel Muster Wohnbau GmbH: .* \\(${s.anzahl} Buchungen\\)$`));
+    const [nachher] = (await http.get(`/api/buchhaltung/stapel?gesellschaftId=${ids.g}`)).body;
+    expect(nachher.versand).toMatchObject({ an: ["kanzlei@stb.example"], status: "wartend" });
+    // EXTF-Datei liegt in der Dokumentablage der Gesellschaft
+    const dok = (await http.get(`/api/dokumente?objektTyp=gesellschaft&objektId=${ids.g}`)).body as { dateiname: string; ordner: string }[];
+    expect(dok).toContainEqual(expect.objectContaining({ dateiname: r.body.dateiname, ordner: "DATEV-Export" }));
+  });
+
   it("storniert exportierte Buchungen, wenn sich die Kontierung ändert", async () => {
     const std = (await http.get(`/api/buchhaltung/kontierung/${ids.g}`)).body;
     expect(std).toMatchObject({ gespeichert: false, kontierung: { bank: "1200", debitorBasis: 10000 } });

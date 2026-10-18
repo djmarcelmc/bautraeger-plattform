@@ -5,7 +5,21 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /** DATEV-Export: lädt die Datei herunter und aktualisiert danach das Journal (Buchungen sind dann festgeschrieben). */
-export function ExportFormular({ gesellschaftId, von, bis, bereit, neu }: { gesellschaftId: string; von: string; bis: string; bereit: boolean; neu: number }) {
+export function ExportFormular({
+  gesellschaftId,
+  von,
+  bis,
+  bereit,
+  neu,
+  steuerberaterEmail,
+}: {
+  gesellschaftId: string;
+  von: string;
+  bis: string;
+  bereit: boolean;
+  neu: number;
+  steuerberaterEmail: string | null;
+}) {
   const router = useRouter();
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -24,11 +38,13 @@ export function ExportFormular({ gesellschaftId, von, bis, bereit, neu }: { gese
       }
       const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "EXTF_Buchungsstapel.csv";
       const fehlend = Number(res.headers.get("x-belege-fehlend") ?? 0);
+      const versand = res.headers.get("x-steuerberater") ?? "";
       const url = URL.createObjectURL(await res.blob());
       const a = Object.assign(document.createElement("a"), { href: url, download: name });
       a.click();
       URL.revokeObjectURL(url);
-      setMeldung(`${name} erstellt – die Buchungen sind als exportiert festgeschrieben.${fehlend ? ` ${fehlend} Beleg(e) fehlen in der Ablage (siehe Belegliste).` : ""}`);
+      setMeldung(`${name} erstellt – die Buchungen sind als exportiert festgeschrieben.${fehlend ? ` ${fehlend} Beleg(e) fehlen in der Ablage (siehe Belegliste).` : ""}${versand.startsWith("an:") ? ` Stapel an ${versand.slice(3)} in den Postausgang gestellt.` : ""}`);
+      if (versand.startsWith("fehler:")) setFehler(`Versand an den Steuerberater fehlgeschlagen: ${decodeURIComponent(versand.slice(7))}`);
       router.refresh();
     } finally {
       setLaeuft(false);
@@ -56,6 +72,16 @@ export function ExportFormular({ gesellschaftId, von, bis, bereit, neu }: { gese
         <input type="checkbox" name="mitBelegen" defaultChecked />
         <span>Belege beifügen (ZIP mit Zahlungsanforderungen, Rechnungsscans und Belegliste)</span>
       </label>
+      {steuerberaterEmail ? (
+        <label className="haken">
+          <input type="checkbox" name="anSteuerberater" defaultChecked />
+          <span>per E-Mail an den Steuerberater ({steuerberaterEmail}) – Stapel im Anhang, Belege als Link</span>
+        </label>
+      ) : (
+        <p className="hint">
+          Tipp: Mit der E-Mail des Steuerberaters bei der <a href={`/gesellschaften/${gesellschaftId}`}>Gesellschaft</a> geht der Stapel nach dem Export automatisch an die Kanzlei.
+        </p>
+      )}
       {fehler ? <p className="fehler">{fehler}</p> : null}
       {meldung ? <p className="meldung">{meldung}</p> : null}
       <div className="knopfleiste">

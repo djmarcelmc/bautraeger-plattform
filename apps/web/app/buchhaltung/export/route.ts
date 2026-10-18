@@ -21,12 +21,20 @@ export async function POST(req: Request) {
   const nurNeue = fd.get("nurNeue") === "on";
   const res = await apiRoh("/buchhaltung/export", { method: "POST", body: { gesellschaftId, von, bis, nurNeue } });
   if (!res.ok) return new Response(await fehlerText(res), { status: res.status, headers: { "content-type": "text/plain; charset=utf-8" } });
+  // Stapel an den Steuerberater (EXTF im Anhang, Belege per Link); ein Fehler hier verhindert den Download nicht
+  let versand = "";
+  if (fd.get("anSteuerberater") === "on" && !nurNeue) versand = `fehler:${encodeURIComponent("Automatisch nur beim Export neuer Buchungen – frühere Stapel bitte über „Bisherige Exporte“ senden.")}`;
+  else if (fd.get("anSteuerberater") === "on" && res.headers.get("x-export-stapel")) {
+    const v = await apiRoh(`/buchhaltung/stapel/${res.headers.get("x-export-stapel")}/senden`, { method: "POST", body: { gesellschaftId } });
+    versand = v.ok ? `an:${(await v.json()).an}` : `fehler:${encodeURIComponent(await fehlerText(v))}`;
+  }
   if (fd.get("mitBelegen") !== "on") {
     const kopf = new Headers();
     for (const k of ["content-type", "content-disposition"]) {
       const v = res.headers.get(k);
       if (v) kopf.set(k, v);
     }
+    if (versand) kopf.set("x-steuerberater", versand);
     return new Response(res.body, { headers: kopf });
   }
   const name = dateiname(res);
@@ -37,6 +45,6 @@ export async function POST(req: Request) {
   const belege = await apiRoh(`/buchhaltung/belege?gesellschaftId=${gesellschaftId}&${q}`);
   const { zip, fehlend } = await datevPaket({ name, daten: csv }, belege.ok ? await belege.json() : []);
   return new Response(Buffer.from(zip), {
-    headers: { "content-type": "application/zip", "content-disposition": `attachment; filename="${name.replace(/\.csv$/, ".zip")}"`, "x-belege-fehlend": String(fehlend) },
+    headers: { "content-type": "application/zip", "content-disposition": `attachment; filename="${name.replace(/\.csv$/, ".zip")}"`, "x-belege-fehlend": String(fehlend), ...(versand ? { "x-steuerberater": versand } : {}) },
   });
 }
