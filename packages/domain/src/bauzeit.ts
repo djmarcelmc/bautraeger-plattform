@@ -270,12 +270,12 @@ export function liquiditaetsplan(posten: LiquiditaetsPosten[], opt: { stichtag: 
   for (const p of posten) {
     const b = money(p.betrag);
     if (b.isZero()) continue;
-    arten[p.richtung].add(p.art);
     if (p.datum === null) ohneTermin[p.richtung] = ohneTermin[p.richtung].plus(b);
     else if (p.datum > letzte) spaeter[p.richtung] = spaeter[p.richtung].plus(b);
     else {
       if (p.datum < erste) ueberfaellig[p.richtung] = ueberfaellig[p.richtung].plus(b);
       const w = p.datum < erste ? wochen[0]! : wochen[Math.floor((Date.parse(p.datum) - Date.parse(erste)) / (7 * 86_400_000))]!;
+      arten[p.richtung].add(p.art);
       const m = w[p.richtung];
       m.set(p.art, (m.get(p.art) ?? ZERO).plus(b));
     }
@@ -314,3 +314,69 @@ export function liquiditaetsplan(posten: LiquiditaetsPosten[], opt: { stichtag: 
   };
 }
 export type Liquiditaetsplan = ReturnType<typeof liquiditaetsplan>;
+
+// ---------------------------------------------------------------- Abfluss eines Handwerkervertrags
+
+export interface VertragsLiquiditaet {
+  /** Auftragssumme inkl. beauftragter Nachträge (brutto, vor Nachlass) */
+  summeVergeben: string;
+  /** Zuletzt geprüfter kumulierter Rechnungsstand */
+  berechnet: string;
+  /** Auszahlungen + Skonto + Bauabzugsteuer */
+  abgegolten: string;
+  nachlassProzent?: number;
+  umlagenProzent?: number;
+  einbehaltVertragserfuellungProzent?: number;
+  einbehaltGewaehrleistungProzent?: number;
+  skontoProzent?: number;
+  /** Planannahme: Skonto wird gezogen (nur wenn der Vertrag Skonto vorsieht) */
+  skontoNutzen?: boolean;
+  /** Vertragserfüllungs-/Gewährleistungsbürgschaft liegt vor und ersetzt den Einbehalt */
+  buergschaftVertragserfuellung?: boolean;
+  buergschaftGewaehrleistung?: boolean;
+}
+
+/**
+ * Teilt die noch zu zahlenden Beträge eines Handwerkervertrags in die Zahlungszeitpunkte auf – nach derselben
+ * Prüfkette wie bei der Rechnungsprüfung (Nachlass, Umlagen, Einbehalt, Skonto; Bauabzugsteuer fließt ans Finanzamt
+ * und bleibt daher ein Abfluss):
+ * - rechnungen: geprüft, aber noch nicht bezahlt
+ * - bauleistung: Abschläge auf die noch nicht abgerechnete Leistung (abzüglich Vertragserfüllungseinbehalt)
+ * - schlusszahlung: Schlussrechnung nach Abnahme – gibt den Vertragserfüllungseinbehalt bis auf den
+ *   Gewährleistungseinbehalt frei
+ * - gewaehrleistung: Auszahlung des Gewährleistungseinbehalts nach Ablauf der Gewährleistung (ohne Skonto)
+ */
+export function vertragsabfluss(v: VertragsLiquiditaet) {
+  const p = (x?: number) => money(x ?? 0).dividedBy(100);
+  const eins = money(1);
+  const ve = v.buergschaftVertragserfuellung ? ZERO : p(v.einbehaltVertragserfuellungProzent);
+  const gw = v.buergschaftGewaehrleistung ? ZERO : p(v.einbehaltGewaehrleistungProzent);
+  const u = p(v.umlagenProzent);
+  const s = v.skontoNutzen === false ? ZERO : p(v.skontoProzent);
+  const netto = (x: Money) => x.times(eins.minus(p(v.nachlassProzent)));
+  const max = (a: Money, b: Money) => (a.gt(b) ? a : b);
+  const nichtNegativ = (x: Money) => max(x, ZERO);
+  const berechnet = money(v.berechnet);
+  const gesamt = max(money(v.summeVergeben), berechnet);
+  const abgegolten = money(v.abgegolten);
+
+  // kumulierte Ansprüche des Handwerkers (vor Skonto) zu den drei Zeitpunkten
+  const anspruchJetzt = netto(berechnet).times(eins.minus(u).minus(ve));
+  const anspruchAbschlaege = netto(gesamt).times(eins.minus(u).minus(ve));
+  const anspruchSchluss = netto(gesamt).times(eins.minus(u).minus(gw));
+  const stufen = [
+    nichtNegativ(anspruchJetzt.minus(abgegolten)),
+    nichtNegativ(anspruchAbschlaege.minus(max(anspruchJetzt, abgegolten))),
+    nichtNegativ(anspruchSchluss.minus(max(anspruchAbschlaege, abgegolten))),
+  ].map(cent);
+  const [rechnungen, bauleistung, schlusszahlung] = stufen.map((x) => cent(x.times(eins.minus(s)))) as [Money, Money, Money];
+  return {
+    rechnungen,
+    bauleistung,
+    schlusszahlung,
+    gewaehrleistung: cent(netto(gesamt).times(gw)),
+    skontoErsparnis: summe(stufen).minus(rechnungen).minus(bauleistung).minus(schlusszahlung),
+    /** Derzeit einbehaltener Vertragserfüllungseinbehalt */
+    einbehaltenBisher: cent(netto(berechnet).times(ve)),
+  };
+}

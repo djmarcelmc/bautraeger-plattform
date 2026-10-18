@@ -40,7 +40,7 @@ export class KostenService {
   }
 
   /** Kennzahlen je Vertrag für die Kostenkontrolle. */
-  private async vertragsKennzahlen(vertragIds: string[], db: DbOderTx = this.db) {
+  async vertragsKennzahlen(vertragIds: string[], db: DbOderTx = this.db) {
     if (!vertragIds.length) return new Map<string, VertragKosten & { offeneRechnungen: number }>();
     const [nachtraege, rechnungen, zahlungen] = await Promise.all([
       db.select().from(nt).where(inArray(nt.handwerkervertragId, vertragIds)),

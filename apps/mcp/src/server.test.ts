@@ -124,6 +124,8 @@ describe("MCP-Server", () => {
           ueberfaellig: { ein: "43000", aus: "0" },
           spaeter: { ein: "0", aus: "0" },
           ohneTermin: { ein: "0", aus: "0" },
+          skonto: true,
+          einbehalte: { skontoErsparnis: "1878.3", einbehaltenBisher: "3920", gewaehrleistung: "4900" },
         }),
         { status: 200 },
       );
@@ -133,6 +135,7 @@ describe("MCP-Server", () => {
     const d = JSON.parse((res.content as { text: string }[])[0]!.text);
     expect(d.wochen[0]).toMatchObject({ kw: "KW 43/2026", einnahmen: { "Angeforderte Raten": "43.000,00 €" }, bestand: "134.875,00 €" });
     expect(d.summe.endbestand).toBe("134.875,00 €");
+    expect(d.einbehalte).toEqual({ vertragserfuellungDerzeit: "3.920,00 €", gewaehrleistungGesamt: "4.900,00 €", skontoertragEingerechnet: "1.878,30 €" });
   });
 
   it("listet Bürgschaften mit Handlungsbedarf", async () => {

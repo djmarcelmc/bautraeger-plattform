@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MABV_ABSCHNITTE } from "./mabv.js";
 import { money } from "./money.js";
 import {
+  vertragsabfluss,
   STANDARD_BAUZEITENPLAN,
   VorgangEingabe,
   bauzeitenplanAusVorlage,
@@ -154,5 +155,42 @@ describe("Abhängigkeiten", () => {
     expect(mindestAbstand("2027-06-25", "2027-06-26")).toBe(0);
     expect(mindestAbstand("2027-06-25", "2027-06-21")).toBe(-5);
     expect(mitIds.filter((x) => x.abhaengigkeiten.length).length).toBe(20);
+  });
+});
+
+describe("vertragsabfluss", () => {
+  const basis = {
+    summeVergeben: "100000",
+    berechnet: "40000",
+    abgegolten: "30000",
+    nachlassProzent: 2,
+    umlagenProzent: 0.5,
+    einbehaltVertragserfuellungProzent: 10,
+    einbehaltGewaehrleistungProzent: 5,
+    skontoProzent: 3,
+  };
+  const text = (r: ReturnType<typeof vertragsabfluss>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.toFixed(2)]));
+
+  it("teilt nach Prüfkette auf: offene Rechnungen, Abschläge, Schlusszahlung, Gewährleistungseinbehalt", () => {
+    expect(text(vertragsabfluss(basis))).toEqual({
+      rechnungen: "4931.48", // (39.200 × 89,5 % − 30.000) × 97 %
+      bauleistung: "51047.22", // (98.000 − 39.200) × 89,5 % × 97 %
+      schlusszahlung: "4753.00", // 98.000 × (10 % − 5 %) × 97 %
+      gewaehrleistung: "4900.00", // 98.000 × 5 %, nach Ablauf der Gewährleistung
+      skontoErsparnis: "1878.30",
+      einbehaltenBisher: "3920.00",
+    });
+  });
+
+  it("ohne Skonto und mit Bürgschaften statt Einbehalten", () => {
+    const r = text(vertragsabfluss({ ...basis, skontoNutzen: false, buergschaftVertragserfuellung: true, buergschaftGewaehrleistung: true }));
+    expect(r).toMatchObject({ rechnungen: "9004.00", bauleistung: "58506.00", schlusszahlung: "0.00", gewaehrleistung: "0.00", skontoErsparnis: "0.00", einbehaltenBisher: "0.00" });
+  });
+
+  it("zahlt Überzahlungen nicht doppelt und rechnet Mehrabrechnung über die Vergabe hinaus", () => {
+    const ueber = vertragsabfluss({ summeVergeben: "10000", berechnet: "4000", abgegolten: "6000" });
+    expect(text(ueber)).toMatchObject({ rechnungen: "0.00", bauleistung: "4000.00", schlusszahlung: "0.00" });
+    const mehr = vertragsabfluss({ summeVergeben: "10000", berechnet: "12000", abgegolten: "10000" });
+    expect(text(mehr)).toMatchObject({ rechnungen: "2000.00", bauleistung: "0.00" });
   });
 });

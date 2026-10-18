@@ -13,14 +13,16 @@ const KURZ: Record<string, string> = {
   raten: "Raten (Plan)",
   verkauf: "Verkauf (Annahme)",
   rechnungen: "Rechnungen",
-  bauleistung: "Bauleistung",
+  bauleistung: "Abschläge",
   ohnePlan: "ohne Vorgang",
+  schlusszahlung: "Schlusszahlung",
+  gewaehrleistung: "GW-Einbehalt",
 };
 
 export default async function LiquiditaetsplanSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ projekt?: string; wochen?: string; anfangsbestand?: string; unverkauft?: string }>;
+  searchParams: Promise<{ projekt?: string; wochen?: string; anfangsbestand?: string; unverkauft?: string; ohneSkonto?: string }>;
 }) {
   const s = await searchParams;
   const q = new URLSearchParams({
@@ -28,6 +30,7 @@ export default async function LiquiditaetsplanSeite({
     wochen: s.wochen ?? "26",
     ...(s.anfangsbestand ? { anfangsbestand: s.anfangsbestand } : {}),
     ...(s.unverkauft ? { unverkauft: "1" } : {}),
+    ...(s.ohneSkonto ? { skonto: "0" } : {}),
   });
   const [d, projekte] = await Promise.all([api<Liquiditaetsplan>(`/auswertungen/liquiditaetsplan?${q}`), api<ProjektListe[]>("/projekte")]);
   const { ein, aus } = d.arten;
@@ -62,6 +65,9 @@ export default async function LiquiditaetsplanSeite({
           <input name="anfangsbestand" defaultValue={s.anfangsbestand ?? ""} placeholder="Anfangsbestand €" inputMode="decimal" className="zahl" aria-label="Anfangsbestand" />
           <label className="haken">
             <input type="checkbox" name="unverkauft" value="1" defaultChecked={!!s.unverkauft} /> unverkaufte Einheiten einrechnen
+          </label>
+          <label className="haken">
+            <input type="checkbox" name="ohneSkonto" value="1" defaultChecked={!!s.ohneSkonto} /> ohne Skonto rechnen
           </label>
           <button type="submit" className="zweitrangig">
             Anzeigen
@@ -200,6 +206,26 @@ export default async function LiquiditaetsplanSeite({
 
       <div className="zweispaltig">
         <section className="karte">
+          <h2>Einbehalte und Skonto</h2>
+          <table className="berichtstabelle eng">
+            <tbody>
+              <tr>
+                <td>Vertragserfüllungseinbehalte (derzeit einbehalten)</td>
+                <td className="num">{deZahl(d.einbehalte.einbehaltenBisher, 0)} €</td>
+              </tr>
+              <tr>
+                <td>Gewährleistungseinbehalte (bis Ende der Gewährleistung)</td>
+                <td className="num">{deZahl(d.einbehalte.gewaehrleistung, 0)} €</td>
+              </tr>
+              <tr>
+                <td>{d.skonto ? "Skontoertrag (eingerechnet)" : "möglicher Skontoertrag (nicht eingerechnet)"}</td>
+                <td className="num plus">{deZahl(d.einbehalte.skontoErsparnis, 0)} €</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="hint">Einbehalte, die durch eine Bürgschaft abgelöst sind, werden mit der Schlusszahlung ausgezahlt.</p>
+        </section>
+        <section className="karte">
           <h2>Außerhalb des Zeitraums</h2>
           <table className="berichtstabelle eng">
             <thead>
@@ -231,7 +257,9 @@ export default async function LiquiditaetsplanSeite({
             <li>Übrige MaBV-Raten: Meilenstein aus dem Bauzeitenplan + Zahlungsziel.</li>
             <li>Unverkaufte Einheiten (optional): Listenpreis nach Standard-MaBV-Raten.</li>
             <li>Kosten: geprüfte, noch offene Rechnungen sofort; der noch nicht berechnete Teil des Trends gleichmäßig über die Dauer der verknüpften Vorgänge.</li>
-            <li>Einbehalte und Skonto sind nicht gesondert berücksichtigt.</li>
+            <li>Vergebene Gewerke nach der Prüfkette des Vertrags: abzüglich Nachlass, Umlagen, Vertragserfüllungseinbehalt und – sofern vereinbart – Skonto. Die Bauabzugsteuer bleibt ein Abfluss (ans Finanzamt).</li>
+            <li>Schlusszahlung: Freigabe des Vertragserfüllungs- bis auf den Gewährleistungseinbehalt, Abnahme (sonst Ende der Vorgänge) + Zahlungsfrist bzw. 30 Tage.</li>
+            <li>Gewährleistungseinbehalt: nach Ablauf der Gewährleistung (Vertrag, sonst 5 Jahre); durch Bürgschaft abgelöste Einbehalte fließen schon mit der Schlusszahlung ab.</li>
           </ul>
         </section>
       </div>

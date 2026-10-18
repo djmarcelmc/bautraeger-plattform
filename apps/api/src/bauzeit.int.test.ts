@@ -179,4 +179,45 @@ describe.skipIf(!url)("Bauzeitenplan und Liquiditätsplan (Integration)", () => 
     expect(restNachher.vorgaenger.map((v: { id: string }) => v.id)).not.toContain(neu.id);
     expect(restNachher.vorgaenger).toHaveLength(1);
   });
+
+  it("berücksichtigt Nachlass, Skonto, Einbehalte und Bürgschaften", async () => {
+    const gewerk = (await als(http.post(`/api/projekte/${projektId}/gewerke`)).send({ nr: 410, bezeichnung: "Fenster", geschaetztBrutto: "50000" })).body.id;
+    const hw = (await als(http.post("/api/partner")).send({ nr: 70002, suchcode: "fenster", firma: "Fenster GmbH", rollen: ["handwerker"] })).body.id;
+    const v = (
+      await als(http.post("/api/handwerkervertraege")).send({
+        gewerkId: gewerk,
+        handwerkerId: hw,
+        vertragBrutto: "50000",
+        nachlassProzent: "2",
+        skontoProzent: "3",
+        skontoFristTage: 10,
+        einbehaltVertragserfuellungProzent: "10",
+        einbehaltGewaehrleistungProzent: "5",
+        abnahmeAm: "2027-04-01",
+      })
+    ).body.id;
+    const url = `/api/auswertungen/liquiditaetsplan?projektId=${projektId}&stichtag=2026-10-19&wochen=104`;
+    const artSumme = (d: { wochen: { aus: Record<string, string> }[] }, art: string) => d.wochen.reduce((s, w) => s + zahl(w.aus[art] ?? "0"), 0);
+
+    const mit = (await http.get(url)).body;
+    expect(mit.skonto).toBe(true);
+    // Schlusszahlung 30 Tage nach Abnahme: 49.000 × (10 % − 5 %) × 97 %
+    expect(mit.wochen.find((w: { von: string }) => w.von === "2027-04-26").aus.schlusszahlung).toBe("2376.50");
+    // Gewährleistungseinbehalt 49.000 × 5 % erst nach fünf Jahren → außerhalb des Planungszeitraums
+    expect(artSumme(mit, "gewaehrleistung")).toBe(0);
+    expect(mit.einbehalte).toMatchObject({ gewaehrleistung: "2450.00", einbehaltenBisher: "0.00" });
+    // Abschläge ohne Vorgang: 49.000 × 90 % × 97 % = 42.777 (über die Bauzeit verteilt, plus Kunst am Bau 10.000)
+    expect(artSumme(mit, "ohnePlan") + zahl(mit.ohneTermin.aus)).toBeCloseTo(42777 + 10000, 2);
+    expect(zahl(mit.einbehalte.skontoErsparnis)).toBeCloseTo((44100 + 2450) * 0.03, 2);
+
+    const ohne = (await http.get(`${url}&skonto=0`)).body;
+    expect(ohne.skonto).toBe(false);
+    expect(zahl(ohne.summe.aus) - zahl(mit.summe.aus)).toBeCloseTo((44100 + 2450) * 0.03, 2);
+
+    // Gewährleistungsbürgschaft ersetzt den Einbehalt → volle Freigabe mit der Schlusszahlung
+    await als(http.post("/api/buergschaften")).send({ richtung: "erhalten", art: "gewaehrleistung", handwerkervertragId: v, betrag: "2450" });
+    const mitBuergschaft = (await http.get(url)).body;
+    expect(mitBuergschaft.wochen.find((w: { von: string }) => w.von === "2027-04-26").aus.schlusszahlung).toBe("4753.00");
+    expect(mitBuergschaft.einbehalte.gewaehrleistung).toBe("0.00");
+  });
 });
