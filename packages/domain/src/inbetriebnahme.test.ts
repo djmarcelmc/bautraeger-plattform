@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { inbetriebnahmePruefen, type InbetriebnahmeStand } from "./inbetriebnahme.js";
 
-const ges = { id: "g1", nr: 1, name: "Muster Wohnbau", anschrift: true, steuernummer: true, datev: true, iban: true, briefbogen: true, kontierungEingestellt: true, datevExporte: 1, bankimporte: 1 };
+const ges = { id: "g1", nr: 1, name: "Muster Wohnbau", anschrift: true, steuernummer: true, datev: true, steuerberaterEmail: true, iban: true, briefbogen: true, kontierungEingestellt: true, datevExporte: 1, bankimporte: 1 };
 const fertig: InbetriebnahmeStand = {
   system: { anmeldungAktiv: true, mailVersand: "microsoft365", rechnungspostfach: "rechnungen@x.de" },
   gesellschaften: [ges],

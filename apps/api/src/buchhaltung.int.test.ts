@@ -243,6 +243,8 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(g.datev.letzteExporte.length).toBeGreaterThan(0);
     expect(typeof g.datev.nichtExportiert).toBe("number");
     expect(g.rechnungenOhneScan).toBe(0); // die Rechnung hat einen Scan
+    expect(g.gesellschaft.steuerberaterEmail).toBe("kanzlei@stb.example");
+    expect(g.datev.letzteExporte.some((x: { versand: { an: string[] } | null }) => x.versand?.an[0] === "kanzlei@stb.example")).toBe(true);
   });
 
   it("Inbetriebnahme-Assistent prüft den Datenstand", async () => {
@@ -255,6 +257,7 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     const status = (k: string) => punkte.find((x: { schluessel: string }) => x.schluessel.startsWith(k))?.status;
     expect(status("datev-test")).toBe("ok"); // Export ist gelaufen
     expect(status("briefbogen")).not.toBe("ok"); // kein Briefbogen hinterlegt
+    expect(status("steuerberater")).toBe("ok");
     expect(d.fortschritt.gesamt).toBeGreaterThan(0);
     expect(d.fortschritt.ok).toBeLessThan(d.fortschritt.gesamt);
   });

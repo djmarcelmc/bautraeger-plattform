@@ -34,6 +34,7 @@ export class InbetriebnahmeController {
           anschrift: sql<boolean>`coalesce(${g.anschrift}, '') <> ''`,
           steuernummer: sql<boolean>`coalesce(${g.steuernummer}, '') <> ''`,
           datev: sql<boolean>`${g.datevBeraternr} is not null and ${g.datevMandantennr} is not null`,
+          steuerberaterEmail: sql<boolean>`coalesce(${g.steuerberaterEmail}, '') <> ''`,
           iban: sql<boolean>`coalesce(${g.iban}, '') <> ''`,
           briefbogen: sql<boolean>`coalesce(${g.briefbogen}->>'dokumentId', '') <> ''`,
           kontierungEingestellt: sql<boolean>`${g.kontierung} is not null`,

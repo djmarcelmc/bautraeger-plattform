@@ -23,7 +23,7 @@ export class SteuerberaterController {
   @Get()
   async uebersicht() {
     const stichtag = heute();
-    const gesellschaften = await this.db.select({ id: g.id, nr: g.nr, name: g.name, steuernummer: g.steuernummer, skr: g.skr }).from(g).where(eq(g.mandantId, await this.kontext.mandantId())).orderBy(asc(g.nr));
+    const gesellschaften = await this.db.select({ id: g.id, nr: g.nr, name: g.name, steuernummer: g.steuernummer, skr: g.skr, steuerberaterEmail: g.steuerberaterEmail }).from(g).where(eq(g.mandantId, await this.kontext.mandantId())).orderBy(asc(g.nr));
     const bauabzug = await this.bauabzug.uebersicht(12, stichtag);
     const ohneScan = gesellschaften.length
       ? await this.db
@@ -43,7 +43,7 @@ export class SteuerberaterController {
       : [];
     const liste = [];
     for (const ges of gesellschaften) {
-      const [stand, stapel] = await Promise.all([this.buchhaltung.nichtExportiert(ges.id, stichtag), this.buchhaltung.stapelListe(ges.id)]);
+      const [stand, stapel] = await Promise.all([this.buchhaltung.nichtExportiert(ges.id, stichtag), this.buchhaltung.stapelMitVersand(ges.id)]);
       const monate = bauabzug.monate
         .map((m) => ({ ...m, zeilen: m.zeilen.filter((z) => z.gesellschaftId === ges.id) }))
         .filter((m) => m.zeilen.length)

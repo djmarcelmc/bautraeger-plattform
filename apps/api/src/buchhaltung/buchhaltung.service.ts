@@ -306,6 +306,24 @@ export class BuchhaltungService {
       .limit(24);
   }
 
+  /** Stapel mit dem jeweils letzten Versand an den Steuerberater (Postausgang, Anlass „datev_export“). */
+  async stapelMitVersand(gesellschaftId: string) {
+    const n = schema.nachricht;
+    const [liste, versand] = await Promise.all([
+      this.stapelListe(gesellschaftId),
+      this.db
+        .select({ an: n.an, status: n.status, fehler: n.fehler, angelegtAm: n.angelegtAm, gesendetAm: n.gesendetAm, anhaenge: n.anhaenge })
+        .from(n)
+        .where(and(eq(n.anlass, "datev_export"), eq(n.bezugId, gesellschaftId)))
+        .orderBy(desc(n.angelegtAm))
+        .limit(100),
+    ]);
+    return liste.map((s) => {
+      const v = versand.find((x) => x.anhaenge[0]?.dateiname.startsWith(s.stapel));
+      return { ...s, versand: v ? { an: v.an, status: v.status, fehler: v.fehler, angelegtAm: v.angelegtAm, gesendetAm: v.gesendetAm } : null };
+    });
+  }
+
   /** Stapel erneut erzeugen (gleiche Buchungen, keine neue Festschreibung). */
   async stapelErneut(gesellschaftId: string, stapel: string) {
     const ges = await this.gesellschaft(gesellschaftId);

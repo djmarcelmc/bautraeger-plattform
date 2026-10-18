@@ -5,7 +5,7 @@ import { schema } from "@bt/db";
 import { DatevExportEingabe, KontierungEingabe, kontierungFuer, mailDatevExport } from "@bt/domain";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
-import { and, desc, eq, gte, isNotNull, lte } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lte } from "drizzle-orm";
 import { basisUrl, NachrichtenService } from "../benachrichtigung/nachrichten.service.js";
 import { SPEICHER, type Speicher } from "../dokumente/speicher.js";
 import { Benutzer, pruefe } from "../common/eingabe.js";
@@ -110,19 +110,8 @@ export class BuchhaltungController {
 
   /** Bisherige Stapel mit dem letzten Versand an den Steuerberater. */
   @Get("stapel")
-  async stapel(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string) {
-    const [liste, versand] = await Promise.all([this.buchhaltung.stapelListe(gesellschaftId), this.versandListe(gesellschaftId)]);
-    return liste.map((s) => ({ ...s, versand: versand.find((v) => v.anhaenge[0]?.dateiname.startsWith(s.stapel)) ?? null }));
-  }
-
-  private async versandListe(gesellschaftId: string) {
-    const n = schema.nachricht;
-    return this.db
-      .select({ an: n.an, status: n.status, fehler: n.fehler, angelegtAm: n.angelegtAm, gesendetAm: n.gesendetAm, anhaenge: n.anhaenge })
-      .from(n)
-      .where(and(eq(n.anlass, "datev_export"), eq(n.bezugId, gesellschaftId)))
-      .orderBy(desc(n.angelegtAm))
-      .limit(100);
+  stapel(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string) {
+    return this.buchhaltung.stapelMitVersand(gesellschaftId);
   }
 
   /**
