@@ -48,7 +48,7 @@ export class BuchhaltungService {
     const kostenstelle = sql<string>`coalesce(nullif(${p.kostenstelle}, ''), ${p.nr}::text)`;
     // Debitor: abweichender Rechnungsempfänger, sonst erster Käufer (niedrigste Partnernummer)
     const debitorId = sql<string | null>`coalesce(${kv.zahlungsanforderungAn}, (select ${kk.partnerId} from ${kk} join ${gp} on ${gp.id} = ${kk.partnerId} where ${kk.kaufvertragId} = ${kv.id} order by ${gp.nr} limit 1))`;
-    const [anf, ein, rech, aus, abf] = await Promise.all([
+    const [anf, ein, rech, aus, abf, ueb] = await Promise.all([
       tx
         .select({ id: zan.id, rechnungsnr: zan.rechnungsnr, angefordertAm: zan.angefordertAm, betrag: zan.betrag, debitorId, kostenstelle, kaufvertragId: kv.id })
         .from(zan)
@@ -81,8 +81,13 @@ export class BuchhaltungService {
         .select({ id: ba.id, abgefuehrtAm: ba.abgefuehrtAm, abzugsbetrag: ba.abzugsbetrag, monat: ba.monat, handwerkerId: ba.handwerkerId })
         .from(ba)
         .where(and(eq(ba.gesellschaftId, gesellschaftId), isNotNull(ba.abgefuehrtAm))),
+      tx
+        .select({ id: kv.id, nr: kv.nr, datum: sql<string>`to_char(${kv.uebergabeIst} at time zone 'Europe/Berlin', 'YYYY-MM-DD')`, debitorId, kostenstelle })
+        .from(kv)
+        .innerJoin(p, eq(kv.projektId, p.id))
+        .where(and(eq(p.gesellschaftId, gesellschaftId), isNotNull(kv.uebergabeIst))),
     ]);
-    const partnerIds = [...new Set([...anf, ...ein].map((x) => x.debitorId).concat([...rech, ...aus].map((x) => x.kreditorId), abf.map((x) => x.handwerkerId)))].filter((x): x is string => !!x);
+    const partnerIds = [...new Set([...anf, ...ein, ...ueb].map((x) => x.debitorId).concat([...rech, ...aus].map((x) => x.kreditorId), abf.map((x) => x.handwerkerId)))].filter((x): x is string => !!x);
     const partner = new Map(
       (partnerIds.length ? await tx.select({ id: gp.id, nr: gp.nr, suchcode: gp.suchcode, firma: gp.firma, nachname: gp.nachname }).from(gp).where(inArray(gp.id, partnerIds)) : []).map((x) => [
         x.id,
@@ -102,6 +107,7 @@ export class BuchhaltungService {
       });
     const q: JournalQuellen = {
       anforderungen: mit(anf, "zahlungsanforderung", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, name: x.partner.name })),
+      uebergaben: mit(ueb, "uebergabe", (x) => x.debitorId).map((x) => ({ kaufvertragId: x.id, datum: x.datum, vertragNr: x.nr, name: x.partner.name, kostenstelle: x.kostenstelle })),
       eingaenge: mit(ein, "zahlungseingang", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, name: x.partner.name })),
       rechnungen: mit(rech, "eingangsrechnung", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, name: x.partner.name })),
       ausgaenge: mit(aus, "zahlungsausgang", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, name: x.partner.name })),
@@ -109,6 +115,7 @@ export class BuchhaltungService {
     };
     const verweise = new Map<string, string>([
       ...ein.map((x) => [x.id, `/kaufvertraege/${x.kaufvertragId}`] as const),
+      ...ueb.map((x) => [x.id, `/kaufvertraege/${x.id}`] as const),
       ...anf.map((x) => [x.id, `/zahlungsanforderungen/${x.id}`] as const),
       ...rech.map((x) => [x.id, `/eingangsrechnungen/${x.id}`] as const),
       ...aus.map((x) => [x.id, `/eingangsrechnungen/${x.eingangsrechnungId}`] as const),

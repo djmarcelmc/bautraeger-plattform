@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { money } from "./money.js";
+import { money, summe } from "./money.js";
 
 // Buchungsjournal: wird aus Verkauf (Zahlungsanforderungen, Zahlungseingänge) und Kosten (freigegebene Rechnungen,
 // Zahlungsausgänge, abgeführte Bauabzugsteuer) abgeleitet und ist Quelle des DATEV-Exports. Bereits exportierte
 // Buchungen werden nie verändert: Ändert sich die Quelle, entsteht eine Stornobuchung und eine neue Buchung.
 //
 // Kontierung je Gesellschaft. Die Standardkonten sind ein Vorschlag (Anzahlungsmethode: Zahlungsanforderungen auf
-// „Erhaltene Anzahlungen“, Bauleistungen als Fremdleistungen ohne Vorsteuer, da Bauträgerumsätze nach § 4 Nr. 9a UStG
+// „Erhaltene Anzahlungen“, mit der Übergabe Umbuchung auf Erlöse, danach Anforderungen direkt auf Erlöse; Bauleistungen als Fremdleistungen ohne Vorsteuer, da Bauträgerumsätze nach § 4 Nr. 9a UStG
 // steuerfrei sind) und müssen mit dem Steuerberater abgestimmt werden.
 
 const konto = (name: string) => z.string().trim().regex(/^\d{4,9}$/, `${name}: 4 bis 9 Ziffern`);
@@ -23,6 +23,8 @@ export const KontierungEingabe = z.object({
   bank: konto("Bankkonto"),
   anzahlungen: konto("Erhaltene Anzahlungen / Erlöse"),
   anzahlungenBu: buSchluessel,
+  erloese: konto("Erlöse"),
+  erloeseBu: buSchluessel,
   bauleistungen: konto("Bauleistungen"),
   bauleistungenBu: buSchluessel,
   skonto: konto("Erhaltene Skonti"),
@@ -33,17 +35,18 @@ export const KontierungEingabe = z.object({
 export type Kontierung = z.infer<typeof KontierungEingabe>;
 
 export const KONTIERUNG_STANDARD: Record<"03" | "04", Kontierung> = {
-  "03": { bank: "1200", anzahlungen: "1710", anzahlungenBu: null, bauleistungen: "3100", bauleistungenBu: null, skonto: "3730", bauabzug: "1736", debitorBasis: 10000, kreditorBasis: 70000 },
-  "04": { bank: "1800", anzahlungen: "3250", anzahlungenBu: null, bauleistungen: "5900", bauleistungenBu: null, skonto: "5730", bauabzug: "3700", debitorBasis: 10000, kreditorBasis: 70000 },
+  "03": { bank: "1200", anzahlungen: "1710", anzahlungenBu: null, erloese: "8100", erloeseBu: null, bauleistungen: "3100", bauleistungenBu: null, skonto: "3730", bauabzug: "1736", debitorBasis: 10000, kreditorBasis: 70000 },
+  "04": { bank: "1800", anzahlungen: "3250", anzahlungenBu: null, erloese: "4100", erloeseBu: null, bauleistungen: "5900", bauleistungenBu: null, skonto: "5730", bauabzug: "3700", debitorBasis: 10000, kreditorBasis: 70000 },
 };
 
 /** Gespeicherte Kontierung oder Standard des Kontenrahmens; Personenkontenbasis passend zur Sachkontenlänge. */
 export function kontierungFuer(g: { skr?: string | null; sachkontenlaenge?: number | null; kontierung?: unknown }): Kontierung {
-  const gespeichert = KontierungEingabe.safeParse(g.kontierung);
-  if (gespeichert.success) return gespeichert.data;
   const std = KONTIERUNG_STANDARD[g.skr === "04" ? "04" : "03"];
   const faktor = 10 ** Math.max(0, (g.sachkontenlaenge ?? 4) - 4);
-  return { ...std, debitorBasis: std.debitorBasis * faktor, kreditorBasis: std.kreditorBasis * faktor };
+  const standard = { ...std, debitorBasis: std.debitorBasis * faktor, kreditorBasis: std.kreditorBasis * faktor };
+  // gespeicherte Zuordnung aus älteren Versionen um neue Konten ergänzen
+  const gespeichert = g.kontierung && typeof g.kontierung === "object" ? KontierungEingabe.safeParse({ ...standard, ...g.kontierung }) : null;
+  return gespeichert?.success ? gespeichert.data : standard;
 }
 
 /**
@@ -60,6 +63,7 @@ export const belegnummer = (s: string | null | undefined) => (s ?? "").replace(/
 export const QUELLEN = {
   zahlungsanforderung: "Zahlungsanforderung",
   zahlungseingang: "Zahlungseingang",
+  uebergabe: "Übergabe (Umbuchung auf Erlöse)",
   eingangsrechnung: "Eingangsrechnung",
   zahlungsausgang: "Zahlungsausgang",
   "zahlungsausgang.skonto": "Skonto",
@@ -86,7 +90,9 @@ export interface JournalPosten {
 }
 
 export interface JournalQuellen {
-  anforderungen: { id: string; rechnungsnr: string; angefordertAm: string; betrag: string; debitorNr: number; name: string; kostenstelle: string | null }[];
+  anforderungen: { id: string; kaufvertragId: string; rechnungsnr: string; angefordertAm: string; betrag: string; debitorNr: number; name: string; kostenstelle: string | null }[];
+  /** Kaufverträge mit Übergabe (Besitzübergang = Gewinnrealisierung) */
+  uebergaben: { kaufvertragId: string; datum: string; vertragNr: string; name: string; kostenstelle: string | null }[];
   eingaenge: { id: string; datum: string; betrag: string; debitorNr: number; name: string; rechnungsnr: string | null; kostenstelle: string | null }[];
   /** Freigegebene oder bezahlte Rechnungen; Betrag = geprüft fällig (nach Nachlass, Umlagen und Einbehalt, vor Skonto). */
   rechnungen: { id: string; rechnungsnr: string; rechnungsdatum: string; betrag: string; kreditorNr: number; name: string; kostenstelle: string | null }[];
@@ -106,8 +112,16 @@ export function journalSoll(q: JournalQuellen, k: Kontierung): JournalPosten[] {
   };
   const deb = (nr: number) => personenkonto(nr, k.debitorBasis);
   const kred = (nr: number) => personenkonto(nr, k.kreditorBasis);
-  for (const a of q.anforderungen)
-    add({ quelleTyp: "zahlungsanforderung", quelleId: a.id, belegdatum: a.angefordertAm, belegnr: belegnummer(a.rechnungsnr), konto: deb(a.debitorNr), gegenkonto: k.anzahlungen, betrag: a.betrag, steuerschluessel: k.anzahlungenBu, buchungstext: text60(`Zahlungsanforderung ${a.name}`), kostenstelle: a.kostenstelle });
+  const uebergabe = new Map(q.uebergaben.map((u) => [u.kaufvertragId, u]));
+  for (const a of q.anforderungen) {
+    // nach der Übergabe direkt auf Erlöse, vorher auf Erhaltene Anzahlungen
+    const nachUebergabe = (uebergabe.get(a.kaufvertragId)?.datum ?? "9999") < a.angefordertAm;
+    add({ quelleTyp: "zahlungsanforderung", quelleId: a.id, belegdatum: a.angefordertAm, belegnr: belegnummer(a.rechnungsnr), konto: deb(a.debitorNr), gegenkonto: nachUebergabe ? k.erloese : k.anzahlungen, betrag: a.betrag, steuerschluessel: nachUebergabe ? k.erloeseBu : k.anzahlungenBu, buchungstext: text60(`Zahlungsanforderung ${a.name}`), kostenstelle: a.kostenstelle });
+  }
+  for (const u of q.uebergaben) {
+    const bisher = summe(q.anforderungen.filter((a) => a.kaufvertragId === u.kaufvertragId && a.angefordertAm <= u.datum).map((a) => money(a.betrag)));
+    add({ quelleTyp: "uebergabe", quelleId: u.kaufvertragId, belegdatum: u.datum, belegnr: belegnummer(u.vertragNr), konto: k.anzahlungen, gegenkonto: k.erloese, betrag: bisher.toFixed(2), steuerschluessel: k.erloeseBu, buchungstext: text60(`Übergabe ${u.vertragNr} ${u.name}`), kostenstelle: u.kostenstelle });
+  }
   for (const e of q.eingaenge)
     add({ quelleTyp: "zahlungseingang", quelleId: e.id, belegdatum: e.datum, belegnr: belegnummer(e.rechnungsnr), konto: k.bank, gegenkonto: deb(e.debitorNr), betrag: e.betrag, steuerschluessel: null, buchungstext: text60(`Zahlung ${e.name}`), kostenstelle: e.kostenstelle });
   for (const r of q.rechnungen)

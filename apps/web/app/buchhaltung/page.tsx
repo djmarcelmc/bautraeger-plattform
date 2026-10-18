@@ -49,6 +49,7 @@ const QUELLFILTER = [
   ["", "Alle Vorgänge"],
   ["zahlungsanforderung", "Zahlungsanforderungen"],
   ["zahlungseingang", "Zahlungseingänge"],
+  ["uebergabe", "Übergaben (Erlöse)"],
   ["eingangsrechnung", "Eingangsrechnungen"],
   ["zahlungsausgang", "Zahlungsausgänge"],
   ["bauabzug_abfuehrung", "Bauabzugsteuer"],
@@ -58,6 +59,8 @@ const KONTEN: [keyof Kontierung, string, string?][] = [
   ["bank", "Bank"],
   ["anzahlungen", "Erhaltene Anzahlungen (Zahlungsanforderungen)"],
   ["anzahlungenBu", "BU-Schlüssel Anzahlungen", "optional"],
+  ["erloese", "Erlöse (ab Übergabe)", "steuerfrei § 4 Nr. 9a UStG"],
+  ["erloeseBu", "BU-Schlüssel Erlöse", "optional"],
   ["bauleistungen", "Bauleistungen / Fremdleistungen"],
   ["bauleistungenBu", "BU-Schlüssel Bauleistungen", "optional, z. B. für § 13b UStG"],
   ["skonto", "Erhaltene Skonti"],
@@ -92,6 +95,7 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
   const sachkonto = new Map<string, string>([
     [k.bank, "Bank"],
     [k.anzahlungen, "Erh. Anzahlungen"],
+    [k.erloese, "Erlöse"],
     [k.bauleistungen, "Bauleistungen"],
     [k.skonto, "Skonti"],
     [k.bauabzug, "Bauabzugsteuer"],
@@ -203,7 +207,10 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
               <h2>Kontenzuordnung</h2>
               <span className={`badge ${j.kontierungGespeichert ? "gut" : "warnung"}`}>{j.kontierungGespeichert ? "eingestellt" : `Standard SKR ${j.gesellschaft.skr ?? "03"}`}</span>
             </summary>
-            <p className="hint">Vorschlag nach Anzahlungsmethode (Bauträgerumsätze steuerfrei nach § 4 Nr. 9a UStG, daher ohne Vorsteuer) – bitte mit dem Steuerberater abstimmen.</p>
+            <p className="hint">
+              Vorschlag nach Anzahlungsmethode: Zahlungsanforderungen auf Erhaltene Anzahlungen, mit der Übergabe Umbuchung auf Erlöse, danach angeforderte Raten direkt auf Erlöse.
+              Bauträgerumsätze sind steuerfrei nach § 4 Nr. 9a UStG, daher ohne Vorsteuer – bitte mit dem Steuerberater abstimmen.
+            </p>
             <Formular aktion={kontierungSpeichern.bind(null, gid)} knopf="Kontenzuordnung speichern">
               <div className="raster">
                 {KONTEN.map(([name, label, hinweis]) => (
@@ -224,7 +231,7 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
 
       <section className="karte ohne-innenabstand">
         {!j.zeilen.length ? (
-          <p className="leer">Im Zeitraum gibt es keine Buchungen. Gebucht werden Zahlungsanforderungen, Zahlungseingänge, freigegebene Rechnungen, Zahlungen und abgeführte Bauabzugsteuer.</p>
+          <p className="leer">Im Zeitraum gibt es keine Buchungen. Gebucht werden Zahlungsanforderungen, Übergaben, Zahlungseingänge, freigegebene Rechnungen, Zahlungen und abgeführte Bauabzugsteuer.</p>
         ) : (
           <div className="tabellenrahmen">
             <table className="journal">
