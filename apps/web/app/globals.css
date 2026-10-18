@@ -2747,6 +2747,7 @@ main.portal {
   font-size: 12px;
   text-align: center;
   padding: 0 12px;
+}
 
 .uploadfeld .portalfreigabe {
   grid-column: auto;
