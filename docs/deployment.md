@@ -81,8 +81,9 @@ git clone git@github-bautraeger:djmarcelmc/bautraeger-plattform.git
 cd bautraeger-plattform
 ```
 
-Solange die Pull Requests noch nicht gemergt sind, den Branch mit dem Deployment auschecken:
-`git checkout claude/deployment` (nach dem Merge: `git checkout main`).
+> **Abkürzung:** Nach dem Klonen erledigt `./deploy/einrichten.sh` die Schritte 3, 5 und 6 automatisch
+> (Pakete, Docker, Firewall, `.env.prod` mit zufälligen Passwörtern, Start). Die Zugangsdaten stehen danach in
+> `zugang.txt` – in den Passwortmanager übernehmen und die Datei löschen.
 
 ## 5. Konfiguration
 
