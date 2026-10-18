@@ -3,6 +3,7 @@ import { schema } from "@bt/db";
 import {
   MABV_ABSCHNITTE,
   basiszinsFehlt,
+  buchhaltungsAufgaben,
   datumPlusTage,
   fristDringlichkeit,
   mangelStatus,
@@ -14,7 +15,9 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { DB, type Db } from "../db.provider.js";
+import { BankabgleichService } from "../bankabgleich/bankabgleich.service.js";
 import { BauabzugService } from "../bauabzug/bauabzug.service.js";
+import { BuchhaltungService } from "../buchhaltung/buchhaltung.service.js";
 import { BauzeitService } from "../bauzeit/bauzeit.service.js";
 import { KostenService } from "../kosten/kosten.service.js";
 import { MaengelService } from "../maengel/maengel.service.js";
@@ -38,6 +41,8 @@ export class CockpitService {
     @Inject(BauzeitService) private readonly bauzeit: BauzeitService,
     @Inject(BuergschaftenService) private readonly buergschaften: BuergschaftenService,
     @Inject(BauabzugService) private readonly bauabzug: BauabzugService,
+    @Inject(BankabgleichService) private readonly bank: BankabgleichService,
+    @Inject(BuchhaltungService) private readonly buchhaltung: BuchhaltungService,
   ) {}
 
   async cockpit() {
@@ -263,6 +268,41 @@ export class CockpitService {
         link: "/bauabzug",
       });
     }
+    // ---------------------------------------------------------------- Buchhaltung: Bankabgleich, DATEV, Belege
+    const gesellschaften = await this.db.select({ id: g.id, nr: g.nr, name: g.name }).from(g).where(eq(g.mandantId, mandantId)).orderBy(asc(g.nr));
+    for (const ges of gesellschaften) {
+      const [bank, export_, ohneScan] = await Promise.all([
+        this.bank.stand(ges.id),
+        this.buchhaltung.nichtExportiert(ges.id, heute),
+        this.db
+          .select({ id: er.id })
+          .from(er)
+          .innerJoin(hv, eq(er.handwerkervertragId, hv.id))
+          .innerJoin(gw, eq(hv.gewerkId, gw.id))
+          .innerJoin(p, eq(gw.projektId, p.id))
+          .where(
+            and(
+              eq(p.gesellschaftId, ges.id),
+              inArray(er.status, ["freigegeben", "bezahlt"]),
+              sql`not exists (select 1 from ${schema.dokument} d where d.objekt_typ = 'eingangsrechnung' and d.objekt_id = ${er.id} and d.geloescht_am is null)`,
+            ),
+          )
+          .orderBy(asc(er.eingangAm)),
+      ]);
+      aufgaben.push(
+        ...buchhaltungsAufgaben(
+          {
+            gesellschaft: { ...ges, datevBereit: export_.datevBereit },
+            bank: { offen: bank.offen, aeltestes: bank.aeltestes, letzterAuszugBis: bank.letzterAuszugBis },
+            laeufeOhneBeleg: bank.laeufeOhneBeleg,
+            nichtExportiert: { anzahl: export_.anzahl, aeltestes: export_.aeltestes },
+            rechnungenOhneBeleg: { anzahl: ohneScan.length, ersteId: ohneScan[0]?.id ?? null },
+          },
+          heute,
+        ),
+      );
+    }
+
     const fehlt = basiszinsFehlt(await this.db.select({ gueltigAb: schema.basiszins.gueltigAb }).from(schema.basiszins), heute);
     if (fehlt)
       aufgaben.push({ bereich: "einstellungen", dringlichkeit: "hoch", titel: "Basiszinssatz nachtragen", text: `Für das Halbjahr ab ${de(fehlt)} fehlt der Basiszins – Verzugszinsen werden sonst zu niedrig berechnet.`, link: "/einstellungen" });

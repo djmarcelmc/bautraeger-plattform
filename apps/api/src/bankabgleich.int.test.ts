@@ -84,6 +84,9 @@ describe.skipIf(!url)("Bankabgleich (Integration)", () => {
     expect(r.status).toBe(201);
     expect(r.body).toMatchObject({ neu: 4, doppelt: 0, gesellschaft: { nr: 1 } });
     expect((await hochladen(datei)).body).toMatchObject({ neu: 0, doppelt: 4 });
+    // Hinweise im Cockpit
+    const titel = (await http.get("/api/cockpit")).body.aufgaben.filter((x: { bereich: string }) => x.bereich === "buchhaltung").map((x: { titel: string }) => x.titel);
+    expect(titel).toEqual(expect.arrayContaining(["4 Bankumsätze zuordnen", "1 Rechnung ohne Scan"]));
     // falsche Gesellschaft bzw. unbekanntes Konto
     expect((await hochladen(datei, "a.xml", ids.g2)).body.message).toMatch(/gehört zum Konto von „Muster Wohnbau GmbH“/);
     expect((await hochladen(camt([{ betrag: "1.00", haben: true, zweck: "x", name: "y", ref: "Z" }], "DE02500105170137075030"))).body.message).toMatch(/keiner Gesellschaft zugeordnet/);
