@@ -5,6 +5,9 @@ Mängelmanagement, Auswertungen – mit Anbindung an DATEV, Microsoft Outlook un
 
 Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artifact/af974a52-9a18-4d5d-9fda-9ae9934284b1)
 
+
+> **Lokal ausprobieren (Windows/Mac):** Docker Desktop installieren, dann `lokal/Starten.bat` doppelklicken – Anleitung in [`lokal/LIESMICH.md`](lokal/LIESMICH.md).
+
 ## Aufbau
 
 | Pfad | Inhalt |
