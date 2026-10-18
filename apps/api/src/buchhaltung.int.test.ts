@@ -194,6 +194,22 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(v.body.zeilen[0]).toMatchObject({ konto: "12345", datev: "59000.00", differenzDatev: "1000.00" });
     expect(v.body.summen.debitor.abweichungen).toBe(1);
     expect((await als(http.post("/api/buchhaltung/saldenliste")).field("gesellschaftId", ids.g).attach("datei", Buffer.from("x;y\n1;2"), "a.csv")).body.message).toMatch(/Konto/);
+    // Excel – ohne und mit DATEV-Vergleich
+    const roh = (r: request.Test) => r.buffer(true).parse((res, cb) => {
+      const t: Buffer[] = [];
+      res.on("data", (c: Buffer) => t.push(c));
+      res.on("end", () => cb(null, Buffer.concat(t)));
+    });
+    const x1 = await roh(als(http.get(`/api/buchhaltung/saldenliste?gesellschaftId=${ids.g}&format=xlsx`)));
+    expect(x1.headers["content-type"]).toMatch(/spreadsheetml/);
+    expect((x1.body as Buffer).subarray(0, 2).toString()).toBe("PK");
+    const ExcelJS = (await import("exceljs")).default;
+    const mappe = new ExcelJS.Workbook();
+    const x2 = await roh(als(http.post("/api/buchhaltung/saldenliste")).field("gesellschaftId", ids.g).field("format", "xlsx").attach("datei", csv, "SuSa.csv"));
+    await mappe.xlsx.load(x2.body as Buffer);
+    const werte = mappe.worksheets[0]!.getSheetValues().flat().map(String).join("|");
+    expect(werte).toMatch(/mit DATEV-Vergleich/);
+    expect(werte).toMatch(/12345\|Müller\|60000\|S\|60000\|0\|59000\|1000/);
   });
 
   it("protokolliert Abgleich und Export", async () => {
