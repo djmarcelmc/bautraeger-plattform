@@ -25,6 +25,7 @@ export interface InbetriebnahmeStand {
     anschrift: boolean;
     steuernummer: boolean;
     datev: boolean;
+    steuerberaterEmail: boolean;
     iban: boolean;
     briefbogen: boolean;
     kontierungEingestellt: boolean;
@@ -75,6 +76,7 @@ export function inbetriebnahmePruefen(s: InbetriebnahmeStand): { gruppen: PruefG
       punkte: [
         proGesellschaft("stammdaten", "Gesellschaften: Anschrift und Steuernummer", (x) => x.anschrift && x.steuernummer, `${g.length} Gesellschaft(en) mit Anschrift und Steuernummer.`, "Anschrift oder Steuernummer fehlt bei"),
         proGesellschaft("datev", "DATEV-Berater-/Mandantennummer", (x) => x.datev, "Bei allen Gesellschaften eingetragen.", "Fehlt bei"),
+        proGesellschaft("steuerberater", "E-Mail des Steuerberaters (Versand der DATEV-Stapel)", (x) => x.steuerberaterEmail, "Bei allen Gesellschaften hinterlegt.", "Noch keine Adresse bei", "warnung"),
         proGesellschaft("iban", "Bankverbindung (SEPA, Bankabgleich)", (x) => x.iban, "Bei allen Gesellschaften hinterlegt.", "IBAN fehlt bei"),
         proGesellschaft("briefbogen", "Briefbogen für Schreiben", (x) => x.briefbogen, "Bei allen Gesellschaften hinterlegt – Musterbrief prüfen.", "Noch kein Briefbogen bei", "warnung"),
         s.basiszinsFehlt

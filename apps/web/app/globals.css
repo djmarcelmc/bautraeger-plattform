@@ -3588,3 +3588,6 @@ td.positiv {
 td.negativ {
   color: var(--gefahr);
 }
+.stb-versand svg {
+  vertical-align: -2px;
+}

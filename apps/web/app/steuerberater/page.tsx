@@ -1,16 +1,22 @@
-import { BookOpenCheck, Download, FileWarning, Landmark, Scale, ShieldCheck } from "lucide-react";
+import { BookOpenCheck, Download, FileWarning, Landmark, Mail, Scale, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+const VERSAND: Record<string, string> = { wartend: "wird gesendet", gesendet: "gesendet", protokolliert: "protokolliert (kein Versandweg)", fehler: "Versand fehlgeschlagen" };
 const buchungen = (n: number) => `${n} ${n === 1 ? "Buchung" : "Buchungen"}`;
 
 interface Uebersicht {
   stichtag: string;
   gesellschaften: {
-    gesellschaft: { id: string; nr: number; name: string; steuernummer: string | null; skr: string | null };
-    datev: { bereit: boolean; nichtExportiert: number; aeltestes: string | null; letzteExporte: { stapel: string; exportiertAm: string; anzahl: number; von: string; bis: string }[] };
+    gesellschaft: { id: string; nr: number; name: string; steuernummer: string | null; skr: string | null; steuerberaterEmail: string | null };
+    datev: {
+      bereit: boolean;
+      nichtExportiert: number;
+      aeltestes: string | null;
+      letzteExporte: { stapel: string; exportiertAm: string; anzahl: number; von: string; bis: string; versand: { an: string[]; status: string; angelegtAm: string; gesendetAm: string | null } | null }[];
+    };
     bauabzug: { monat: string; monatText: string; faelligAm: string; offen: number; nichtAbgefuehrt: number; abzugsbetrag: string }[];
     rechnungenOhneScan: number;
   }[];
@@ -72,12 +78,27 @@ export default async function Steuerberater() {
                   <Scale size={15} /> Saldenliste &amp; OP-Abgleich
                 </a>
               </div>
+              <p className="hint stb-versand">
+                <Mail size={13} />{" "}
+                {g.steuerberaterEmail ? (
+                  <>Stapel gehen per E-Mail an {g.steuerberaterEmail}</>
+                ) : (
+                  <>
+                    Keine Steuerberater-E-Mail hinterlegt – <a href={`/gesellschaften/${g.id}`}>bei der Gesellschaft eintragen</a>, dann kommt jeder Stapel automatisch per Mail.
+                  </>
+                )}
+              </p>
               {datev.letzteExporte.length ? (
                 <ul className="stb-liste">
                   {datev.letzteExporte.map((s) => (
                     <li key={s.stapel}>
                       <span>
                         {deDatum(s.exportiertAm)} · {buchungen(s.anzahl)} ({deDatum(s.von)} – {deDatum(s.bis)})
+                        {s.versand ? (
+                          <span className={`versandvermerk ${s.versand.status}`}>
+                            <Mail size={12} /> {VERSAND[s.versand.status] ?? s.versand.status} {deDatum((s.versand.gesendetAm ?? s.versand.angelegtAm).slice(0, 10))}
+                          </span>
+                        ) : null}
                       </span>
                       <span>
                         <a href={`/buchhaltung/stapel/${s.stapel}?g=${g.id}`}>Stapel</a> · <a href={`/buchhaltung/stapel/${s.stapel}?g=${g.id}&belege=1`}>mit Belegen</a>
