@@ -149,6 +149,38 @@ cd ~/bautraeger-plattform
 
 Das Skript erstellt zuerst eine Sicherung, holt den neuen Stand, baut neu und startet die Dienste.
 
+## 7a. Automatische Updates über GitHub Actions (empfohlen)
+
+Der Workflow `.github/workflows/pruefen-und-deployen.yml` prüft jeden Stand (Build, Unit- und Integrationstests mit
+PostgreSQL) und rollt **jeden Stand auf `main` automatisch aus**: Sicherung → `git pull` → Build → Neustart
+(`deploy/update.sh`), danach Erreichbarkeitsprüfung. Schlagen die Tests fehl, wird nicht ausgerollt.
+
+**Einmalig einrichten** (auf dem Server, als der Benutzer, dem `~/bautraeger-plattform` gehört):
+
+```bash
+# Eigener Schlüssel nur für GitHub – auf dem Server auf das Update-Skript beschränkt
+ssh-keygen -t ed25519 -f ~/gh_deploy -N "" -C "github-actions deploy"
+echo "command=\"cd $HOME/bautraeger-plattform && ./deploy/update.sh\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $(cat ~/gh_deploy.pub)" >> ~/.ssh/authorized_keys
+
+cat ~/gh_deploy                                              # → Secret DEPLOY_SSH_KEY (kompletter Inhalt)
+ssh-keyscan -t ed25519 "$(curl -s -4 ifconfig.me)" 2>/dev/null   # → Secret DEPLOY_KNOWN_HOSTS
+curl -s -4 ifconfig.me; echo                                 # → Secret DEPLOY_HOST
+rm ~/gh_deploy ~/gh_deploy.pub                               # privaten Schlüssel danach vom Server löschen
+```
+
+Auf GitHub: **Repository → Settings → Secrets and variables → Actions → New repository secret**
+
+| Secret | Inhalt |
+| --- | --- |
+| `DEPLOY_HOST` | IPv4 des Servers |
+| `DEPLOY_USER` | SSH-Benutzer (meist `root`) |
+| `DEPLOY_SSH_KEY` | privater Schlüssel `~/gh_deploy` (inkl. `-----BEGIN …` / `-----END …`) |
+| `DEPLOY_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan` |
+| `DEPLOY_URL` | optional, Standard `https://projectx.cubivivit.de` |
+
+Testen: **Actions → „Prüfen und deployen“ → Run workflow** (Branch `main`). Ohne Secrets wird der Deploy-Schritt
+übersprungen; die Tests laufen trotzdem.
+
 ## 8. Sicherungen
 
 - Täglich (und vor jedem Update) im Ordner `~/bautraeger-plattform/backups`:

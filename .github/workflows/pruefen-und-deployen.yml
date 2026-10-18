@@ -1,0 +1,105 @@
+# Prüft jeden Pull Request und jeden Stand auf main (Build, Typprüfung, Unit- und Integrationstests).
+# Auf main wird danach automatisch auf den Server ausgerollt – sobald die Secrets eingerichtet sind
+# (Anleitung: docs/deployment.md, Abschnitt „Automatische Updates“).
+name: Prüfen und deployen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  pruefen:
+    name: Build und Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bt
+          POSTGRES_PASSWORD: bt
+          POSTGRES_DB: bautraeger_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bt -d bautraeger_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://bt:bt@localhost:5432/bautraeger_test
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build (alle Pakete)
+        run: pnpm build
+      - name: Unit-Tests Domain
+        run: pnpm --filter @bt/domain test
+      - name: Tests MCP
+        run: pnpm --filter @bt/mcp test
+      - name: Integrationstests API (mit PostgreSQL)
+        run: pnpm --filter @bt/api test
+
+  deployen:
+    name: Auf den Server ausrollen
+    needs: pruefen
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-produktiv
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+    steps:
+      - name: Secrets vorhanden?
+        id: bereit
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "::notice::Automatisches Deployment noch nicht eingerichtet (Secret DEPLOY_HOST fehlt) – übersprungen."
+            echo "aktiv=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "aktiv=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: SSH vorbereiten
+        if: steps.bereit.outputs.aktiv == 'true'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Update ausführen (Sicherung → git pull → build → Neustart)
+        if: steps.bereit.outputs.aktiv == 'true'
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        # Der Schlüssel ist auf dem Server auf „deploy/update.sh“ beschränkt (command=… in authorized_keys),
+        # GitHub kann damit also nichts anderes ausführen.
+        run: ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER:-root}@$DEPLOY_HOST"
+      - name: Erreichbarkeit prüfen
+        if: steps.bereit.outputs.aktiv == 'true'
+        env:
+          DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+        run: |
+          url="${DEPLOY_URL:-https://projectx.cubivivit.de}"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url/" || true)
+            # 401 = Passwortschutz aktiv, 200/302/307 = Anmeldung/Startseite – in jedem Fall läuft die Plattform
+            case "$code" in 200|302|307|401) echo "Plattform antwortet ($code)."; exit 0 ;; esac
+            echo "Versuch $i: HTTP $code – warte …"; sleep 10
+          done
+          echo "::error::Plattform antwortet nach dem Update nicht ($url)."; exit 1
