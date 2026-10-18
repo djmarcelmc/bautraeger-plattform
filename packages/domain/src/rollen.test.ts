@@ -21,6 +21,8 @@ describe("Rollen und Rechte", () => {
     expect(r("PUT", "/projekte/abc")).toBe("projekte");
     expect(r("POST", "/projekte/abc/einheiten")).toBe("projekte");
     expect(r("POST", "/partner")).toBe("stammdaten");
+    expect(r("POST", "/import/partner/ausfuehren")).toBe("stammdaten");
+    expect(r("POST", "/import/einheiten/pruefen")).toBe("projekte");
     expect(r("PUT", "/benachrichtigungen/einstellungen")).toBe("verwaltung");
     expect(r("POST", "/gesellschaften")).toBe("verwaltung");
     expect(r("DELETE", "/irgendwas/neues")).toBe("verwaltung");

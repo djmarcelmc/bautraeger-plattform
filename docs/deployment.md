@@ -129,6 +129,9 @@ Danach unter **Einstellungen → Benachrichtigungen** die Empfänger eintragen u
 Fehlgeschlagene Sendungen werden automatisch wiederholt (nach 1, 5, 30 Minuten, 2 und 12 Stunden) und im Postausgang
 mit Fehlertext angezeigt.
 
+Danach geht es mit der [Checkliste zur Inbetriebnahme](inbetriebnahme.md) weiter (Grundeinstellungen,
+Datenübernahme, Abgleich).
+
 ## 7. Updates
 
 ```bash

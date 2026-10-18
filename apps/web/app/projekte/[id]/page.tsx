@@ -182,9 +182,18 @@ export default async function ProjektSeite({
                 ))}
               </tbody>
             </table>
-            {!p.einheiten.length && <p className="leer">Noch keine Einheiten – unten die erste anlegen.</p>}
+            {!p.einheiten.length && (
+              <p className="leer">
+                Noch keine Einheiten – unten die erste anlegen oder <a href={`/einstellungen/import?art=einheiten&projekt=${id}`}>Einheitenliste aus Excel importieren</a>.
+              </p>
+            )}
           </div>
-          <h2>Einheit hinzufügen</h2>
+          <div className="pruefkopf mitte">
+            <h2>Einheit hinzufügen</h2>
+            <a className="knopf zweitrangig klein" href={`/einstellungen/import?art=einheiten&projekt=${id}`}>
+              Aus Excel/CSV importieren
+            </a>
+          </div>
           <Formular aktion={einheitAnlegen.bind(null, id)} knopf="Einheit anlegen">
             <EinheitFelder andere={p.einheiten} />
           </Formular>

@@ -2522,3 +2522,104 @@ main.portal {
     padding: 10px 12px;
   }
 }
+
+/* ------------------------------------------------------------------ Datenimport */
+.importassistent {
+  display: grid;
+  gap: 18px;
+}
+.importassistent h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.importschritte {
+  list-style: none;
+  counter-reset: schritt;
+  padding: 0;
+  margin: 18px 0 8px;
+  display: grid;
+  gap: 18px;
+}
+.importschritte > li {
+  counter-increment: schritt;
+  position: relative;
+  padding-left: 42px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.importschritte > li::before {
+  content: counter(schritt);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--akzent-weich);
+  color: var(--akzent-text);
+  font-weight: 650;
+  display: grid;
+  place-items: center;
+}
+.importschritte .hint {
+  margin: 0;
+}
+.importschritte .uploadfeld {
+  width: 100%;
+  align-items: center;
+}
+.importschritte .uploadfeld .haken-reihe {
+  grid-column: auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.importprojekt {
+  display: grid;
+  gap: 4px;
+  min-width: min(320px, 100%);
+}
+.knopf.zweitrangig {
+  background: var(--flaeche);
+  color: var(--text);
+  border-color: var(--linie-stark);
+}
+.knopf.zweitrangig:hover {
+  background: var(--flaeche-2);
+  color: var(--text);
+}
+.knopf.klein {
+  padding: 5px 12px;
+  min-height: 32px;
+  font-size: 13.5px;
+}
+.importspalten {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.importspalten h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0 0 6px;
+}
+.importfehler {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--gefahr);
+  font-size: 13px;
+}
+.importschritte .uploadfeld .haken-reihe {
+  flex-wrap: nowrap;
+}
+.importschritte .uploadfeld .haken-reihe input {
+  width: auto;
+  flex: none;
+}
+.pruefkopf.mitte {
+  align-items: center;
+  margin: 18px 0 10px;
+}

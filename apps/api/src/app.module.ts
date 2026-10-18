@@ -26,6 +26,7 @@ import { KaufvertraegeController } from "./verkauf/kaufvertraege.controller.js";
 import { VerkaufService } from "./verkauf/verkauf.service.js";
 import { ZahlungenController } from "./verkauf/zahlungen.controller.js";
 import { EinheitenController } from "./einheiten/einheiten.controller.js";
+import { ImportController } from "./import/import.controller.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
 import { KostenController } from "./kosten/kosten.controller.js";
 import { KostenService } from "./kosten/kosten.service.js";
@@ -53,6 +54,7 @@ class HealthController {
     PartnerController,
     ProjekteController,
     EinheitenController,
+    ImportController,
     ProtokollController,
     DokumenteController,
     KaufvertraegeController,
