@@ -3,6 +3,11 @@
 Checkliste für den Wechsel von AMADEUS X (oder Excel-Listen) auf die Bauträger-Plattform. Die Reihenfolge ist so
 gewählt, dass jeder Schritt auf dem vorherigen aufbaut. Erst nach Schritt 6 sollte mit echten Daten gearbeitet werden.
 
+> Die Seite **Werkzeuge → Inbetriebnahme** (`/inbetriebnahme`) prüft die meisten Punkte live gegen den Datenstand
+> (Gesellschaften, DATEV-Nummern, IBAN, Briefbogen, Basiszins, Partner, Projekte, Kontenzuordnung, Exporte) und
+> verlinkt direkt auf die jeweilige Einstellung. Was sich nicht prüfen lässt (Sicherung, Rücksicherung, Abstimmung
+> mit dem Steuerberater), bleibt hier als Haken zum Abarbeiten.
+
 ## 1. Server bereitstellen
 
 - [ ] Stack nach [deployment.md](deployment.md) auf **projectx.cubivivit.de** installiert, HTTPS-Zertifikat aktiv
