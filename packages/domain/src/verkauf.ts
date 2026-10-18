@@ -23,6 +23,7 @@ export const KaufvertragKonditionen = z.object({
   lastenfreistellungGesichert: z.boolean().default(false),
   buergschaftNach7: z.boolean().default(false),
   zahlungszielTage: leerAlsUndefiniert(ganzzahl().min(0).max(90).default(10)),
+  verbraucher: z.boolean().default(true),
   verzugszinsProzent: dezimal(4),
   anforderungssperre: z.boolean().default(false),
   mahnsperre: z.boolean().default(false),

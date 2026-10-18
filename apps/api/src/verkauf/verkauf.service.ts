@@ -56,7 +56,7 @@ export class VerkaufService {
       .where(and(eq(k.id, id), eq(g.mandantId, await this.kontext.mandantId())));
     if (!kopf) throw new NotFoundException("Kaufvertrag nicht gefunden");
 
-    const [kaeufer, einheiten, raten, anforderungen, eingaenge] = await Promise.all([
+    const [kaeufer, einheiten, raten, anforderungen, eingaenge, mahnungen] = await Promise.all([
       db
         .select({ partner: schema.geschaeftspartner, anteilProzent: schema.kaufvertragKaeufer.anteilProzent })
         .from(schema.kaufvertragKaeufer)
@@ -71,6 +71,12 @@ export class VerkaufService {
       db.select().from(schema.rate).where(eq(schema.rate.kaufvertragId, id)).orderBy(asc(schema.rate.nr)),
       db.select().from(schema.zahlungsanforderung).where(eq(schema.zahlungsanforderung.kaufvertragId, id)).orderBy(asc(schema.zahlungsanforderung.angefordertAm)),
       db.select().from(schema.zahlungseingang).where(eq(schema.zahlungseingang.kaufvertragId, id)).orderBy(asc(schema.zahlungseingang.datum)),
+      db
+        .select({ mahnung: schema.mahnung })
+        .from(schema.mahnung)
+        .innerJoin(schema.zahlungsanforderung, eq(schema.mahnung.zahlungsanforderungId, schema.zahlungsanforderung.id))
+        .where(eq(schema.zahlungsanforderung.kaufvertragId, id))
+        .orderBy(asc(schema.mahnung.datum)),
     ]);
 
     const meldungen = einheiten.length
@@ -128,6 +134,7 @@ export class VerkaufService {
         offen: o.toFixed(2),
         ueberfaellig: o.gt(0) && a.faelligAm < heute,
         raten: ratenMitStatus.filter((r) => r.zahlungsanforderungId === a.id).map((r) => r.nr),
+        mahnungen: mahnungen.map((x) => x.mahnung).filter((x) => x.zahlungsanforderungId === a.id),
       };
     });
 

@@ -7,3 +7,4 @@ export * from "./verkauf.js";
 export * from "./gewerkeplan.js";
 export * from "./kosten.js";
 export * from "./maengel.js";
+export * from "./mahnwesen.js";

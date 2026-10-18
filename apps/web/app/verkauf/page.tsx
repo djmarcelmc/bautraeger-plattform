@@ -1,12 +1,15 @@
 import { AlertTriangle, Plus, Search } from "lucide-react";
+import { Feld } from "@/components/Felder";
+import { Formular } from "@/components/Formular";
+import { mahnlauf } from "./aktionen";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
-import type { KaufvertragListe, OffenerPosten } from "@/lib/typen";
+import type { KaufvertragListe, MahnPosten, OffenerPosten } from "@/lib/typen";
 
 export const dynamic = "force-dynamic";
 
-export default async function Verkauf({ searchParams }: { searchParams: Promise<{ reiter?: string; suche?: string }> }) {
-  const { reiter = "vertraege", suche = "" } = await searchParams;
+export default async function Verkauf({ searchParams }: { searchParams: Promise<{ reiter?: string; suche?: string; stichtag?: string }> }) {
+  const { reiter = "vertraege", suche = "", stichtag } = await searchParams;
   const [vertraege, op] = await Promise.all([
     api<KaufvertragListe[]>(`/kaufvertraege${suche ? `?suche=${encodeURIComponent(suche)}` : ""}`),
     api<OffenerPosten[]>("/offene-posten"),
@@ -58,8 +61,12 @@ export default async function Verkauf({ searchParams }: { searchParams: Promise<
         <a href="?reiter=op" className={reiter === "op" ? "aktiv" : undefined}>
           Offene Posten ({op.length})
         </a>
+        <a href="?reiter=mahnwesen" className={reiter === "mahnwesen" ? "aktiv" : undefined}>
+          Mahnwesen{ueberfaellig.length ? ` (${ueberfaellig.length})` : ""}
+        </a>
       </nav>
-      {reiter === "vertraege" ? (
+      {reiter === "mahnwesen" ? <Mahnwesen stichtag={stichtag} /> : null}
+      {reiter === "mahnwesen" ? null : reiter === "vertraege" ? (
         <>
           <form className="filterleiste">
             <div className="suchfeld">
@@ -162,6 +169,83 @@ export default async function Verkauf({ searchParams }: { searchParams: Promise<
           {!op.length && <p className="leer">Keine offenen Posten.</p>}
         </div>
       )}
+    </>
+  );
+}
+
+const STUFE_TEXT = ["", "Zahlungserinnerung", "Mahnung", "Letzte Mahnung"];
+
+async function Mahnwesen({ stichtag }: { stichtag?: string }) {
+  const heute = new Date().toISOString().slice(0, 10);
+  const tag = stichtag ?? heute;
+  const posten = await api<MahnPosten[]>(`/mahnwesen/vorschlag?stichtag=${tag}`);
+  const faellig = posten.filter((p) => p.vorschlag.stufe);
+  return (
+    <>
+      <form className="filterleiste">
+        <input type="hidden" name="reiter" value="mahnwesen" />
+        <label>
+          <span>Stichtag</span>
+          <input type="date" name="stichtag" defaultValue={tag} />
+        </label>
+        <button type="submit" className="zweitrangig">
+          Neu berechnen
+        </button>
+        <p className="hint">
+          Erinnerung {3} Tage nach Fälligkeit, danach je 7 Tage Frist. Verzugszinsen tagesgenau ab dem Tag nach Fälligkeit (Basiszins + 5 bzw. 9 Prozentpunkte).
+        </p>
+      </form>
+      <Formular aktion={mahnlauf} knopf={faellig.length ? `${faellig.length} Mahnung(en) erstellen und drucken` : null}>
+        <div className="karte ohne-innenabstand">
+          <table>
+            <thead>
+              <tr>
+                <th />
+                <th>Rechnung</th>
+                <th>Vertrag / Empfänger</th>
+                <th>fällig</th>
+                <th className="num">offen €</th>
+                <th className="num">Zinsen bis Stichtag €</th>
+                <th>bisher</th>
+                <th>Vorschlag</th>
+              </tr>
+            </thead>
+            <tbody>
+              {posten.map((p) => (
+                <tr key={p.id} className={p.vorschlag.stufe ? "hervorgehoben" : undefined}>
+                  <td>{p.vorschlag.stufe ? <input type="checkbox" name="posten" value={p.id} defaultChecked aria-label={`${p.rechnungsnr} mahnen`} /> : null}</td>
+                  <td>
+                    <a href={`/zahlungsanforderungen/${p.id}`}>{p.rechnungsnr}</a>
+                  </td>
+                  <td>
+                    <a href={`/kaufvertraege/${p.vertrag.id}?reiter=zahlungen`}>{p.vertrag.nr}</a> <span className="hint">· {p.empfaenger}</span>
+                  </td>
+                  <td>
+                    {deDatum(p.faelligAm)} <span className="hint">({p.tageUeberfaellig} T)</span>
+                  </td>
+                  <td className="num">{deZahl(p.offen)}</td>
+                  <td className="num">{p.zinsHinweis ? <span className="badge warnung" title={p.zinsHinweis}>Basiszins fehlt</span> : deZahl(p.verzugszinsen)}</td>
+                  <td>{p.mahnstufe ? <span className="badge">{STUFE_TEXT[p.mahnstufe]}</span> : <span className="hint">–</span>}</td>
+                  <td>
+                    {p.vorschlag.stufe ? (
+                      <span className="badge gefahr">{STUFE_TEXT[p.vorschlag.stufe]}</span>
+                    ) : (
+                      <span className="hint">{p.vorschlag.hinweis ?? "–"}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!posten.length && <p className="leer">Keine überfälligen Zahlungsanforderungen zum Stichtag.</p>}
+        </div>
+        {faellig.length ? (
+          <div className="raster">
+            <Feld label="Mahndatum" name="datum" typ="date" wert={tag} pflicht />
+            <Feld label="Mahngebühr € (ab 2. Stufe)" name="mahngebuehr" zahl hinweis="Bei Verbrauchern nur tatsächliche Kosten" />
+          </div>
+        ) : null}
+      </Formular>
     </>
   );
 }

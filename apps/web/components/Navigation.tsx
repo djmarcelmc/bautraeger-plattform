@@ -8,6 +8,7 @@ import {
   FolderKanban,
   HandCoins,
   LayoutDashboard,
+  Settings,
   Users,
   Wrench,
   type LucideIcon,
@@ -33,7 +34,13 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
       { href: "#", text: "Auswertungen", icon: BarChart3, bald: true },
     ],
   },
-  { titel: "Werkzeuge", eintraege: [{ href: "/mabv", text: "MaBV-Rechner", icon: Calculator }] },
+  {
+    titel: "Werkzeuge",
+    eintraege: [
+      { href: "/mabv", text: "MaBV-Rechner", icon: Calculator },
+      { href: "/einstellungen", text: "Einstellungen", icon: Settings },
+    ],
+  },
 ];
 
 export function Navigation() {
@@ -42,7 +49,7 @@ export function Navigation() {
     href === "/"
       ? pfad === "/"
       : href === "/verkauf"
-        ? ["/verkauf", "/kaufvertraege", "/zahlungsanforderungen"].some((x) => pfad.startsWith(x))
+        ? ["/verkauf", "/kaufvertraege", "/zahlungsanforderungen", "/mahnungen"].some((x) => pfad.startsWith(x))
         : href === "/kosten"
           ? ["/kosten", "/gewerke", "/handwerkervertraege", "/eingangsrechnungen"].some((x) => pfad.startsWith(x))
           : pfad.startsWith(href);

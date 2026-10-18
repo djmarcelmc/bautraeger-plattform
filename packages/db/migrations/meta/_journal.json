@@ -43,6 +43,13 @@
       "when": 1792319351974,
       "tag": "0005_maengel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792320401331,
+      "tag": "0006_mahnwesen",
+      "breakpoints": true
     }
   ]
 }

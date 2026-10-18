@@ -1132,7 +1132,20 @@ form.upload > .meldung {
   border-top: 2px solid #111;
 }
 
+.schreiben + .schreiben {
+  margin-top: 24px;
+}
+
 @media print {
+  .seitenumbruch {
+    break-after: page;
+  }
+  .seitenumbruch:last-of-type {
+    break-after: auto;
+  }
+  .schreiben + .schreiben {
+    margin-top: 0;
+  }
   @page {
     size: A4;
     margin: 18mm 20mm;

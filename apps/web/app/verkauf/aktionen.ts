@@ -44,7 +44,7 @@ export async function konditionenSpeichern(id: string, fd: FormData): Promise<Ak
   try {
     await api(`/kaufvertraege/${id}/konditionen`, {
       method: "PUT",
-      body: formularDaten(fd, { haken: ["vertragWirksam", "lastenfreistellungGesichert", "buergschaftNach7", "anforderungssperre", "mahnsperre"] }),
+      body: formularDaten(fd, { haken: ["vertragWirksam", "lastenfreistellungGesichert", "buergschaftNach7", "anforderungssperre", "mahnsperre", "verbraucher"] }),
     });
   } catch (e) {
     return alsErgebnis(e);
@@ -113,4 +113,28 @@ export async function sammelanforderung(projektId: string, fd: FormData): Promis
   revalidatePath(`/projekte/${projektId}`);
   revalidatePath("/verkauf");
   return anzahl ? { meldung: `${anzahl} Zahlungsanforderung(en) erstellt – zu finden unter Verkauf › Offene Posten.` } : { fehler: ["Derzeit ist keine Rate anforderbar."] };
+}
+
+export async function mahnlauf(fd: FormData): Promise<AktionsErgebnis> {
+  const ids = fd.getAll("posten").map(String);
+  if (!ids.length) return { fehler: ["Bitte mindestens einen Posten auswählen."] };
+  let r: { erstellt: string[]; uebersprungen: { rechnungsnr: string; grund: string }[] };
+  try {
+    r = await api("/mahnungen", { method: "POST", body: { zahlungsanforderungIds: ids, datum: fd.get("datum"), mahngebuehr: fd.get("mahngebuehr") } });
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+  revalidatePath("/verkauf");
+  if (!r.erstellt.length) return { fehler: ["Keine Mahnung erstellt: " + r.uebersprungen.map((u) => `${u.rechnungsnr} (${u.grund})`).join(", ")] };
+  redirect(`/mahnungen/druck?ids=${r.erstellt.join(",")}`);
+}
+
+export async function basiszinsSpeichern(fd: FormData): Promise<AktionsErgebnis> {
+  try {
+    await api("/basiszinssaetze", { method: "POST", body: formularDaten(fd) });
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+  revalidatePath("/einstellungen");
+  return { meldung: "Basiszinssatz gespeichert." };
 }

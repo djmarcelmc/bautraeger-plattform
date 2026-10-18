@@ -56,6 +56,8 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET/POST /api/projekte/:id/bautenstand`, `DELETE /api/bautenstand/:id` | Bautenstand melden / zurücknehmen (gesperrt nach Anforderung) |
 | `POST /api/zahlungsanforderungen`, `POST /api/projekte/:id/zahlungsanforderungen`, `GET /api/zahlungsanforderungen/:id` | Raten anfordern (einzeln, zusammengefasst oder als Sammelanforderung je Projekt) |
 | `POST /api/zahlungseingaenge`, `GET /api/offene-posten` | Zahlungen verbuchen (keine Überzahlung), offene Posten mit Verzugstagen |
+| `GET /api/mahnwesen/vorschlag?stichtag=`, `POST /api/mahnungen`, `GET /api/mahnungen?ids=` | Mahnvorschlag mit Verzugszinsen, Mahnlauf (Erinnerung → Mahnung → letzte Mahnung), Druckdaten |
+| `GET/POST /api/basiszinssaetze` | Basiszinssätze nach § 247 BGB (vorbelegt bis 01.07.2026, neue Werte in den Einstellungen nachtragen) |
 | `GET/POST /api/dokumente`, `GET /api/dokumente/:id/datei`, `DELETE /api/dokumente/:id` | Dokumentablage (SHA-256, nur Ausblenden statt Löschen) |
 | `GET /api/projekte/:id/kosten`, `POST /api/projekte/:id/gewerkeplan`, `POST /api/projekte/:id/gewerke`, `PUT/DELETE /api/gewerke/:id` | Kostenkontrolle, Gewerkeplan aus Vorlage (65 Gewerke), Gewerke |
 | `POST /api/handwerkervertraege`, `GET/PUT /api/handwerkervertraege/:id`, `POST /api/handwerkervertraege/:id/nachtraege`, `PUT /api/nachtraege/:id` | Handwerkerverträge (Nachlass, Skonto, Umlagen, Einbehalte) und Nachträge |
@@ -110,5 +112,5 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – offen: Mahnwesen, Zusatzleistungen/Gutschriften, Versand per Outlook
 5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – offen: SEPA-Zahlungsdatei, Bürgschaften, Rollen für Prüfung/Freigabe
 6. ~~Mängelverwaltung mit Fotos, Rügen und Fristen~~ ✓ – offen: Standardmängel-Vorlagen, Abnahmeprotokolle
-7. Mahnwesen für den Verkauf
+7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
 8. Buchungsjournal automatisch aus Verkauf und Kosten befüllen
