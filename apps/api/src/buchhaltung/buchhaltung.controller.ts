@@ -9,6 +9,55 @@ import { Benutzer, pruefe } from "../common/eingabe.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { BuchhaltungService, type JournalFilter } from "./buchhaltung.service.js";
+import { XLSX, excelDatei, type Abschnitt } from "../auswertungen/excel.js";
+
+type Saldenliste = Awaited<ReturnType<BuchhaltungService["saldenliste"]>>;
+
+/** Saldenliste als Excel: je Gruppe Konten mit Salden, darunter die offenen Posten. */
+async function saldenlisteExcel(d: Saldenliste) {
+  const de = (iso: string) => iso.split("-").reverse().join(".");
+  const zahl = (v: string | null) => (v === null ? null : Number(v));
+  const sh = (v: string) => (Number(v) > 0 ? "S" : Number(v) < 0 ? "H" : "");
+  const abschnitte: Abschnitt[] = [];
+  for (const [art, titel] of [
+    ["debitor", "Debitoren (Käufer)"],
+    ["kreditor", "Kreditoren (Handwerker)"],
+  ] as const) {
+    const zeilen = d.zeilen.filter((z) => z.art === art);
+    const s = d.summen[art]!;
+    abschnitte.push({
+      titel: `${titel} – Saldo Soll positiv, Haben negativ`,
+      spalten: [
+        { titel: "Konto", breite: 10 },
+        { titel: "Name", breite: 30 },
+        { titel: "Saldo Journal", art: "euro", breite: 15 },
+        { titel: "S/H", breite: 5 },
+        { titel: "Offene Posten", art: "euro", breite: 15 },
+        { titel: "Differenz", art: "euro", breite: 13 },
+        ...(d.mitDatev ? [{ titel: "Saldo DATEV", art: "euro" as const, breite: 15 }, { titel: "Differenz DATEV", art: "euro" as const, breite: 15 }] : []),
+      ],
+      zeilen: [
+        ...zeilen.map((z) => [z.konto, z.name, zahl(z.journal), sh(z.journal), zahl(z.op), zahl(z.differenzOp), ...(d.mitDatev ? [zahl(z.datev), zahl(z.differenzDatev)] : [])]),
+        ["Summe", `${s.abweichungen} Abweichung(en)`, zahl(s.journal), sh(s.journal), zahl(s.op), null, ...(d.mitDatev ? [zahl(s.datev), null] : [])],
+      ],
+      fett: [zeilen.length],
+    });
+  }
+  const posten = d.zeilen.flatMap((z) => z.posten.map((p) => [p.konto, p.name, p.beleg, zahl(p.offen)]));
+  if (posten.length)
+    abschnitte.push({
+      titel: "Offene Posten",
+      spalten: [
+        { titel: "Konto", breite: 10 },
+        { titel: "Name", breite: 30 },
+        { titel: "Beleg", breite: 22 },
+        { titel: "offen", art: "euro", breite: 15 },
+      ],
+      zeilen: posten,
+    });
+  const titel = `Saldenliste Personenkonten ${d.gesellschaft.nr} ${d.gesellschaft.name}, Stichtag ${de(d.stichtag)}${d.mitDatev ? " – mit DATEV-Vergleich" : ""}`;
+  return new StreamableFile(await excelDatei("Saldenliste", titel, abschnitte), { type: XLSX, disposition: `attachment; filename="Saldenliste-${d.gesellschaft.nr}-${d.stichtag}.xlsx"` });
+}
 
 const datum = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
 
@@ -84,17 +133,19 @@ export class BuchhaltungController {
   }
 
   @Get("saldenliste")
-  saldenliste(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string, @Query("stichtag") stichtag: string | undefined, @Benutzer() benutzer: string) {
-    return this.buchhaltung.saldenliste(gesellschaftId, datum(stichtag) ?? new Date().toISOString().slice(0, 10), benutzer);
+  async saldenliste(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string, @Query("stichtag") stichtag: string | undefined, @Query("format") format: string | undefined, @Benutzer() benutzer: string) {
+    const d = await this.buchhaltung.saldenliste(gesellschaftId, datum(stichtag) ?? new Date().toISOString().slice(0, 10), benutzer);
+    return format === "xlsx" ? saldenlisteExcel(d) : d;
   }
 
   /** Saldenliste mit Vergleich gegen eine DATEV-Saldenliste (CSV). */
   @Post("saldenliste")
   @UseInterceptors(FileInterceptor("datei", { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }))
-  saldenlisteVergleich(@UploadedFile() datei: Express.Multer.File | undefined, @Body() body: { gesellschaftId?: string; stichtag?: string }, @Benutzer() benutzer: string) {
+  async saldenlisteVergleich(@UploadedFile() datei: Express.Multer.File | undefined, @Body() body: { gesellschaftId?: string; stichtag?: string; format?: string }, @Benutzer() benutzer: string) {
     if (!datei?.size) throw new BadRequestException("Bitte die Saldenliste aus DATEV (CSV) auswählen.");
     if (!/^[0-9a-f-]{36}$/.test(body?.gesellschaftId ?? "")) throw new BadRequestException("Gesellschaft wählen");
-    return this.buchhaltung.saldenliste(body.gesellschaftId!, datum(body.stichtag) ?? new Date().toISOString().slice(0, 10), benutzer, new Uint8Array(datei.buffer));
+    const d = await this.buchhaltung.saldenliste(body.gesellschaftId!, datum(body.stichtag) ?? new Date().toISOString().slice(0, 10), benutzer, new Uint8Array(datei.buffer));
+    return body.format === "xlsx" ? saldenlisteExcel(d) : d;
   }
 
   @Get("kontierung/:gesellschaftId")

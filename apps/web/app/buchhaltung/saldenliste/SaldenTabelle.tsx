@@ -1,7 +1,7 @@
 "use client";
 
-import { FileUp } from "lucide-react";
-import { Fragment, useState, useTransition } from "react";
+import { FileSpreadsheet, FileUp } from "lucide-react";
+import { Fragment, useRef, useState, useTransition } from "react";
 import { mitDatevVergleichen, type Saldenliste } from "./aktionen";
 
 const zahl = (v: string) => Math.abs(Number(v)).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,14 +16,45 @@ export function SaldenTabelle({ start }: { start: Saldenliste }) {
   const [nurAbweichungen, setNur] = useState(false);
   const [offen, setOffen] = useState<string | null>(null);
   const [laeuft, starte] = useTransition();
+  const datevDatei = useRef<File | null>(null);
+  const [exportLaeuft, setExport] = useState(false);
+
+  /** Excel herunterladen – mit DATEV-Vergleich wird die zuletzt verglichene CSV erneut mitgeschickt. */
+  async function excel() {
+    setExport(true);
+    try {
+      const fd = new FormData();
+      fd.set("gesellschaftId", d.gesellschaft.id);
+      fd.set("stichtag", d.stichtag);
+      let res: Response;
+      if (d.mitDatev && datevDatei.current) {
+        fd.set("datei", datevDatei.current);
+        res = await fetch("/buchhaltung/saldenliste/excel", { method: "POST", body: fd });
+      } else res = await fetch(`/buchhaltung/saldenliste/excel?g=${d.gesellschaft.id}&stichtag=${d.stichtag}`);
+      if (!res.ok) {
+        setFehler([await res.text()]);
+        return;
+      }
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "Saldenliste.xlsx";
+      const url = URL.createObjectURL(await res.blob());
+      Object.assign(document.createElement("a"), { href: url, download: name }).click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExport(false);
+    }
+  }
 
   function vergleichen(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     const fd = new FormData(ev.currentTarget);
+    const datei = fd.get("datei");
     starte(async () => {
       const r = await mitDatevVergleichen(d.gesellschaft.id, d.stichtag, fd);
       setFehler(r.fehler ?? null);
-      if (r.daten) setD(r.daten);
+      if (r.daten) {
+        setD(r.daten);
+        datevDatei.current = datei instanceof File ? datei : null;
+      }
     });
   }
 
@@ -61,10 +92,15 @@ export function SaldenTabelle({ start }: { start: Saldenliste }) {
         ) : null}
       </section>
 
-      <label className="haken nurabweichungen">
-        <input type="checkbox" checked={nurAbweichungen} onChange={(e) => setNur(e.target.checked)} />
-        <span>nur Konten mit Abweichung</span>
-      </label>
+      <div className="saldenleiste">
+        <label className="haken nurabweichungen">
+          <input type="checkbox" checked={nurAbweichungen} onChange={(e) => setNur(e.target.checked)} />
+          <span>nur Konten mit Abweichung</span>
+        </label>
+        <button type="button" className="zweitrangig" onClick={excel} disabled={exportLaeuft}>
+          <FileSpreadsheet size={16} /> {exportLaeuft ? "Excel wird erstellt …" : d.mitDatev ? "Excel mit DATEV-Vergleich" : "Excel"}
+        </button>
+      </div>
 
       {gruppen.map(([art, titel]) => {
         const zeilen = d.zeilen.filter((z) => z.art === art && (!nurAbweichungen || !ok(z.differenzOp) || !ok(z.differenzDatev)));
