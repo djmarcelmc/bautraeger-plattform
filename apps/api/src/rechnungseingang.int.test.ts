@@ -139,4 +139,27 @@ describe.skipIf(!url)("Rechnungseingang (Integration)", () => {
     // Absender bekannt, aber zwei offene Verträge → Vertrag wählen
     expect(m.vorschlag).toMatchObject({ handwerkervertragId: null });
   });
+
+  it("unbekannter Handwerker: Vorschlag für Stammdaten und Projekt, danach Zuordnung; IBAN-Abweichung wird gewarnt", async () => {
+    const neu = await pdf(["Fliesen Kaiser GmbH", "Baustelle: Parkstrasse, Esslingen", "Rechnungsnummer: FK-77", "Rechnungsbetrag 4.760,00 EUR", "IBAN DE89 3704 0044 0532 0130 00"]);
+    const betrug = await pdf(["Rohbau Muster KG", "Rechnung Nr. AR-9", "Gesamtbetrag 1.000,00 EUR", "IBAN DE12 5001 0517 0648 4898 90"]);
+    const r = await als(http.post("/api/rechnungseingang")).attach("dateien", neu, "FK-77.pdf").attach("dateien", betrug, "AR-9.pdf");
+    expect(r.status).toBe(201);
+    let l = await liste();
+    const fk = l.eingaenge.find((e: { dateiname: string }) => e.dateiname === "FK-77.pdf");
+    expect(fk.vorschlag).toMatchObject({ handwerkerId: null });
+    expect(fk.neuerHandwerker).toMatchObject({ firma: "Fliesen Kaiser GmbH", suchcode: "FLIESENKAISER", iban: "DE89370400440532013000" });
+    const p2 = l.gewerke.find((g: { projektNr: number }) => g.projektNr === 102);
+    expect(fk.projektId).toBe(p2.projektId);
+    expect(fk.gewerkId).toBeNull(); // im Projekt gibt es noch kein Fliesengewerk
+    const ar9 = l.eingaenge.find((e: { dateiname: string }) => e.dateiname === "AR-9.pdf");
+    expect(ar9.vorschlag.gruende.join(" ")).toMatch(/Achtung: IBAN auf der Rechnung \(DE12500105170648489890\) weicht/);
+
+    // Handwerker und Vertrag aus dem Vorschlag anlegen → jetzt sichere Zuordnung
+    const hw = (await als(http.post("/api/partner")).send({ nr: 70010, suchcode: fk.neuerHandwerker.suchcode, firma: fk.neuerHandwerker.firma, iban: fk.neuerHandwerker.iban, rollen: ["handwerker"] })).body.id;
+    const gw = (await als(http.post(`/api/projekte/${p2.projektId}/gewerke`)).send({ nr: 600, bezeichnung: "Fliesen" })).body.id;
+    const v = (await als(http.post("/api/handwerkervertraege")).send({ gewerkId: gw, handwerkerId: hw, vertragBrutto: "20000" })).body.id;
+    l = await liste();
+    expect(l.eingaenge.find((e: { dateiname: string }) => e.dateiname === "FK-77.pdf").vorschlag).toMatchObject({ handwerkerId: hw, handwerkervertragId: v, sicherheit: "sicher" });
+  });
 });

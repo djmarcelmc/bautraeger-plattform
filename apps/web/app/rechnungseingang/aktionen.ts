@@ -70,3 +70,37 @@ export async function wiederherstellen(id: string): Promise<AktionsErgebnis> {
   revalidatePath("/rechnungseingang");
   return {};
 }
+
+/** Neuen Handwerker mit den Daten aus der Rechnung anlegen (danach wird die Zuordnung neu vorgeschlagen). */
+export async function handwerkerAnlegen(fd: FormData): Promise<AktionsErgebnis> {
+  try {
+    await api("/partner", {
+      method: "POST",
+      body: {
+        nr: fd.get("nr"),
+        suchcode: fd.get("suchcode"),
+        firma: fd.get("firma"),
+        iban: fd.get("iban") ?? "",
+        email: fd.get("email") ?? "",
+        steuernummer: fd.get("steuernummer") ?? "",
+        freistellungGueltigBis: fd.get("freistellungGueltigBis") ?? "",
+        rollen: ["handwerker"],
+      },
+    });
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+  revalidatePath("/rechnungseingang");
+  return { meldung: "Handwerker angelegt." };
+}
+
+/** Handwerkervertrag zum erkannten Handwerker anlegen. */
+export async function vertragAnlegen(handwerkerId: string, fd: FormData): Promise<AktionsErgebnis> {
+  try {
+    await api("/handwerkervertraege", { method: "POST", body: { handwerkerId, gewerkId: fd.get("gewerkId"), vertragBrutto: fd.get("vertragBrutto"), vertragVom: fd.get("vertragVom") ?? "" } });
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+  revalidatePath("/rechnungseingang");
+  return { meldung: "Vertrag angelegt – bitte Konditionen (Skonto, Einbehalte) später im Vertrag ergänzen." };
+}
