@@ -1,0 +1,21 @@
+{
+  "name": "bautraeger-plattform",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "dev:api": "pnpm --filter @bt/api dev",
+    "dev:web": "pnpm --filter @bt/web dev",
+    "dev:mcp": "pnpm --filter @bt/mcp dev",
+    "db:generate": "pnpm --filter @bt/db generate",
+    "db:migrate": "pnpm --filter @bt/db migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
