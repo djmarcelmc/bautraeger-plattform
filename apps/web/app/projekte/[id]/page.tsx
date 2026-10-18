@@ -1,10 +1,13 @@
-import { EINHEIT_TYP_TEXT, PROJEKTART_TEXT } from "@bt/domain";
-import { Building2, CalendarDays, MapPin } from "lucide-react";
-import { Feld, Gruppe, Haken, Protokoll } from "@/components/Felder";
+import { EINHEIT_TYP_TEXT, MABV_ABSCHNITTE, PROJEKTART_TEXT } from "@bt/domain";
+import { Building2, CalendarDays, MapPin, Plus } from "lucide-react";
+import { Dokumente } from "@/components/Dokumente";
+import { Auswahl, Feld, Gruppe, Haken, Protokoll } from "@/components/Felder";
+import { MeldungZuruecknehmen } from "@/components/MeldungZuruecknehmen";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
-import type { Gesellschaft, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import type { Gesellschaft, KaufvertragListe, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "../../verkauf/aktionen";
 import { EinheitFelder } from "../../einheiten/EinheitFelder";
 import { einheitAnlegen, projektAendern, projektKopieren } from "../aktionen";
 import { ProjektFelder } from "../ProjektFelder";
@@ -19,8 +22,27 @@ const PLURAL: Record<string, [string, string]> = {
   sonstiges: ["Sonstige", "Sonstige"],
 };
 
+const KURZ: Record<string, string> = {
+  erdarbeiten: "Erdarb.",
+  rohbau: "Rohbau",
+  dach: "Dach",
+  heizung: "Heizung",
+  sanitaer: "Sanitär",
+  elektro: "Elektro",
+  fenster: "Fenster",
+  innenputz: "Putz",
+  estrich: "Estrich",
+  fliesen: "Fliesen",
+  bezugsfertigkeit: "Bezug",
+  fassade: "Fassade",
+  fertigstellung: "Fertig",
+};
+
 const REITER = [
   ["einheiten", "Einheiten"],
+  ["verkauf", "Verkauf"],
+  ["bautenstand", "Bautenstand"],
+  ["dokumente", "Dokumente"],
   ["stammdaten", "Stammdaten"],
   ["kopieren", "Projekt kopieren"],
   ["protokoll", "Änderungsprotokoll"],
@@ -157,6 +179,9 @@ export default async function ProjektSeite({
         </>
       )}
 
+      {reiter === "verkauf" && <VerkaufReiter projektId={id} />}
+      {reiter === "bautenstand" && <BautenstandReiter projektId={id} />}
+      {reiter === "dokumente" && <Dokumente objektTyp="projekt" objektId={id} pfad={`/projekte/${id}`} />}
       {reiter === "stammdaten" && <Stammdaten p={p} />}
 
       {reiter === "kopieren" && (
@@ -194,5 +219,118 @@ async function ProtokollReiter({ id }: { id: string }) {
     <div className="karte">
       <Protokoll eintraege={eintraege} />
     </div>
+  );
+}
+
+async function VerkaufReiter({ projektId }: { projektId: string }) {
+  const vertraege = await api<KaufvertragListe[]>(`/kaufvertraege?projektId=${projektId}`);
+  return (
+    <>
+      <div className="aktionen" style={{ marginBottom: 12 }}>
+        <a className="knopf" href={`/kaufvertraege/neu?projekt=${projektId}`}>
+          <Plus size={16} /> Neuer Kaufvertrag
+        </a>
+      </div>
+      <div className="karte ohne-innenabstand">
+        <table>
+          <thead>
+            <tr>
+              <th>Vertrag</th>
+              <th>Käufer</th>
+              <th>Einheiten</th>
+              <th className="num">Vertragssumme €</th>
+              <th className="num">Angefordert €</th>
+              <th className="num">Bezahlt €</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vertraege.map((v) => (
+              <tr key={v.id} className="klickbar">
+                <td>
+                  <a href={`/kaufvertraege/${v.id}`} className="zeilenlink">
+                    {v.nr}
+                  </a>
+                </td>
+                <td>{v.kaeufer}</td>
+                <td>{v.einheiten}</td>
+                <td className="num">{deZahl(v.vertragssumme)}</td>
+                <td className="num">{deZahl(v.angefordert)}</td>
+                <td className="num">{deZahl(v.bezahlt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!vertraege.length && <p className="leer">Noch keine Kaufverträge in diesem Projekt.</p>}
+      </div>
+    </>
+  );
+}
+
+async function BautenstandReiter({ projektId }: { projektId: string }) {
+  const { einheiten, meldungen } = await api<{
+    einheiten: { id: string; nr: string; typ: string; bauabschnitt: number | null }[];
+    meldungen: { id: string; einheitId: string; abschnitt: string; fertigAm: string }[];
+  }>(`/projekte/${projektId}/bautenstand`);
+  const heute = new Date().toISOString().slice(0, 10);
+  if (!einheiten.length) return <p className="leer">Noch keine Einheiten angelegt.</p>;
+  return (
+    <>
+      <Formular aktion={bautenstandMelden.bind(null, projektId)} knopf="Fertig melden">
+        <div className="karte ohne-innenabstand">
+          <table className="bautenstand">
+            <thead>
+              <tr>
+                <th />
+                <th>Einheit</th>
+                {MABV_ABSCHNITTE.map((a) => (
+                  <th key={a.key} title={a.bezeichnung}>
+                    {KURZ[a.key]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {einheiten.map((e) => (
+                <tr key={e.id}>
+                  <td>
+                    <input type="checkbox" name="einheit" value={e.id} aria-label={`Einheit ${e.nr} auswählen`} />
+                  </td>
+                  <td>
+                    <b>{e.nr}</b>
+                    <div className="hint">{EINHEIT_TYP_TEXT[e.typ as keyof typeof EINHEIT_TYP_TEXT]}</div>
+                  </td>
+                  {MABV_ABSCHNITTE.map((a) => {
+                    const m = meldungen.find((x) => x.einheitId === e.id && x.abschnitt === a.key);
+                    return (
+                      <td key={a.key} className="zellentd">
+                        {m ? (
+                          <MeldungZuruecknehmen aktion={bautenstandZuruecknehmen.bind(null, projektId, m.id)} datum={deDatum(m.fertigAm)} titel={`${e.nr}: ${KURZ[a.key]}`} />
+                        ) : (
+                          <span className="zelle" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="raster">
+          <Auswahl label="Bauabschnitt" name="abschnitt" pflicht optionen={MABV_ABSCHNITTE.map((a) => ({ wert: a.key, text: a.bezeichnung }))} />
+          <Feld label="Fertig am" name="fertigAm" typ="date" wert={heute} pflicht />
+          <p className="hint breit">Einheiten links anhaken, Abschnitt wählen und fertig melden. Stellplätze laufen bei der Ratenfreigabe mit der Wohnung mit.</p>
+        </div>
+      </Formular>
+      <h2>Raten anfordern</h2>
+      <Formular aktion={sammelanforderung.bind(null, projektId)} knopf="Alle anforderbaren Raten anfordern" bestaetigen="Für alle Kaufverträge dieses Projekts die anforderbaren Raten anfordern?">
+        <div className="karte">
+          <div className="raster">
+            <Feld label="Datum der Anforderung" name="datum" typ="date" wert={heute} pflicht />
+            <p className="hint breit">Erstellt je Kaufvertrag eine Zahlungsanforderung über alle Raten, deren Bauabschnitt gemeldet und deren Voraussetzungen erfüllt sind.</p>
+          </div>
+        </div>
+      </Formular>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { Dokumente } from "@/components/Dokumente";
 import { Protokoll } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
@@ -21,6 +22,8 @@ export default async function PartnerBearbeiten({ params }: { params: Promise<{ 
       <Formular aktion={partnerAendern.bind(null, id)}>
         <PartnerFelder p={p} />
       </Formular>
+      <h2>Dokumente</h2>
+      <Dokumente objektTyp="geschaeftspartner" objektId={id} pfad={`/partner/${id}`} />
       <details className="karte">
         <summary>Änderungsprotokoll ({protokoll.length})</summary>
         <Protokoll eintraege={protokoll} />

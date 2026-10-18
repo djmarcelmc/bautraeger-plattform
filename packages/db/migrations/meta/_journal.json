@@ -15,6 +15,20 @@
       "when": 1792315161019,
       "tag": "0001_eindeutige_nummern",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792316247000,
+      "tag": "0002_verkauf_dokumente",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792316248169,
+      "tag": "0003_anforderung_ohne_rate",
+      "breakpoints": true
     }
   ]
 }

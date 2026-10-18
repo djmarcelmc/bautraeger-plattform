@@ -22,8 +22,66 @@ const json = (v: unknown) => text(JSON.stringify(v, null, 2));
  * MCP-Server der Bauträger-Plattform.
  * Lesende Tools liefern Daten; schreibende Tools (folgen) erzeugen nur Entwürfe.
  */
-export function erstelleServer(db?: Db) {
+export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
   const server = new McpServer({ name: "bautraeger-plattform", version: "0.1.0" });
+
+  /** Lesender Aufruf der REST-API – dort gelten dieselben Prüfregeln wie in der Oberfläche. */
+  const apiGet = async <T>(pfad: string): Promise<T> => {
+    const res = await fetch(`${apiUrl}/api${pfad}`, { headers: { "x-benutzer": "mcp" } });
+    if (!res.ok) throw new Error(`API-Fehler ${res.status} bei ${pfad}`);
+    return (await res.json()) as T;
+  };
+
+  if (apiUrl)
+    server.registerTool(
+      "anforderbare_raten",
+      {
+        title: "Anforderbare Raten",
+        description:
+          "Listet je Kaufvertrag die Raten, die jetzt angefordert werden können (Bautenstand gemeldet, MaBV-Voraussetzungen erfüllt), sowie gesperrte Raten mit fehlender Voraussetzung. Optional für ein Projekt (Projektnummer).",
+        inputSchema: { projektNr: z.number().int().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ projektNr }) => {
+        let projektId: string | undefined;
+        if (projektNr !== undefined) {
+          const projekte = await apiGet<{ id: string; nr: number }[]>(`/projekte?abgeschlossen=alle&suche=${projektNr}`);
+          projektId = projekte.find((x) => x.nr === projektNr)?.id;
+          if (!projektId) return text(`Projekt ${projektNr} nicht gefunden.`);
+        }
+        const vertraege = await apiGet<{ id: string }[]>(`/kaufvertraege${projektId ? `?projektId=${projektId}` : ""}`);
+        const ergebnis = [];
+        for (const { id } of vertraege) {
+          const v = await apiGet<{
+            nr: string;
+            projekt: { nr: number; suchcode: string };
+            kaeufer: { firma: string | null; vorname: string | null; nachname: string | null }[];
+            raten: { nr: number; betrag: string; status: string; text: string | null }[];
+            voraussetzungen: Record<string, boolean>;
+          }>(`/kaufvertraege/${id}`);
+          const anforderbar = v.raten.filter((r) => r.status === "anforderbar");
+          const gesperrt = v.raten.filter((r) => r.status === "gesperrt");
+          if (!anforderbar.length && !gesperrt.length) continue;
+          const fehlend = Object.entries({
+            "Vertrag wirksam": v.voraussetzungen.vertragWirksam,
+            Auflassungsvormerkung: v.voraussetzungen.vormerkungEingetragen,
+            Lastenfreistellung: v.voraussetzungen.lastenfreistellungGesichert,
+          })
+            .filter(([, ok]) => !ok && !v.voraussetzungen.buergschaftNach7)
+            .map(([t]) => t);
+          ergebnis.push({
+            kaufvertrag: v.nr,
+            projekt: `${v.projekt.nr} ${v.projekt.suchcode}`,
+            kaeufer: v.kaeufer.map((k) => k.firma ?? [k.vorname, k.nachname].filter(Boolean).join(" ")).join(", "),
+            anforderbar: anforderbar.map((r) => ({ rate: r.nr, betrag: formatDe(money(r.betrag)), bauabschnitt: r.text })),
+            summeAnforderbar: formatDe(anforderbar.reduce((s, r) => s.plus(r.betrag), money(0))),
+            gesperrt: gesperrt.map((r) => r.nr),
+            fehlendeVoraussetzungen: v.voraussetzungen.anforderungssperre ? ["Anforderungssperre"] : fehlend,
+          });
+        }
+        return ergebnis.length ? json(ergebnis) : text("Derzeit sind keine Raten anforderbar.");
+      },
+    );
 
   server.registerTool(
     "mabv_ratenplan_berechnen",
@@ -119,15 +177,14 @@ export function erstelleServer(db?: Db) {
           projekt: schema.projekt.nr,
           kaufvertrag: schema.kaufvertrag.nr,
           rechnungsnr: za.rechnungsnr,
-          rate: schema.rate.nr,
+          raten: sql<string>`(select string_agg(${schema.rate.nr}::text, ', ' order by ${schema.rate.nr}) from ${schema.rate} where ${schema.rate.zahlungsanforderungId} = ${za.id})`,
           faelligAm: za.faelligAm,
           betrag: za.betrag,
           bezahlt,
           mahnstufe: za.mahnstufe,
         })
         .from(za)
-        .innerJoin(schema.rate, eq(za.rateId, schema.rate.id))
-        .innerJoin(schema.kaufvertrag, eq(schema.rate.kaufvertragId, schema.kaufvertrag.id))
+        .innerJoin(schema.kaufvertrag, eq(za.kaufvertragId, schema.kaufvertrag.id))
         .innerJoin(schema.projekt, eq(schema.kaufvertrag.projektId, schema.projekt.id))
         .where(
           and(

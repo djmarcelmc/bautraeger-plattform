@@ -1,5 +1,6 @@
 /** Fiktive Demodaten für die lokale Entwicklung: `pnpm --filter @bt/db seed` */
 import { STANDARD_7_RATEN, money, ratenplanBerechnen } from "@bt/domain";
+import { eq } from "drizzle-orm";
 import { verbinden } from "./index.js";
 import * as s from "./schema.js";
 
@@ -37,12 +38,16 @@ const raten = await db
 // Rate 1 angefordert und bezahlt, Rate 2 angefordert und überfällig
 const [za1] = await db
   .insert(s.zahlungsanforderung)
-  .values({ rateId: raten[0]!.id, rechnungsnr: "ZA-1001", angefordertAm: "2026-05-01", faelligAm: "2026-05-11", betrag: raten[0]!.betrag })
+  .values({ kaufvertragId: kv!.id, rechnungsnr: "ZA-2026-00001", angefordertAm: "2026-05-01", faelligAm: "2026-05-11", betrag: raten[0]!.betrag })
   .returning();
+await db.update(s.rate).set({ zahlungsanforderungId: za1!.id }).where(eq(s.rate.id, raten[0]!.id));
 await db.insert(s.zahlungseingang).values({ zahlungsanforderungId: za1!.id, kaufvertragId: kv!.id, datum: "2026-05-09", betrag: raten[0]!.betrag });
-await db
+const [za2] = await db
   .insert(s.zahlungsanforderung)
-  .values({ rateId: raten[1]!.id, rechnungsnr: "ZA-1002", angefordertAm: "2026-09-01", faelligAm: "2026-09-11", betrag: raten[1]!.betrag });
+  .values({ kaufvertragId: kv!.id, rechnungsnr: "ZA-2026-00002", angefordertAm: "2026-09-01", faelligAm: "2026-09-11", betrag: raten[1]!.betrag })
+  .returning();
+await db.update(s.rate).set({ zahlungsanforderungId: za2!.id }).where(eq(s.rate.id, raten[1]!.id));
+await db.insert(s.nummernkreis).values({ gesellschaftId: g!.id, art: "ZA", jahr: 2026, letzte: 2 });
 
 console.log("Demodaten angelegt: Projekt 101 LINDENWEG, Kaufvertrag KV-1 mit 7 Raten.");
 process.exit(0);
