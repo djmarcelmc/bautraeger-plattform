@@ -60,9 +60,30 @@ describe.skipIf(!url)("Käuferportal (Integration)", () => {
   it("zeigt dem Käufer Objekt und Einheiten ohne interne Daten", async () => {
     const d = (await http.get(`/api/portal/${token}`)).body;
     expect(d).toMatchObject({ objekt: { strasse: "Lindenweg 5", ort: "Stuttgart" }, bautraeger: { name: "Muster Wohnbau GmbH" }, kaeufer: ["Frau Erika Muster"], einheiten: [{ nr: "01" }], maengel: [] });
-    expect(JSON.stringify(d)).not.toMatch(/vkBrutto|300000|handwerker/i);
+    expect(JSON.stringify(d)).not.toMatch(/vkBrutto|handwerker|kostenBrutto|speicherKey/i);
+    expect(d.zahlungen).toMatchObject({ kaufpreis: "300000.00", gesamt: "300000.00", bezahlt: "0.00", offen: "0.00", naechsteFaelligkeit: null });
+    expect(d.raten[0]).toMatchObject({ nr: 1, stand: "nicht_faellig", standText: "noch nicht fällig", rechnungsnr: null });
     expect((await http.get("/api/portal/ungueltig-aber-lang-genug-123")).status).toBe(404);
     expect((await http.get("/api/portal/../kaufvertraege")).status).toBe(404);
+  });
+
+  it("zeigt Sonderwünsche ohne Kosten und nur freigegebene Unterlagen", async () => {
+    await als(http.post(`/api/kaufvertraege/${kaufvertrag}/sonderwuensche`)).send({ bezeichnung: "Parkett", betragBrutto: "5200", kostenBrutto: "3900", gueltigBis: "2031-01-31" });
+    const hoch = (inhalt: string, name: string, ordner?: string) => {
+      const r = als(http.post("/api/dokumente")).field("objektTyp", "kaufvertrag").field("objektId", kaufvertrag);
+      return (ordner ? r.field("ordner", ordner) : r).attach("datei", Buffer.from(inhalt), name);
+    };
+    const intern = (await hoch("intern", "Kalkulation.txt")).body.id;
+    await hoch("%PDF-1.7 Schreiben", "ZA-2026-00001.pdf", "Schriftverkehr");
+    const plan = (await hoch("Grundriss", "Grundriss.pdf", "Käuferportal")).body.id;
+    const d = (await http.get(`/api/portal/${token}`)).body;
+    expect(d.sonderwuensche).toEqual([{ nr: 1, bezeichnung: "Parkett", beschreibung: null, gutschrift: false, betrag: "5200.00", status: "angebot", statusText: "Angebot", gueltigBis: "2031-01-31" }]);
+    expect(d.dokumente.map((x: { dateiname: string }) => x.dateiname).sort()).toEqual(["Grundriss.pdf", "ZA-2026-00001.pdf"]);
+    const dl = await http.get(`/api/portal/${token}/dokumente/${plan}`).buffer(true);
+    expect(dl.status).toBe(200);
+    expect(dl.headers["content-disposition"]).toMatch(/attachment; filename\*=UTF-8''Grundriss\.pdf/);
+    expect((await http.get(`/api/portal/${token}/dokumente/${intern}`)).status).toBe(404);
+    expect((await http.get(`/api/portal/falscher-token-1234567890/dokumente/${plan}`)).status).toBe(404);
   });
 
   it("nimmt Meldungen mit Fotos an und prüft Einheit und Dateiformat", async () => {

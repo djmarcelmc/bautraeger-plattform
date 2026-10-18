@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PortalMeldung, bildformat, portalStatus } from "./portal.js";
+import { PORTAL_RATEN_TEXT, PortalMeldung, bildformat, portalRatenStand, portalStatus } from "./portal.js";
 
 describe("Käuferportal", () => {
   it("prüft Meldungen", () => {
@@ -20,5 +20,21 @@ describe("Käuferportal", () => {
     expect(bildformat(bytes(0, 0, 0, 0x18, "ftyp", "heic"))).toBe("image/heic");
     expect(bildformat(bytes("%PDF-1.7"))).toBeNull();
     expect(bildformat(bytes("<svg"))).toBeNull();
+  });
+});
+
+describe("portalRatenStand", () => {
+  const s = (status: string, betrag = "1000", faelligAm: string | null = null) => portalRatenStand({ status, betrag, faelligAm }, "2026-10-18");
+  it("übersetzt interne Zustände für Käufer", () => {
+    expect(s("offen")).toBe("nicht_faellig");
+    expect(s("gesperrt")).toBe("nicht_faellig");
+    expect(s("anforderbar")).toBe("demnaechst");
+    expect(s("angefordert", "1000", "2026-10-28")).toBe("angefordert");
+    expect(s("angefordert", "1000", "2026-10-01")).toBe("ueberfaellig");
+    expect(s("teilbezahlt", "1000", "2026-10-28")).toBe("teilbezahlt");
+    expect(s("bezahlt")).toBe("bezahlt");
+    expect(s("bezahlt", "-450")).toBe("verrechnet");
+    expect(s("anforderbar", "-450")).toBe("nicht_faellig");
+    expect(PORTAL_RATEN_TEXT.demnaechst).toMatch(/Anforderung folgt/);
   });
 });

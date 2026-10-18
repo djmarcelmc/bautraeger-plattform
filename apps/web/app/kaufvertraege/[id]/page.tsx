@@ -361,10 +361,10 @@ async function PortalReiter({ v }: { v: VertragDetail }) {
   return (
     <div className="zweispaltig">
       <section className="karte">
-        <h2>Mängelanzeige per Link</h2>
+        <h2>Käuferportal per Link</h2>
         <p className="hint">
-          Der Käufer meldet Mängel ohne eigenes Konto über einen persönlichen Link – mit Fotos – und sieht dort den Bearbeitungsstand (eingegangen, in Bearbeitung, erledigt). Interne
-          Angaben wie Handwerker, Rügen oder Kosten sind nicht sichtbar. Neue Meldungen erscheinen im Cockpit.
+          Über einen persönlichen Link – ohne eigenes Konto – sieht der Käufer Zahlungsstand und Raten, seine Sonderwünsche und Unterlagen (versendete Schreiben sowie Dokumente mit
+          „im Käuferportal zeigen“) und meldet Mängel mit Fotos. Interne Angaben wie Handwerker, Rügen, Kosten oder Margen sind nicht sichtbar. Neue Meldungen erscheinen im Cockpit.
         </p>
         <dl className="datenliste">
           <dt>Status</dt>

@@ -14,6 +14,8 @@ export async function dokumentHochladen(objektTyp: string, objektId: string, pfa
       ziel.set("objektId", objektId);
       const beschreibung = fd.get("beschreibung");
       if (typeof beschreibung === "string" && beschreibung) ziel.set("beschreibung", beschreibung);
+      const ordner = fd.get("ordner");
+      if (typeof ordner === "string" && ordner) ziel.set("ordner", ordner);
       ziel.set("datei", datei, datei.name);
       await api("/dokumente", { method: "POST", body: ziel });
     }

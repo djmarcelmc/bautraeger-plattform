@@ -13,6 +13,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  StreamableFile,
   UploadedFiles,
   UseInterceptors,
 } from "@nestjs/common";
@@ -22,14 +23,19 @@ import {
   PORTAL_MAX_FOTO_BYTES,
   PORTAL_MAX_FOTOS,
   PORTAL_MAX_MELDUNGEN_TAG,
+  PORTAL_ORDNER,
+  PORTAL_RATEN_TEXT,
   PORTAL_STATUS_TEXT,
   PortalLinkEingabe,
   PortalMeldung,
   bildformat,
   datumPlusMonate,
+  portalRatenStand,
   portalStatus,
+  SONDERWUNSCH_STATUS_TEXT,
+  type SonderwunschStatus,
 } from "@bt/domain";
-import { and, asc, desc, eq, gt, isNull, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, max, sql } from "drizzle-orm";
 import { memoryStorage } from "multer";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { protokollieren } from "../common/protokoll.js";
@@ -100,7 +106,18 @@ export class PortalController {
     @Inject(SPEICHER) private readonly speicher: Speicher,
     @Inject(MaengelService) private readonly maengel: MaengelService,
     @Inject(NachrichtenService) private readonly nachrichten: NachrichtenService,
+    @Inject(VerkaufService) private readonly verkauf: VerkaufService,
   ) {}
+
+  /** Dokumente, die Käufer sehen dürfen: versendete Schreiben und ausdrücklich freigegebene Unterlagen. */
+  private dokumenteDesVertrags(kaufvertragId: string, mandantId: string) {
+    const d = schema.dokument;
+    return this.db
+      .select({ id: d.id, dateiname: d.dateiname, ordner: d.ordner, beschreibung: d.beschreibung, groesse: d.groesse, angelegtAm: d.angelegtAm, speicherKey: d.speicherKey, mimeType: d.mimeType })
+      .from(d)
+      .where(and(eq(d.mandantId, mandantId), eq(d.objektTyp, "kaufvertrag"), eq(d.objektId, kaufvertragId), isNull(d.geloeschtAm), inArray(d.ordner, [...PORTAL_ORDNER])))
+      .orderBy(desc(d.angelegtAm));
+  }
 
   /** Gültiger Zugang → Kaufvertrag samt Mandant; sonst 404 (keine Unterscheidung, um nichts preiszugeben). */
   private async zugang(token: string) {
@@ -142,6 +159,10 @@ export class PortalController {
       .where(eq(m.kaufvertragId, z.kaufvertragId))
       .orderBy(desc(m.festgestelltAm), desc(m.nr));
     const ruegen = await this.maengel.ruegen(liste.map((x) => x.id));
+    const v = await this.verkauf.vertrag(z.kaufvertragId);
+    const stichtag = heute();
+    const offeneAnforderungen = v.anforderungen.filter((a) => Number(a.offen) > 0);
+    const dokumente = await this.dokumenteDesVertrags(z.kaufvertragId, z.mandantId);
     return {
       objekt: { strasse: kopf!.strasse, plz: kopf!.plz, ort: kopf!.ort, bezeichnung: kopf!.suchcode },
       bautraeger: { name: kopf!.gesellschaft, anschrift: kopf!.anschrift },
@@ -155,7 +176,46 @@ export class PortalController {
         return { nr: x.nr, titel: x.titel, ort: x.ort, gemeldetAm: x.festgestelltAm, erledigtAm: x.erledigtAm, gemeinschaft: x.eigentum === "gemeinschaft", status, statusText: PORTAL_STATUS_TEXT[status] };
       }),
       maxFotos: PORTAL_MAX_FOTOS,
+      zahlungen: {
+        kaufpreis: v.summen.vertragssumme,
+        sonderwuensche: v.summen.sonderwuensche,
+        gesamt: v.summen.gesamt,
+        angefordert: v.summen.angefordert,
+        bezahlt: v.summen.bezahlt,
+        offen: v.summen.offen,
+        ueberfaellig: offeneAnforderungen.filter((a) => a.faelligAm < stichtag).reduce((s, a) => s + Number(a.offen), 0).toFixed(2),
+        naechsteFaelligkeit: offeneAnforderungen.map((a) => a.faelligAm).sort()[0] ?? null,
+      },
+      offeneRechnungen: offeneAnforderungen.map((a) => ({ rechnungsnr: a.rechnungsnr, angefordertAm: a.angefordertAm, faelligAm: a.faelligAm, betrag: a.betrag, offen: a.offen, ueberfaellig: a.faelligAm < stichtag })),
+      raten: v.raten.map((r) => {
+        const stand = portalRatenStand(r, stichtag);
+        return { nr: r.nr, text: r.text, prozent: r.prozent, betrag: r.betrag, bezahlt: r.bezahlt, rechnungsnr: r.rechnungsnr, faelligAm: r.faelligAm, sonderwunsch: r.typ !== "mabv", stand, standText: PORTAL_RATEN_TEXT[stand] };
+      }),
+      sonderwuensche: v.sonderwuensche.map((s) => ({
+        nr: s.nr,
+        bezeichnung: s.bezeichnung,
+        beschreibung: s.beschreibung,
+        gutschrift: s.art === "gutschrift",
+        betrag: s.betragBrutto,
+        status: s.status,
+        statusText: SONDERWUNSCH_STATUS_TEXT[s.status as SonderwunschStatus],
+        gueltigBis: s.status === "angebot" ? s.gueltigBis : null,
+      })),
+      dokumente: dokumente.map(({ speicherKey: _k, mimeType: _m, ...d }) => (void _k, void _m, d)),
     };
+  }
+
+  /** Download eines freigegebenen Dokuments (nur mit gültigem Link). */
+  @Get(":token/dokumente/:id")
+  async dokument(@Param("token") token: string, @Param("id", ParseUUIDPipe) id: string) {
+    const z = await this.zugang(token);
+    const x = (await this.dokumenteDesVertrags(z.kaufvertragId, z.mandantId)).find((d) => d.id === id);
+    if (!x) throw new NotFoundException("Dokument nicht gefunden");
+    return new StreamableFile(this.speicher.lesen(x.speicherKey), {
+      type: x.mimeType ?? "application/octet-stream",
+      disposition: `attachment; filename*=UTF-8''${encodeURIComponent(x.dateiname)}`,
+      length: x.groesse ?? undefined,
+    });
   }
 
   /** Mängelanzeige mit bis zu fünf Fotos. */
