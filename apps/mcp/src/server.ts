@@ -265,16 +265,17 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       {
         title: "Liquiditätsplan nach Kalenderwochen",
         description:
-          "Erwartete Ein- und Auszahlungen je Kalenderwoche aus Bauzeitenplan, MaBV-Raten und Gewerken, mit Bestand und Tiefststand (Finanzierungsbedarf). Optional für ein Projekt (Projektnummer), mit Anfangsbestand und unverkauften Einheiten.",
+          "Erwartete Ein- und Auszahlungen je Kalenderwoche aus Bauzeitenplan, MaBV-Raten und Gewerken, mit Bestand und Tiefststand (Finanzierungsbedarf). Kosten nach Prüfkette der Verträge (Nachlass, Umlagen, Einbehalte, Skonto) inkl. Schlusszahlungen und Auszahlung der Gewährleistungseinbehalte. Optional für ein Projekt (Projektnummer), mit Anfangsbestand, unverkauften Einheiten und ohne Skonto.",
         inputSchema: {
           projektNr: z.number().int().optional(),
           wochen: z.number().int().min(4).max(104).optional(),
           anfangsbestand: z.number().optional(),
           unverkaufteEinheiten: z.boolean().optional(),
+          ohneSkonto: z.boolean().optional(),
         },
         annotations: { readOnlyHint: true },
       },
-      async ({ projektNr, wochen, anfangsbestand, unverkaufteEinheiten }) => {
+      async ({ projektNr, wochen, anfangsbestand, unverkaufteEinheiten, ohneSkonto }) => {
         const q = new URLSearchParams({ wochen: String(wochen ?? 26) });
         if (projektNr !== undefined) {
           const projekte = await apiGet<{ id: string; nr: number }[]>(`/projekte?abgeschlossen=alle&suche=${projektNr}`);
@@ -284,6 +285,7 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
         }
         if (anfangsbestand !== undefined) q.set("anfangsbestand", anfangsbestand.toFixed(2));
         if (unverkaufteEinheiten) q.set("unverkauft", "1");
+        if (ohneSkonto) q.set("skonto", "0");
         const d = await apiGet<{
           stichtag: string;
           projekte: { nr: number; suchcode: string; hatPlan: boolean }[];
@@ -294,6 +296,8 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
           ueberfaellig: { ein: string; aus: string };
           spaeter: { ein: string; aus: string };
           ohneTermin: { ein: string; aus: string };
+          skonto: boolean;
+          einbehalte: { skontoErsparnis: string; einbehaltenBisher: string; gewaehrleistung: string };
         }>(`/auswertungen/liquiditaetsplan?${q}`);
         const euro = (v: string) => `${formatDe(money(v))} €`;
         const posten = (r: Record<string, string>, t: Record<string, string>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [t[k] ?? k, euro(v)]));
@@ -305,6 +309,11 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
           davonUeberfaellig: { einnahmen: euro(d.ueberfaellig.ein), ausgaben: euro(d.ueberfaellig.aus) },
           spaeter: { einnahmen: euro(d.spaeter.ein), ausgaben: euro(d.spaeter.aus) },
           ohneTermin: { einnahmen: euro(d.ohneTermin.ein), ausgaben: euro(d.ohneTermin.aus) },
+          einbehalte: {
+            vertragserfuellungDerzeit: euro(d.einbehalte.einbehaltenBisher),
+            gewaehrleistungGesamt: euro(d.einbehalte.gewaehrleistung),
+            [d.skonto ? "skontoertragEingerechnet" : "skontoertragMoeglich"]: euro(d.einbehalte.skontoErsparnis),
+          },
           wochen: d.wochen.map((w) => ({
             kw: `KW ${w.woche}/${w.jahr}`,
             einnahmen: posten(w.ein, d.artText.ein),

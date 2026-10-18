@@ -185,6 +185,7 @@ export class BauzeitController {
     @Query("wochen") wochen?: string,
     @Query("anfangsbestand") anfangsbestand?: string,
     @Query("unverkauft") unverkauft?: string,
+    @Query("skonto") skonto?: string,
     @Query("stichtag") stichtag?: string,
     @Query("format") format?: string,
   ) {
@@ -196,6 +197,7 @@ export class BauzeitController {
       wochen: Math.min(Math.max(Number(wochen) || 26, 4), 104),
       anfangsbestand: bestand && /^-?\d+(\.\d{1,2})?$/.test(bestand) ? bestand : "0",
       unverkauft: unverkauft === "1",
+      skonto: skonto !== "0",
       stichtag: stichtag && /^\d{4}-\d{2}-\d{2}$/.test(stichtag) ? stichtag : undefined,
     });
     if (format !== "xlsx") return d;
@@ -203,7 +205,7 @@ export class BauzeitController {
     const ein = d.arten.ein;
     const aus = d.arten.aus;
     const titel = d.projekte.length === 1 ? `Liquiditätsplan ${d.projekte[0]!.nr} ${d.projekte[0]!.suchcode}` : "Liquiditätsplan";
-    const inhalt = await excelDatei("Liquiditätsplan", `${titel} nach Kalenderwochen (brutto), Anfangsbestand ${d.anfangsbestand} €`, [
+    const inhalt = await excelDatei("Liquiditätsplan", `${titel} nach Kalenderwochen (brutto, ${d.skonto ? "Skonto gezogen" : "ohne Skonto"}), Anfangsbestand ${d.anfangsbestand} €`, [
       {
         spalten: [
           { titel: "KW", breite: 10 },

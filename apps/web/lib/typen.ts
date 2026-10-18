@@ -526,6 +526,8 @@ export interface Liquiditaetsplan {
   ueberfaellig: { ein: string; aus: string };
   spaeter: { ein: string; aus: string };
   ohneTermin: { ein: string; aus: string };
+  skonto: boolean;
+  einbehalte: { skontoErsparnis: string; einbehaltenBisher: string; gewaehrleistung: string };
 }
 
 export interface ZahlungsvorschlagRechnung {
