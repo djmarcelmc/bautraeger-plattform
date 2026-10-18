@@ -1,4 +1,5 @@
 import { NACHTRAG_STATUS } from "@bt/domain";
+import { BuergschaftenAbschnitt } from "@/components/Buergschaften";
 import { Dokumente } from "@/components/Dokumente";
 import { Feld, Gruppe, Haken } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
@@ -15,6 +16,7 @@ const REITER = [
   ["rechnungen", "Rechnungen"],
   ["nachtraege", "Nachträge"],
   ["konditionen", "Konditionen"],
+  ["buergschaften", "Bürgschaften"],
   ["dokumente", "Dokumente"],
 ] as const;
 
@@ -214,6 +216,14 @@ export default async function VertragSeite({ params, searchParams }: { params: P
       )}
 
       {reiter === "konditionen" && <Konditionen v={v} />}
+      {reiter === "buergschaften" && (
+        <BuergschaftenAbschnitt
+          richtung="erhalten"
+          vertragId={id}
+          pfad={`/handwerkervertraege/${id}`}
+          hinweis="Sicherheiten des Handwerkers, z. B. Vertragserfüllungsbürgschaft statt Einbehalt oder Gewährleistungsbürgschaft zur Ablösung des Sicherheitseinbehalts."
+        />
+      )}
       {reiter === "dokumente" && <Dokumente objektTyp="handwerkervertrag" objektId={id} pfad={`/handwerkervertraege/${id}`} />}
     </>
   );

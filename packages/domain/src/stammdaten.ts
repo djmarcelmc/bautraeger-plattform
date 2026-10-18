@@ -15,6 +15,24 @@ export function ibanGueltig(iban: string): boolean {
   return rest === 1;
 }
 
+/** Prüft einen BIC (8 oder 11 Stellen). */
+export const bicGueltig = (bic: string) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic.replace(/\s/g, "").toUpperCase());
+
+const ibanFeld = () =>
+  z
+    .string()
+    .transform((s) => s.replace(/\s/g, "").toUpperCase())
+    .refine((s) => s === "" || ibanGueltig(s), "Ungültige IBAN (Prüfziffer)")
+    .transform((s) => (s === "" ? null : s))
+    .nullish();
+const bicFeld = () =>
+  z
+    .string()
+    .transform((s) => s.replace(/\s/g, "").toUpperCase())
+    .refine((s) => s === "" || bicGueltig(s), "Ungültiger BIC (8 oder 11 Zeichen)")
+    .transform((s) => (s === "" ? null : s))
+    .nullish();
+
 // ---------------------------------------------------------------- Gesellschaft
 
 export const GesellschaftEingabe = z.object({
@@ -25,6 +43,9 @@ export const GesellschaftEingabe = z.object({
   datevMandantennr: ganzzahlOptional(1, 99999),
   skr: z.enum(["03", "04"]).default("03"),
   sachkontenlaenge: leerAlsUndefiniert(ganzzahl().min(4).max(8).default(4)),
+  /** Auftraggeberkonto für SEPA-Überweisungen. */
+  iban: ibanFeld(),
+  bic: bicFeld(),
 });
 export type GesellschaftEingabe = z.infer<typeof GesellschaftEingabe>;
 
@@ -50,12 +71,8 @@ export const PartnerEingabe = z
       .pipe(z.email("Ungültige E-Mail-Adresse").nullable())
       .nullish(),
     telefon: text(50),
-    iban: z
-      .string()
-      .transform((s) => s.replace(/\s/g, "").toUpperCase())
-      .refine((s) => s === "" || ibanGueltig(s), "Ungültige IBAN (Prüfziffer)")
-      .transform((s) => (s === "" ? null : s))
-      .nullish(),
+    iban: ibanFeld(),
+    bic: bicFeld(),
     rollen: z.array(z.enum(PARTNER_ROLLEN)).min(1, "Mindestens eine Rolle wählen"),
     freistellungGueltigBis: datum(),
   })

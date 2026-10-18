@@ -133,6 +133,6 @@ describe.skipIf(!url)("Kosten (Integration)", () => {
     expect((await als(http.post(`/api/eingangsrechnungen/${r2}/freigeben`))).status).toBe(201);
     const z = await als(http.post(`/api/eingangsrechnungen/${r2}/zahlung`)).send({ datum: "2026-10-06" });
     expect(z.status).toBe(409);
-    expect(z.body.message).toMatch(/Kein Zahlbetrag offen/);
+    expect(z.body.message).toMatch(/kein Zahlbetrag offen/i);
   });
 });

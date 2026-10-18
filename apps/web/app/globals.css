@@ -1828,6 +1828,88 @@ table.liqtabelle td {
   }
 }
 
+/* ------------------------------------------------------------------ Zahlungsläufe & Bürgschaften */
+.zahlungsgruppe {
+  margin-bottom: 16px;
+}
+.zahlungsgruppe .formular {
+  gap: 0;
+}
+.zahlungsgruppe .fehler,
+.zahlungsgruppe .meldung {
+  margin: 12px 16px 0;
+}
+.gruppenkopf,
+.gruppenfuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+.gruppenkopf h2 {
+  margin: 0;
+}
+.gruppenkopf .hint {
+  margin: 2px 0 0;
+}
+.gruppenfuss {
+  border-top: 1px solid var(--linie);
+  background: var(--flaeche-2);
+}
+.auswahlsumme {
+  font-size: 14px;
+  color: var(--text-2);
+}
+.auswahlsumme b {
+  color: var(--text);
+  font-size: 16px;
+}
+tr.gesperrt td {
+  color: var(--text-3);
+}
+tr.erledigt td {
+  opacity: 0.6;
+}
+.hinweise {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-top: 2px;
+}
+.hint.warnung {
+  color: var(--warnung);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  white-space: normal;
+  text-align: right;
+}
+td.num.fett {
+  font-weight: 650;
+}
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+label.inline span {
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.kpi b.klein {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+h2.kartentitel {
+  padding: 14px 16px 4px;
+  margin: 0;
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

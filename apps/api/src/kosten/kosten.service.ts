@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema, type DbOderTx } from "@bt/db";
 import {
   freistellungGueltig,
@@ -14,6 +14,7 @@ import {
 } from "@bt/domain";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
+import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 
 const { gewerk: gw, handwerkervertrag: hv, projekt: p, gesellschaft: g, eingangsrechnung: er, zahlungsausgang: za, nachtrag: nt } = schema;
@@ -194,5 +195,29 @@ export class KostenService {
       },
       faelligAm: v.zahlungsfristTage !== null && v.zahlungsfristTage !== undefined ? datumPlusTage(x.eingangAm, v.zahlungsfristTage) : null,
     };
+  }
+
+  /** Zahlbetrag einer freigegebenen Rechnung am Zahlungstag (Skonto nur in der Frist, Bauabzugsteuer ohne gültige Freistellung). */
+  async zahlbetrag(id: string, datum: string) {
+    const r = await this.rechnung(id, datum);
+    if (r.status !== "freigegeben") throw new ConflictException(`Rechnung ${r.rechnungsnr}: nur freigegebene Rechnungen können bezahlt werden.`);
+    const e = r.vorschau.skontoMoeglich ? r.vorschau.mitSkonto : r.vorschau.ohneSkonto;
+    if (money(e.faellig!).lte(0)) throw new ConflictException(`Rechnung ${r.rechnungsnr}: kein Zahlbetrag offen (durch frühere Zahlungen abgegolten).`);
+    return { r, e };
+  }
+
+  /** Verbucht die Zahlung (Zahlungsausgang, Status „bezahlt“, Protokoll). */
+  async zahlungBuchen(tx: DbOderTx, z: Awaited<ReturnType<KostenService["zahlbetrag"]>>, datum: string, benutzer: string, zahlungslaufId?: string) {
+    const { r, e } = z;
+    await tx.insert(za).values({ eingangsrechnungId: r.id, datum, betrag: e.auszahlung!, skonto: e.skonto!, bauabzugsteuer: e.bauabzugsteuer!, zahlungslaufId });
+    await tx.update(er).set({ status: "bezahlt", pruefergebnis: e, geaendertAm: new Date() }).where(eq(er.id, r.id));
+    await protokollieren(tx, {
+      tabelle: "eingangsrechnung",
+      id: r.id,
+      aktion: "update",
+      alt: { status: r.status },
+      neu: { status: "bezahlt", datum, auszahlung: e.auszahlung, skonto: e.skonto, bauabzugsteuer: e.bauabzugsteuer, ...(zahlungslaufId ? { zahlungslaufId } : {}) },
+      benutzer,
+    });
   }
 }

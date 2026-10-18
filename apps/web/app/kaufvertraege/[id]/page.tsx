@@ -1,5 +1,6 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Check, Printer, X } from "lucide-react";
+import { BuergschaftenAbschnitt } from "@/components/Buergschaften";
 import { Dokumente } from "@/components/Dokumente";
 import { Feld, Gruppe, Haken, Protokoll } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
@@ -15,6 +16,7 @@ const REITER = [
   ["raten", "Raten"],
   ["zahlungen", "Zahlungen"],
   ["konditionen", "Konditionen"],
+  ["buergschaften", "Bürgschaften"],
   ["dokumente", "Dokumente"],
   ["protokoll", "Protokoll"],
 ] as const;
@@ -319,6 +321,14 @@ export default async function KaufvertragSeite({
         </Formular>
       )}
 
+      {reiter === "buergschaften" && (
+        <BuergschaftenAbschnitt
+          richtung="ausgegeben"
+          vertragId={id}
+          pfad={pfad}
+          hinweis="Bürgschaft nach § 7 MaBV: Sichert alle Zahlungen des Käufers; dann dürfen Raten auch ohne Vormerkung und Lastenfreistellung angefordert werden (Konditionen: „Bürgschaft nach § 7 MaBV“ anhaken)."
+        />
+      )}
       {reiter === "dokumente" && <Dokumente objektTyp="kaufvertrag" objektId={id} pfad={pfad} />}
       {reiter === "protokoll" && <ProtokollReiter id={id} />}
     </>

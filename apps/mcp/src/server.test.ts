@@ -134,4 +134,22 @@ describe("MCP-Server", () => {
     expect(d.wochen[0]).toMatchObject({ kw: "KW 43/2026", einnahmen: { "Angeforderte Raten": "43.000,00 €" }, bestand: "134.875,00 €" });
     expect(d.summe.endbestand).toBe("134.875,00 €");
   });
+
+  it("listet Bürgschaften mit Handlungsbedarf", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      expect(new URL(url).searchParams.get("status")).toBe("handlung");
+      return new Response(
+        JSON.stringify({
+          buergschaften: [{ artText: "Gewährleistungsbürgschaft", richtung: "erhalten", projekt: { nr: 101, suchcode: "LINDENWEG" }, bezug: "300 Rohbau – Rohbau KG", buerge: "Sparkasse", nr: "GB-1", betrag: "2500", gueltigBis: null, rueckgabeFaelligAb: "2025-01-15", status: "rueckgabe_faellig" }],
+          summen: { erhalten: "2500", ausgegeben: "0", handlungsbedarf: 1 },
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "buergschaften", arguments: {} });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.buergschaften[0]).toMatchObject({ projekt: "101 LINDENWEG", betrag: "2.500,00 €", status: "Rückgabe fällig" });
+    expect(d.summen.handlungsbedarf).toBe(1);
+  });
 });
