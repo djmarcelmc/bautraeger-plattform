@@ -326,6 +326,8 @@ export interface Handwerkervertrag {
 }
 
 export interface RechnungDetail extends Rechnung {
+  /** Kumulierter Betrag gegen Auftrag inkl. beauftragter Nachträge */
+  auftragsrahmen: { stufe: "ok" | "nahe" | "ueber"; auftrag: string; angeboten: string; ueberschreitung: string; auslastungProzent: number | null; text: string | null };
   handwerkervertragId: string;
   vertrag: {
     id: string;

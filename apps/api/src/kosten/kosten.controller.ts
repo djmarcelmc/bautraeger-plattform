@@ -243,13 +243,15 @@ export class KostenController {
   }
 
   @Post("eingangsrechnungen/:id/freigeben")
-  async freigeben(@Param("id", ParseUUIDPipe) id: string, @Benutzer() benutzer: string) {
+  async freigeben(@Param("id", ParseUUIDPipe) id: string, @Body() body: { ueberschreitungBestaetigt?: boolean } | undefined, @Benutzer() benutzer: string) {
     const r = await this.kosten.rechnung(id);
+    const ueber = r.auftragsrahmen.stufe === "ueber";
+    if (ueber && body?.ueberschreitungBestaetigt !== true) throw new ConflictException(`${r.auftragsrahmen.text} Freigabe nur mit ausdrücklicher Bestätigung der Überschreitung.`);
     if (r.status !== "rechnerisch_geprueft" && r.status !== "sachlich_geprueft") throw new ConflictException("Nur geprüfte Rechnungen können freigegeben werden.");
     if (anmeldungAktiv() && r.geprueftVon === benutzer) throw new ConflictException("Vier-Augen-Prinzip: Die Freigabe muss eine andere Person vornehmen als die Prüfung.");
     await this.db.transaction(async (tx) => {
       await tx.update(er).set({ status: "freigegeben", freigegebenAm: new Date(), freigegebenVon: benutzer, geaendertAm: new Date() }).where(eq(er.id, id));
-      await protokollieren(tx, { tabelle: "eingangsrechnung", id, aktion: "update", alt: { status: r.status }, neu: { status: "freigegeben" }, benutzer });
+      await protokollieren(tx, { tabelle: "eingangsrechnung", id, aktion: "update", alt: { status: r.status }, neu: { status: "freigegeben", ...(ueber ? { auftragUeberschritten: r.auftragsrahmen.ueberschreitung } : {}) }, benutzer });
     });
     return this.kosten.rechnung(id);
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { STANDARD_GEWERKEPLAN } from "./gewerkeplan.js";
 import {
+  auftragsrahmen,
   HandwerkervertragEingabe,
   freistellungGueltig,
   gewerkeplanAusVorlage,
@@ -96,5 +97,24 @@ describe("Kostenkontrolle", () => {
       bezahlt: "270000.00",
     });
     expect(kostenstandSumme([k, kostenstand("1000", [])]).trend).toBe("531000.00");
+  });
+});
+
+describe("auftragsrahmen", () => {
+  const n = [
+    { betragBrutto: "5000", status: "beauftragt" },
+    { betragBrutto: "3000", status: "angeboten" },
+    { betragBrutto: "9999", status: "abgelehnt" },
+  ];
+  it("innerhalb, nahe und über dem Auftrag inkl. beauftragter Nachträge", () => {
+    expect(auftragsrahmen("40000", "50000", n)).toMatchObject({ stufe: "ok", auftrag: "55000.00", auslastungProzent: 73, text: null });
+    expect(auftragsrahmen("51000", "50000", n)).toMatchObject({ stufe: "nahe", auslastungProzent: 93 });
+    expect(auftragsrahmen("51000", "50000", n, true).stufe).toBe("ok"); // Schlussrechnung ohne 90-%-Hinweis
+    const ueber = auftragsrahmen("57000", "50000", n);
+    expect(ueber).toMatchObject({ stufe: "ueber", ueberschreitung: "2000.00", angeboten: "3000.00" });
+    expect(ueber.text).toBe("Rechnung (kumuliert 57.000,00 €) übersteigt den Auftrag von 55.000,00 € um 2.000,00 €. Angebotene Nachträge über 3.000,00 € würden das decken – vor der Freigabe beauftragen.");
+    expect(auftragsrahmen("60000", "50000", n).text).toMatch(/Auch die angebotenen Nachträge \(3\.000,00 €\) reichen nicht/);
+    expect(auftragsrahmen("60000", "50000", []).text).toMatch(/kein Nachtrag vor/);
+    expect(auftragsrahmen("100", "0", []).text).toMatch(/keine Auftragssumme hinterlegt/);
   });
 });

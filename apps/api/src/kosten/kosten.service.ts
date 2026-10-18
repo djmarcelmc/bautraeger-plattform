@@ -1,6 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema, type DbOderTx } from "@bt/db";
 import {
+  auftragsrahmen,
   type EingangsrechnungEingabe,
   freistellungGueltig,
   kostenstand,
@@ -179,6 +180,7 @@ export class KostenService {
     const alsText = (e: ReturnType<typeof pruefkette>) => Object.fromEntries(Object.entries(e).map(([k2, m]) => [k2, m.toFixed(2)]));
     const skontoFristBis = v.skontoFristTage !== null && v.skontoFristTage !== undefined ? datumPlusTage(x.eingangAm, v.skontoFristTage) : null;
     return {
+      auftragsrahmen: auftragsrahmen(x.geprueftKumuliert ?? x.betragBrutto, v.vertragBrutto, v.nachtraege, x.schlussrechnung),
       ...x,
       maengel: v.maengel,
       vertrag: { id: v.id, nrIntern: v.nrIntern, projekt: v.projekt, gewerk: { id: v.gewerk.id, nr: v.gewerk.nr, bezeichnung: v.gewerk.bezeichnung }, handwerker: v.handwerker, skontoProzent: v.skontoProzent, zahlungsfristTage: v.zahlungsfristTage },

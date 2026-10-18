@@ -82,7 +82,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/abnahmen?projektId=`, `POST /api/projekte/:id/abnahmen`, `GET/PUT/DELETE /api/abnahmen/:id`, `POST …/:id/maengel`, `POST …/:id/abschliessen` | Abnahmen (Sondereigentum, Gemeinschaftseigentum, Handwerker) mit Mängeln, Zählerständen, Schlüsseln; Abschluss setzt Übergabe/Abnahme und Gewährleistung |
 | `GET/POST /api/mangelvorlagen`, `POST /api/mangelvorlagen/standard`, `PUT/DELETE /api/mangelvorlagen/:id` | Standardmängel-Katalog |
 | `GET /api/auswertungen/mabv-pruefbericht?gesellschaftId=&von=&bis=` | Prüfhilfe nach § 16 MaBV mit Feststellungen je Kaufvertrag (auch `format=xlsx`) |
-| `GET/POST /api/eingangsrechnungen`, `GET /api/eingangsrechnungen/:id?zahlungsdatum=`, `POST …/:id/pruefen`, `…/freigeben`, `…/zahlung` | Rechnungseingangsbuch und Workflow Prüfen → Freigeben → Zahlen (Skontofrist, Bauabzugsteuer) |
+| `GET/POST /api/eingangsrechnungen`, `GET /api/eingangsrechnungen/:id?zahlungsdatum=`, `POST …/:id/pruefen`, `…/freigeben`, `…/zahlung` | Rechnungseingangsbuch und Workflow Prüfen → Freigeben → Zahlen (Skontofrist, Bauabzugsteuer); Abgleich mit dem Auftrag inkl. beauftragter Nachträge (ab 90 % Hinweis, Überschreitung nur mit protokollierter Bestätigung freigebbar) |
 
 Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Mit eingeschalteter
 Microsoft-Anmeldung (`AUTH_AKTIV=true`) übergibt die Weboberfläche Benutzer und Rollen (`x-benutzer`, `x-rollen`), und

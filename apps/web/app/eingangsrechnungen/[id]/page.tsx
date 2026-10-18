@@ -76,6 +76,20 @@ export default async function RechnungSeite({ params, searchParams }: { params: 
                   : `Skontofrist abgelaufen am ${deDatum(v.skontoFristBis)}`
                 : "Kein Skonto vereinbart"}
             </div>
+            {r.auftragsrahmen.text ? (
+              <div className={r.auftragsrahmen.stufe === "ueber" ? "fehlt" : "neutral"}>
+                <AlertTriangle size={16} />
+                <span>
+                  {r.auftragsrahmen.text}
+                  {r.auftragsrahmen.stufe === "ueber" ? (
+                    <>
+                      {" "}
+                      <a href={`/handwerkervertraege/${r.vertrag.id}?reiter=nachtraege`}>Nachträge ansehen</a>
+                    </>
+                  ) : null}
+                </span>
+              </div>
+            ) : null}
             {r.maengel.offen ? (
               <div className="fehlt">
                 <AlertTriangle size={16} />
@@ -109,7 +123,14 @@ export default async function RechnungSeite({ params, searchParams }: { params: 
             <div className="karte">
               <h2>2. Zur Zahlung freigeben</h2>
               <p className="hint">Auszahlung voraussichtlich {deZahl(v.skontoMoeglich ? v.mitSkonto.auszahlung : v.ohneSkonto.auszahlung)} €.</p>
-              <Formular aktion={rechnungFreigeben.bind(null, id)} knopf="Freigeben" className="formular" />
+              <Formular aktion={rechnungFreigeben.bind(null, id)} knopf="Freigeben" className="formular">
+                {r.auftragsrahmen.stufe === "ueber" ? (
+                  <label className="haken warnhaken">
+                    <input type="checkbox" name="ueberschreitungBestaetigt" required />
+                    <span>Überschreitung des Auftrags um {deZahl(r.auftragsrahmen.ueberschreitung)} € geprüft und freigegeben (wird protokolliert)</span>
+                  </label>
+                ) : null}
+              </Formular>
             </div>
           )}
           {r.status === "freigegeben" && (
