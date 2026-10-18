@@ -100,4 +100,32 @@ describe.skipIf(!url)("Auswertungen (Integration)", () => {
       expect(r.status).toBe(200);
     }
   });
+
+  it("erstellt den MaBV-Prüfbericht und stellt eine verspätete Vormerkung fest", async () => {
+    const ok = (await http.get("/api/auswertungen/mabv-pruefbericht?von=2026-01-01&bis=2026-12-31")).body;
+    expect(ok.zeitraum).toEqual({ von: "2026-01-01", bis: "2026-12-31" });
+    expect(ok.summen).toMatchObject({ vertraege: 1, anforderungen: 1, verstoesse: 0, vertragssumme: "310000.00", angefordertImZeitraum: "93000.00", eingegangenImZeitraum: "50000.00" });
+    const v = ok.vertraege[0];
+    expect(v.sicherung).toMatchObject({ art: "§ 3", vormerkungEingetragenAm: "2026-04-01" });
+    expect(v.anforderungen[0]).toMatchObject({ ordnungsgemaess: true, raten: [{ nr: 1, abschnitte: [{ key: "erdarbeiten", fertigAm: "2026-05-01", rechtzeitig: true }] }] });
+    expect((await http.get("/api/auswertungen/mabv-pruefbericht?von=2025-01-01&bis=2025-12-31")).body.summen.vertraege).toBe(0);
+
+    // Vormerkung nachträglich auf ein Datum nach der Anforderung setzen → Feststellung
+    const kv = (await http.get(`/api/kaufvertraege/${v.id}`)).body;
+    await als(http.put(`/api/kaufvertraege/${v.id}/konditionen`)).send({ zahlungsanforderungAn: kv.zahlungsanforderungAn, vertragWirksam: true, lastenfreistellungGesichert: true, vormerkungEingetragenAm: "2026-06-01" });
+    const mit = (await http.get("/api/auswertungen/mabv-pruefbericht?von=2026-01-01&bis=2026-12-31")).body;
+    expect(mit.summen.verstoesse).toBe(1);
+    expect(mit.vertraege[0].feststellungen[0]).toMatchObject({ art: "voraussetzung", schwere: "verstoss", text: expect.stringMatching(/Vormerkung erst am 01.06.2026/) });
+
+    const x = await http.get("/api/auswertungen/mabv-pruefbericht?von=2026-01-01&bis=2026-12-31&format=xlsx").buffer(true).parse((r, cb) => {
+      const teile: Buffer[] = [];
+      r.on("data", (c: Buffer) => teile.push(c));
+      r.on("end", () => cb(null, Buffer.concat(teile)));
+    });
+    expect(x.headers["content-disposition"]).toMatch(/MaBV-Pruefbericht/);
+    const mappe = new ExcelJS.Workbook();
+    await mappe.xlsx.load(x.body);
+    const texte = mappe.worksheets[0]!.getSheetValues().flat().map(String);
+    expect(texte.some((t) => t.includes("Vormerkung erst am 01.06.2026"))).toBe(true);
+  });
 });

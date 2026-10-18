@@ -349,6 +349,41 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "mabv_pruefbericht",
+      {
+        title: "MaBV-Prüfbericht (§ 16 MaBV)",
+        description:
+          "Prüfhilfe je Gesellschaft und Jahr: Kaufverträge mit Sicherungsart, Zahlungsanforderungen und automatische Feststellungen (Anforderung vor Bautenstand, fehlende Voraussetzungen nach § 3 oder Sicherheit nach § 7, Ratenplan). Standard: Vorjahr.",
+        inputSchema: { jahr: z.number().int().min(2000).max(2100).optional(), gesellschaftNr: z.number().int().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ jahr, gesellschaftNr }) => {
+        const q = new URLSearchParams(jahr ? { von: `${jahr}-01-01`, bis: `${jahr}-12-31` } : {});
+        if (gesellschaftNr !== undefined) {
+          const ges = await apiGet<{ id: string; nr: number }[]>("/gesellschaften");
+          const g = ges.find((x) => x.nr === gesellschaftNr);
+          if (!g) return text(`Gesellschaft ${gesellschaftNr} nicht gefunden.`);
+          q.set("gesellschaftId", g.id);
+        }
+        const d = await apiGet<{
+          gesellschaft: { name: string };
+          zeitraum: { von: string; bis: string };
+          summen: { vertraege: number; vertragssumme: string; angefordertImZeitraum: string; eingegangenImZeitraum: string; anforderungen: number; verstoesse: number; hinweise: number };
+          vertraege: { nr: string; kaeufer: string[]; sicherung: { art: string }; verstoesse: number; feststellungen: { art: string; schwere: string; text: string; rechnungsnr?: string }[] }[];
+        }>(`/auswertungen/mabv-pruefbericht?${q}`);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        return json({
+          gesellschaft: d.gesellschaft.name,
+          zeitraum: d.zeitraum,
+          summen: { ...d.summen, vertragssumme: euro(d.summen.vertragssumme), angefordertImZeitraum: euro(d.summen.angefordertImZeitraum), eingegangenImZeitraum: euro(d.summen.eingegangenImZeitraum) },
+          feststellungen: d.vertraege.flatMap((v) => v.feststellungen.map((f) => ({ kaufvertrag: v.nr, kaeufer: v.kaeufer.join(", "), sicherung: v.sicherung.art, ...f }))),
+          hinweis: "Prüfhilfe auf Basis der erfassten Daten; die Würdigung obliegt dem Prüfer nach § 16 MaBV.",
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(

@@ -13,7 +13,7 @@ Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artif
 | `packages/db` | PostgreSQL-Schema (Drizzle), Migrationen, Demodaten |
 | `apps/api` | REST-API (NestJS): Stammdaten, Verkauf (Kaufverträge, Bautenstand, Zahlungsanforderungen, offene Posten), Kosten (Gewerke, Handwerkerverträge, Nachträge, Eingangsrechnungen), Mängel (Rügen, Fristen), Dokumente, Änderungsprotokoll, DATEV-Export |
 | `apps/mcp` | MCP-Server (stdio und Streamable HTTP) mit Tools für KI-Assistenten |
-| `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Auswertungen (Liquidität, Liquiditätsplan nach KW, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
+| `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Auswertungen (Liquidität, Liquiditätsplan nach KW, MaBV-Prüfbericht, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
 | `docs/` | Anleitungen: [Deployment auf dem vServer](docs/deployment.md), [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) |
 | `deploy/`, `Dockerfile`, `docker-compose.prod.yml` | Produktivbetrieb: Caddy (HTTPS, Passwortschutz), PostgreSQL, tägliche Sicherungen, Update-Skript |
 
@@ -70,6 +70,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET/POST /api/buergschaften?status=offen\|handlung&richtung=`, `GET/PUT/DELETE /api/buergschaften/:id` | Bürgschaften (erhalten/§ 7 MaBV) mit Ablauf- und Rückgabeüberwachung |
 | `GET /api/abnahmen?projektId=`, `POST /api/projekte/:id/abnahmen`, `GET/PUT/DELETE /api/abnahmen/:id`, `POST …/:id/maengel`, `POST …/:id/abschliessen` | Abnahmen (Sondereigentum, Gemeinschaftseigentum, Handwerker) mit Mängeln, Zählerständen, Schlüsseln; Abschluss setzt Übergabe/Abnahme und Gewährleistung |
 | `GET/POST /api/mangelvorlagen`, `POST /api/mangelvorlagen/standard`, `PUT/DELETE /api/mangelvorlagen/:id` | Standardmängel-Katalog |
+| `GET /api/auswertungen/mabv-pruefbericht?gesellschaftId=&von=&bis=` | Prüfhilfe nach § 16 MaBV mit Feststellungen je Kaufvertrag (auch `format=xlsx`) |
 | `GET/POST /api/eingangsrechnungen`, `GET /api/eingangsrechnungen/:id?zahlungsdatum=`, `POST …/:id/pruefen`, `…/freigeben`, `…/zahlung` | Rechnungseingangsbuch und Workflow Prüfen → Freigeben → Zahlen (Skontofrist, Bauabzugsteuer) |
 
 Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Bis zur Microsoft-Anmeldung
@@ -96,7 +97,7 @@ DATABASE_URL=... node apps/mcp/dist/index.js --http   # http://localhost:3002/mc
 ```
 
 Tools: `mabv_ratenplan_berechnen`, `handwerker_pruefkette`, `projekte_auflisten`, `offene_zahlungsanforderungen`
-(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan` und `buergschaften` (über die REST-API, wenn
+(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften` und `mabv_pruefbericht` (über die REST-API, wenn
 `API_URL` gesetzt ist – dort gelten dieselben Prüfregeln wie in der Oberfläche).
 
 Dokumente werden lokal unter `DOKUMENTE_PFAD` (Standard `data/dokumente`) abgelegt; eine S3-Ablage kann über die
@@ -122,6 +123,6 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – SEPA-Zahlungslauf (pain.001.001.09) und Bürgschaften ✓; offen: Rollen für Prüfung/Freigabe, Bauabzugsteuer-Anmeldung
 6. ~~Mängelverwaltung mit Fotos, Rügen und Fristen~~ ✓ – Standardmängel-Katalog und Abnahmeprotokolle ✓
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
-8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – offen: MaBV-Prüfbericht
+8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – MaBV-Prüfbericht (§ 16) ✓
 9. ~~Bauzeitenplan (Gantt, MaBV-Meilensteine) und Liquiditätsplan nach Kalenderwochen~~ ✓ – offen: Abhängigkeiten zwischen Vorgängen, Einbehalte im Liquiditätsplan
 10. Buchungsjournal automatisch aus Verkauf und Kosten befüllen

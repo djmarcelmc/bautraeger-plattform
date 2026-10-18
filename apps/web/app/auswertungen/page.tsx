@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, FileText, LineChart, Wallet } from "lucide-react";
+import { BarChart3, ClipboardList, FileText, LineChart, ShieldCheck, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ProjektListe } from "@/lib/typen";
 
@@ -24,6 +24,11 @@ export default async function Auswertungen() {
           <LineChart size={22} />
           <div className="kacheltitel">Liquiditätsplan</div>
           <div className="kachelzeile">Erwartete Ein- und Auszahlungen nach Kalenderwochen aus Bauzeitenplan, Raten und Gewerken – mit Bestand und Tiefststand</div>
+        </a>
+        <a href="/auswertungen/mabv-pruefbericht" className="projektkachel">
+          <ShieldCheck size={22} />
+          <div className="kacheltitel">MaBV-Prüfbericht</div>
+          <div className="kachelzeile">Prüfhilfe nach § 16 MaBV: Sicherung, Raten und Bautenstand je Kaufvertrag mit automatischen Feststellungen</div>
         </a>
         <a href="/auswertungen/controlling" className="projektkachel">
           <BarChart3 size={22} />

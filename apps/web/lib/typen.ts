@@ -642,3 +642,50 @@ export interface Mangelvorlage {
   titel: string;
   beschreibung: string | null;
 }
+
+export interface MabvFeststellung {
+  art: "ratenplan" | "bautenstand" | "voraussetzung" | "sicherheit";
+  schwere: "verstoss" | "hinweis";
+  text: string;
+  rechnungsnr?: string;
+}
+
+export interface MabvPruefbericht {
+  gesellschaft: { id: string; nr: number; name: string; anschrift: string | null };
+  gesellschaften: { id: string; nr: number; name: string }[];
+  zeitraum: { von: string; bis: string };
+  erstelltAm: string;
+  vertraege: {
+    id: string;
+    nr: string;
+    urkundennr: string | null;
+    datum: string | null;
+    projekt: { id: string; nr: number; suchcode: string };
+    kaeufer: string[];
+    einheiten: string[];
+    sicherung: {
+      art: "§ 3" | "§ 7";
+      vertragWirksam: boolean;
+      vormerkungEingetragenAm: string | null;
+      lastenfreistellungGesichert: boolean;
+      buergschaften: { nr: string | null; betrag: string; ausgestelltAm: string | null; gueltigBis: string | null; rueckgabeAm: string | null; buerge: string | null }[];
+    };
+    vertragssumme: string;
+    anforderungen: {
+      id: string;
+      rechnungsnr: string;
+      angefordertAm: string;
+      faelligAm: string;
+      betrag: string;
+      kumuliert: string;
+      ordnungsgemaess: boolean | null;
+      raten: { nr: number; typ: string; prozent: string | null; betrag: string; abschnitte: { key: string; text: string; fertigAm: string | null; rechtzeitig: boolean }[] }[];
+      feststellungen: MabvFeststellung[];
+    }[];
+    eingaenge: { datum: string; betrag: string; verwendungszweck: string | null }[];
+    summen: { angefordertImZeitraum: string; eingegangenImZeitraum: string; angefordertBisEnde: string; eingegangenBisEnde: string };
+    feststellungen: MabvFeststellung[];
+    verstoesse: number;
+  }[];
+  summen: { vertraege: number; vertragssumme: string; angefordertImZeitraum: string; eingegangenImZeitraum: string; anforderungen: number; verstoesse: number; hinweise: number; mitParagraph7: number };
+}
