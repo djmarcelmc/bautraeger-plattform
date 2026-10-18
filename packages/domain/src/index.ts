@@ -12,3 +12,4 @@ export * from "./bauzeit.js";
 export * from "./sepa.js";
 export * from "./abnahme.js";
 export * from "./mabv-pruefung.js";
+export * from "./cockpit.js";

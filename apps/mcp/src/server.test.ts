@@ -173,4 +173,26 @@ describe("MCP-Server", () => {
     expect(d.summen.vertragssumme).toBe("792.400,00 €");
     expect(d.feststellungen[0]).toMatchObject({ kaufvertrag: "KV-101-002", rechnungsnr: "ZA-2026-00002", schwere: "verstoss" });
   });
+
+  it("liefert die Aufgaben aus dem Cockpit", async () => {
+    vi.stubGlobal("fetch", async () =>
+      new Response(
+        JSON.stringify({
+          stichtag: "2026-10-18",
+          anzahl: { hoch: 1, mittel: 1, info: 0 },
+          kennzahlen: {},
+          aufgaben: [
+            { bereich: "verkauf", dringlichkeit: "hoch", titel: "Zahlung überfällig: ZA-2026-00002", text: "seit 68 Tagen", betrag: "121680", projekt: "101 LINDENWEG" },
+            { bereich: "bau", dringlichkeit: "mittel", titel: "3 Vorgänge über Plan-Ende", text: "…" },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "aufgaben", arguments: { nurDringend: true } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.aufgaben).toHaveLength(1);
+    expect(d.aufgaben[0]).toMatchObject({ titel: "Zahlung überfällig: ZA-2026-00002", betrag: "121.680,00 €" });
+  });
 });

@@ -9,9 +9,11 @@ import { MabvPruefberichtService } from "./auswertungen/mabv-pruefbericht.servic
 import { BauzeitController } from "./bauzeit/bauzeit.controller.js";
 import { BauzeitService } from "./bauzeit/bauzeit.service.js";
 import { BuergschaftenController } from "./sepa/buergschaften.controller.js";
+import { BuergschaftenService } from "./sepa/buergschaften.service.js";
 import { ZahlungslaufController } from "./sepa/zahlungslauf.controller.js";
 import { AbnahmenController } from "./abnahme/abnahmen.controller.js";
 import { MangelvorlagenController } from "./abnahme/mangelvorlagen.controller.js";
+import { CockpitController } from "./cockpit/cockpit.controller.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
 import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
@@ -55,6 +57,7 @@ class HealthController {
     MahnwesenController,
     AuswertungenController,
     BauzeitController,
+    CockpitController,
     AbnahmenController,
     MangelvorlagenController,
     ZahlungslaufController,
@@ -70,6 +73,7 @@ class HealthController {
     AuswertungenService,
     MabvPruefberichtService,
     BauzeitService,
+    BuergschaftenService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],

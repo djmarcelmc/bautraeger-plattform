@@ -13,7 +13,7 @@ Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artif
 | `packages/db` | PostgreSQL-Schema (Drizzle), Migrationen, Demodaten |
 | `apps/api` | REST-API (NestJS): Stammdaten, Verkauf (Kaufverträge, Bautenstand, Zahlungsanforderungen, offene Posten), Kosten (Gewerke, Handwerkerverträge, Nachträge, Eingangsrechnungen), Mängel (Rügen, Fristen), Dokumente, Änderungsprotokoll, DATEV-Export |
 | `apps/mcp` | MCP-Server (stdio und Streamable HTTP) mit Tools für KI-Assistenten |
-| `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Auswertungen (Liquidität, Liquiditätsplan nach KW, MaBV-Prüfbericht, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
+| `apps/web` | Weboberfläche (Next.js): Cockpit (Aufgaben aus allen Bereichen), Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Auswertungen (Liquidität, Liquiditätsplan nach KW, MaBV-Prüfbericht, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
 | `docs/` | Anleitungen: [Deployment auf dem vServer](docs/deployment.md), [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) |
 | `deploy/`, `Dockerfile`, `docker-compose.prod.yml` | Produktivbetrieb: Caddy (HTTPS, Passwortschutz), PostgreSQL, tägliche Sicherungen, Update-Skript |
 
@@ -46,6 +46,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 
 | Methode & Pfad | Zweck |
 | --- | --- |
+| `GET /api/cockpit` | Aufgaben aus allen Bereichen nach Dringlichkeit und Kennzahlen für die Startseite |
 | `GET/POST /api/gesellschaften`, `GET/PUT /api/gesellschaften/:id` | Gesellschaften |
 | `GET /api/partner?suche=&rolle=`, `GET /api/partner/naechste-nr`, `POST`, `GET/PUT /api/partner/:id` | Geschäftspartner |
 | `GET /api/projekte?suche=&abgeschlossen=nein\|ja\|alle`, `GET /api/projekte/naechste-nr?gesellschaftId=` | Projektliste, Nummernvorschlag |
@@ -97,7 +98,7 @@ DATABASE_URL=... node apps/mcp/dist/index.js --http   # http://localhost:3002/mc
 ```
 
 Tools: `mabv_ratenplan_berechnen`, `handwerker_pruefkette`, `projekte_auflisten`, `offene_zahlungsanforderungen`
-(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften` und `mabv_pruefbericht` (über die REST-API, wenn
+(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften` `mabv_pruefbericht` und `aufgaben` (über die REST-API, wenn
 `API_URL` gesetzt ist – dort gelten dieselben Prüfregeln wie in der Oberfläche).
 
 Dokumente werden lokal unter `DOKUMENTE_PFAD` (Standard `data/dokumente`) abgelegt; eine S3-Ablage kann über die

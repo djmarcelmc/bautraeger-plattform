@@ -384,6 +384,33 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "aufgaben",
+      {
+        title: "Aufgaben (Cockpit)",
+        description:
+          "Was ist heute zu tun? Offene Aufgaben aus allen Bereichen, nach Dringlichkeit sortiert: überfällige Zahlungen, anforderbare Raten, Rechnungen prüfen/freigeben/zahlen (Skontofristen), Mängelfristen, Bürgschaften, Bauverzug, zu meldender Bautenstand, Abnahmen, Bauabzugsteuer-Termine.",
+        inputSchema: { nurDringend: z.boolean().optional(), bereich: z.enum(["verkauf", "kosten", "maengel", "sicherheiten", "bau", "steuern", "einstellungen"]).optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ nurDringend, bereich }) => {
+        const d = await apiGet<{
+          stichtag: string;
+          anzahl: { hoch: number; mittel: number; info: number };
+          kennzahlen: Record<string, string | number>;
+          aufgaben: { bereich: string; dringlichkeit: string; titel: string; text: string; datum?: string | null; betrag?: string | null; projekt?: string | null }[];
+        }>("/cockpit");
+        const liste = d.aufgaben.filter((a) => (!nurDringend || a.dringlichkeit === "hoch") && (!bereich || a.bereich === bereich));
+        if (!liste.length) return text(nurDringend ? "Keine dringenden Aufgaben." : "Keine offenen Aufgaben.");
+        return json({
+          stichtag: d.stichtag,
+          anzahl: d.anzahl,
+          aufgaben: liste.map((a) => ({ ...a, betrag: a.betrag ? `${formatDe(money(a.betrag))} €` : undefined })),
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(
