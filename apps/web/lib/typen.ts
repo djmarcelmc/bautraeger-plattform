@@ -10,6 +10,7 @@ export interface Gesellschaft {
   iban: string | null;
   bic: string | null;
   steuernummer: string | null;
+  steuerberaterEmail: string | null;
 }
 
 export interface Partner {

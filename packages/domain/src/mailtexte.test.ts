@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BenachrichtigungEinstellung, mailAufgaben, mailAusText, mailMangelEingang, mailMangelGemeldet, mailMangelStatus, SchreibenVersandEingabe, schreibenVorlage } from "./mailtexte.js";
+import { BenachrichtigungEinstellung, mailAufgaben, mailAusText, mailDatevExport, mailMangelEingang, mailMangelGemeldet, mailMangelStatus, SchreibenVersandEingabe, schreibenVorlage } from "./mailtexte.js";
 
 const m = { bautraeger: "Muster Wohnbau GmbH", projekt: "101 LINDENWEG", nr: "101-7", titel: "Balkontür <klemmt>", ort: "Wohnzimmer", einheit: "02", kaeufer: "Max Beispiel", beschreibung: "Zeile 1\nZeile 2", fotos: 2 };
 
@@ -54,5 +54,19 @@ describe("Schreiben per E-Mail", () => {
     expect(m.html.match(/<p /g)).toHaveLength(3);
     expect(SchreibenVersandEingabe.parse({ an: "a@x.de; b@y.de", betreff: "x", text: "y" }).an).toEqual(["a@x.de", "b@y.de"]);
     expect(SchreibenVersandEingabe.safeParse({ an: "kaputt", betreff: "x", text: "y" }).success).toBe(false);
+  });
+});
+
+describe("mailDatevExport", () => {
+  const d = { gesellschaft: "Muster Wohnbau GmbH", beraternr: 12345, mandantennr: 1, stapel: "EXTF-20261018120000", von: "2026-01-01", bis: "2026-10-31", anzahl: 42, dateiname: "EXTF-20261018120000_1_2026-01-01_2026-10-31.csv", belegeLink: "https://x.de/buchhaltung/stapel/EXTF-20261018120000?g=abc&belege=1", uebersichtLink: "https://x.de/steuerberater" };
+  it("Betreff mit Zeitraum und Anzahl, Link zu den Belegen", () => {
+    const m = mailDatevExport(d);
+    expect(m.betreff).toBe("DATEV-Buchungsstapel Muster Wohnbau GmbH: 01.01.2026 – 31.10.2026 (42 Buchungen)");
+    expect(m.text).toContain("12345 / 1");
+    expect(m.text).toContain(d.belegeLink);
+    expect(m.html).toContain('href="https://x.de/buchhaltung/stapel/EXTF-20261018120000?g=abc&amp;belege=1"');
+  });
+  it("kennzeichnet erneuten Versand", () => {
+    expect(mailDatevExport({ ...d, erneut: true }).betreff).toMatch(/– erneut$/);
   });
 });

@@ -3523,3 +3523,37 @@ table.saldentabelle tr.postenzeile ul {
 .kostentabelle .badge.klein {
   margin-left: 6px;
 }
+
+/* ------------------------------------------------------------------ Versand an den Steuerberater */
+.versandvermerk {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.versandvermerk.gesendet {
+  color: var(--gut);
+}
+.versandvermerk.fehler {
+  color: var(--gefahr);
+}
+.versandvermerk.wartend,
+.versandvermerk.protokolliert {
+  color: var(--warnung);
+}
+.stapelzeile {
+  display: grid;
+}
+.meldung-kurz,
+.fehler-kurz {
+  font-size: 12.5px;
+  align-self: center;
+}
+.meldung-kurz {
+  color: var(--gut);
+}
+.fehler-kurz {
+  color: var(--gefahr);
+}

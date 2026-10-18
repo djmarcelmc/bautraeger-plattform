@@ -1,11 +1,23 @@
 import { QUELLEN, type Kontierung, type QuelleTyp } from "@bt/domain";
-import { BookOpenCheck, FileClock, RefreshCw, TriangleAlert, Undo2 } from "lucide-react";
+import { BookOpenCheck, FileClock, Mail, RefreshCw, TriangleAlert, Undo2 } from "lucide-react";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 import type { Gesellschaft } from "@/lib/typen";
-import { kontierungSpeichern, kontierungZuruecksetzen } from "./aktionen";
+import { kontierungSpeichern, kontierungZuruecksetzen, stapelSenden } from "./aktionen";
 import { ExportFormular } from "./ExportFormular";
+import { StapelSenden } from "./StapelSenden";
+
+const VERSAND_TEXT = { wartend: "wird gesendet", gesendet: "gesendet", protokolliert: "protokolliert (kein Versandweg)", fehler: "Versand fehlgeschlagen" } as const;
+
+/** Letzter Versand eines Stapels an den Steuerberater. */
+function VersandVermerk({ v }: { v: { an: string[]; status: keyof typeof VERSAND_TEXT; fehler: string | null; angelegtAm: string; gesendetAm: string | null } }) {
+  return (
+    <span className={`versandvermerk ${v.status}`} title={v.fehler ?? undefined}>
+      <Mail size={13} /> {VERSAND_TEXT[v.status]} an {v.an.join(", ")} · {deDatum((v.gesendetAm ?? v.angelegtAm).slice(0, 10))}
+    </span>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +41,7 @@ interface Zeile {
 }
 
 interface Journal {
-  gesellschaft: { id: string; nr: number; name: string; skr: string | null; sachkontenlaenge: number | null; datevBereit: boolean };
+  gesellschaft: { id: string; nr: number; name: string; skr: string | null; sachkontenlaenge: number | null; datevBereit: boolean; steuerberaterEmail: string | null };
   kontierung: Kontierung;
   kontierungGespeichert: boolean;
   abgleich: { neu: number; geaendert: number; geloescht: number; storniert: number };
@@ -92,7 +104,16 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
   const q = new URLSearchParams({ gesellschaftId: gid, von, bis, status, ...(quelle ? { quelle } : {}) });
   const [j, stapel] = await Promise.all([
     api<Journal>(`/buchhaltung/journal?${q}`),
-    api<{ stapel: string; exportiertAm: string; anzahl: number; von: string; bis: string }[]>(`/buchhaltung/stapel?gesellschaftId=${gid}`),
+    api<
+      {
+        stapel: string;
+        exportiertAm: string;
+        anzahl: number;
+        von: string;
+        bis: string;
+        versand: { an: string[]; status: "wartend" | "gesendet" | "fehler" | "protokolliert"; fehler: string | null; angelegtAm: string; gesendetAm: string | null } | null;
+      }[]
+    >(`/buchhaltung/stapel?gesellschaftId=${gid}`),
   ]);
   const k = j.kontierung;
   const sachkonto = new Map<string, string>([
@@ -211,10 +232,14 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
               <ul>
                 {stapel.map((s) => (
                   <li key={s.stapel}>
-                    <span>
-                      <b>{deDatum(s.exportiertAm)}</b> · {s.anzahl} Buchungen · {deDatum(s.von)} – {deDatum(s.bis)}
+                    <span className="stapelzeile">
+                      <span>
+                        <b>{deDatum(s.exportiertAm)}</b> · {s.anzahl} Buchungen · {deDatum(s.von)} – {deDatum(s.bis)}
+                      </span>
+                      {s.versand ? <VersandVermerk v={s.versand} /> : null}
                     </span>
                     <span className="knopfleiste">
+                      {j.gesellschaft.steuerberaterEmail ? <StapelSenden aktion={stapelSenden.bind(null, gid, s.stapel, !!s.versand)} erneut={!!s.versand} /> : null}
                       <a className="knopf zweitrangig klein" href={`/buchhaltung/stapel/${s.stapel}?g=${gid}`}>
                         Stapel
                       </a>
@@ -227,7 +252,7 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
               </ul>
             </details>
           ) : null}
-          <ExportFormular gesellschaftId={gid} von={von.slice(0, 4) === bis.slice(0, 4) ? von : `${bis.slice(0, 4)}-01-01`} bis={bis} bereit={j.gesellschaft.datevBereit} neu={j.summen.neu} />
+          <ExportFormular gesellschaftId={gid} von={von.slice(0, 4) === bis.slice(0, 4) ? von : `${bis.slice(0, 4)}-01-01`} bis={bis} bereit={j.gesellschaft.datevBereit} neu={j.summen.neu} steuerberaterEmail={j.gesellschaft.steuerberaterEmail} />
         </section>
         <section className="karte">
           <details className="kontierung" open={!j.kontierungGespeichert && j.summen.anzahl === 0}>

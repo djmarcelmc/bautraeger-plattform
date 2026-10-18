@@ -162,6 +162,13 @@
       "when": 1792345394971,
       "tag": "0022_iban_bestaetigung",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792347852394,
+      "tag": "0023_steuerberater_email",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "gesellschaft" ADD COLUMN "steuerberater_email" text;

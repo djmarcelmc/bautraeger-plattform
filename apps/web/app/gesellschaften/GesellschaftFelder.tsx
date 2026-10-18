@@ -22,6 +22,7 @@ export function GesellschaftFelder({ g, vorschlagNr }: { g?: Gesellschaft; vorsc
           ]}
         />
         <Feld label="Sachkontenlänge" name="sachkontenlaenge" wert={g?.sachkontenlaenge ?? 4} zahl />
+        <Feld label="E-Mail Steuerberater" name="steuerberaterEmail" typ="email" wert={g?.steuerberaterEmail} breit hinweis="erhält nach dem DATEV-Export den Buchungsstapel und den Link zu den Belegen" />
       </Gruppe>
       <Gruppe titel="Bankverbindung (SEPA-Auftraggeberkonto)">
         <Feld label="IBAN" name="iban" wert={g?.iban?.replace(/(.{4})/g, "$1 ").trim()} breit hinweis="Von diesem Konto werden die Zahlungsläufe überwiesen" />

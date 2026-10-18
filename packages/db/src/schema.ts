@@ -47,6 +47,8 @@ export const gesellschaft = pgTable("gesellschaft", {
   bic: text("bic"),
   /** Steuernummer des Leistungsempfängers (Bauabzugsteuer-Anmeldung). */
   steuernummer: text("steuernummer"),
+  /** E-Mail des Steuerberaters: erhält nach dem DATEV-Export den Buchungsstapel. */
+  steuerberaterEmail: text("steuerberater_email"),
   /** Briefbogen (PDF in der Dokumentablage) und Satzspiegel für Schreiben */
   briefbogen: jsonb("briefbogen").$type<Record<string, unknown>>(),
   /** Kontenzuordnung für das Buchungsjournal (DATEV); leer = Standard des Kontenrahmens */

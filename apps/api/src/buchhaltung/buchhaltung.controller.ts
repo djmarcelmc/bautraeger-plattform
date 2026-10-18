@@ -1,10 +1,13 @@
-import { BadRequestException, Body, Controller, Delete, Get, Header, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Header, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { schema } from "@bt/db";
-import { DatevExportEingabe, KontierungEingabe, kontierungFuer } from "@bt/domain";
+import { DatevExportEingabe, KontierungEingabe, kontierungFuer, mailDatevExport } from "@bt/domain";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
-import { and, eq, gte, isNotNull, lte } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lte } from "drizzle-orm";
+import { basisUrl, NachrichtenService } from "../benachrichtigung/nachrichten.service.js";
+import { SPEICHER, type Speicher } from "../dokumente/speicher.js";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
@@ -66,6 +69,8 @@ export class BuchhaltungController {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(BuchhaltungService) private readonly buchhaltung: BuchhaltungService,
+    @Inject(NachrichtenService) private readonly nachrichten: NachrichtenService,
+    @Inject(SPEICHER) private readonly speicher: Speicher,
   ) {}
 
   /** Journal einer Gesellschaft; vorher werden neue und geänderte Vorgänge automatisch gebucht. */
@@ -103,9 +108,77 @@ export class BuchhaltungController {
     return new StreamableFile(r.datei, { disposition: `attachment; filename="${r.dateiname}"` });
   }
 
+  /** Bisherige Stapel mit dem letzten Versand an den Steuerberater. */
   @Get("stapel")
-  stapel(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string) {
-    return this.buchhaltung.stapelListe(gesellschaftId);
+  async stapel(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string) {
+    const [liste, versand] = await Promise.all([this.buchhaltung.stapelListe(gesellschaftId), this.versandListe(gesellschaftId)]);
+    return liste.map((s) => ({ ...s, versand: versand.find((v) => v.anhaenge[0]?.dateiname.startsWith(s.stapel)) ?? null }));
+  }
+
+  private async versandListe(gesellschaftId: string) {
+    const n = schema.nachricht;
+    return this.db
+      .select({ an: n.an, status: n.status, fehler: n.fehler, angelegtAm: n.angelegtAm, gesendetAm: n.gesendetAm, anhaenge: n.anhaenge })
+      .from(n)
+      .where(and(eq(n.anlass, "datev_export"), eq(n.bezugId, gesellschaftId)))
+      .orderBy(desc(n.angelegtAm))
+      .limit(100);
+  }
+
+  /**
+   * Stapel per E-Mail an den Steuerberater: EXTF-Datei im Anhang (in der Dokumentablage der Gesellschaft abgelegt),
+   * Belege als Link auf das ZIP. Versand über den Postausgang (mit Wiederholung bei Fehlern).
+   */
+  @Post("stapel/:stapel/senden")
+  async senden(@Param("stapel") stapel: string, @Body() body: unknown, @Benutzer() benutzer: string) {
+    if (!/^EXTF-\d{14}$/.test(stapel)) throw new NotFoundException("Exportstapel nicht gefunden");
+    const { gesellschaftId, erneut } = pruefe(z.object({ gesellschaftId: z.uuid("Gesellschaft wählen"), erneut: z.boolean().optional() }), body);
+    const ges = await this.buchhaltung.gesellschaft(gesellschaftId);
+    if (!ges.steuerberaterEmail) throw new ConflictException("Bei der Gesellschaft ist keine E-Mail-Adresse des Steuerberaters hinterlegt.");
+    const r = await this.buchhaltung.stapelErneut(gesellschaftId, stapel);
+    const zeilen = await this.db.select({ belegdatum: schema.buchung.belegdatum }).from(schema.buchung).where(and(eq(schema.buchung.gesellschaftId, gesellschaftId), eq(schema.buchung.exportStapel, stapel)));
+    const von = zeilen.reduce((a, z) => (z.belegdatum < a ? z.belegdatum : a), zeilen[0]!.belegdatum);
+    const bis = zeilen.reduce((a, z) => (z.belegdatum > a ? z.belegdatum : a), zeilen[0]!.belegdatum);
+    const inhalt = Buffer.from(r.datei);
+    const speicherKey = `${ges.mandantId}/${new Date().getFullYear()}/${randomUUID()}`;
+    await this.speicher.speichern(speicherKey, inhalt);
+    const mail = mailDatevExport({
+      gesellschaft: ges.name,
+      beraternr: ges.datevBeraternr!,
+      mandantennr: ges.datevMandantennr!,
+      stapel,
+      von,
+      bis,
+      anzahl: r.anzahl,
+      dateiname: r.dateiname,
+      belegeLink: `${basisUrl()}/buchhaltung/stapel/${stapel}?g=${gesellschaftId}&belege=1`,
+      uebersichtLink: `${basisUrl()}/steuerberater`,
+      erneut,
+    });
+    return this.db.transaction(async (tx) => {
+      const [dok] = await tx
+        .insert(schema.dokument)
+        .values({
+          mandantId: ges.mandantId,
+          objektTyp: "gesellschaft",
+          objektId: gesellschaftId,
+          ordner: "DATEV-Export",
+          beschreibung: `Buchungsstapel per E-Mail an ${ges.steuerberaterEmail}`.slice(0, 300),
+          dateiname: r.dateiname,
+          mimeType: "text/csv",
+          groesse: inhalt.length,
+          speicherKey,
+          sha256: createHash("sha256").update(inhalt).digest("hex"),
+          hochgeladenVon: benutzer,
+        })
+        .returning();
+      const nachrichtId = await this.nachrichten.einreihen(
+        { an: [ges.steuerberaterEmail!], mail, anlass: "datev_export", bezugId: gesellschaftId, mandantId: ges.mandantId, anhaenge: [{ dokumentId: dok!.id, dateiname: r.dateiname }] },
+        tx,
+      );
+      await protokollieren(tx, { tabelle: "buchung", id: gesellschaftId, aktion: "update", neu: { versand: stapel, an: ges.steuerberaterEmail, buchungen: r.anzahl }, benutzer });
+      return { nachrichtId, an: ges.steuerberaterEmail, dateiname: r.dateiname, anzahl: r.anzahl };
+    });
   }
 
   /** Einen früheren Stapel erneut herunterladen (keine neue Festschreibung). */
