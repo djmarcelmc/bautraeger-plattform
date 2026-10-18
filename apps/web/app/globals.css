@@ -2747,4 +2747,129 @@ main.portal {
   font-size: 12px;
   text-align: center;
   padding: 0 12px;
+
+.uploadfeld .portalfreigabe {
+  grid-column: auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  flex-wrap: nowrap;
+}
+.uploadfeld .portalfreigabe input {
+  width: auto;
+}
+
+/* ------------------------------------------------------------------ Käuferportal: Bereiche */
+.portal-reiter {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -4px 16px;
+  padding: 0 4px;
+}
+.portal-reiter a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 99px;
+  color: var(--text-2);
+  font-weight: 550;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.portal-reiter a.aktiv {
+  background: var(--flaeche);
+  color: var(--akzent);
+  border-color: var(--linie);
+  box-shadow: var(--schatten);
+}
+.portal-zahl {
+  background: var(--akzent);
+  color: #fff;
+  border-radius: 99px;
+  font-size: 11px;
+  padding: 1px 7px;
+}
+.portal-zahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.portal-zahlen small {
+  display: block;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.portal-zahlen b {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.portal-zahlen .warnung b {
+  color: var(--gefahr);
+}
+.portal-balken {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--flaeche-2);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.portal-balken div {
+  height: 100%;
+  background: var(--gut);
+  border-radius: 99px;
+}
+.portal-mehr {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 550;
+}
+.portal-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0 16px;
+}
+.portal-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius-klein);
+  font-size: 13.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  color: var(--text);
+  text-decoration: none;
+}
+.portal-rechts {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.portal-status.ueberfaellig {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.portal-summe {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 2px solid var(--linie);
+  font-variant-numeric: tabular-nums;
+}
+.portal-status.neutral {
+  background: var(--flaeche-2);
+  color: var(--text-2);
+}
+.portal-rechts b {
+  white-space: nowrap;
 }

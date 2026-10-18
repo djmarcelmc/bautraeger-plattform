@@ -43,3 +43,30 @@ export function bildformat(kopf: Uint8Array): "image/jpeg" | "image/png" | "imag
   if (ascii(4, 8) === "ftyp" && ["heic", "heix", "mif1", "msf1", "heif"].includes(ascii(8, 12))) return "image/heic";
   return null;
 }
+
+/** Ordner der Dokumentablage, deren Inhalte Käufer im Portal sehen. */
+export const PORTAL_ORDNER = ["Schriftverkehr", "Käuferportal"] as const;
+
+export type PortalRatenStand = "nicht_faellig" | "demnaechst" | "angefordert" | "ueberfaellig" | "teilbezahlt" | "bezahlt" | "verrechnet";
+export const PORTAL_RATEN_TEXT: Record<PortalRatenStand, string> = {
+  nicht_faellig: "noch nicht fällig",
+  demnaechst: "Bautenstand erreicht – Anforderung folgt",
+  angefordert: "angefordert",
+  ueberfaellig: "überfällig",
+  teilbezahlt: "teilweise bezahlt",
+  bezahlt: "bezahlt",
+  verrechnet: "verrechnet",
+};
+
+/**
+ * Ratenstand aus Käufersicht. Interne Zustände (z. B. gesperrt wegen fehlender Fälligkeitsvoraussetzungen)
+ * erscheinen als „noch nicht fällig“.
+ */
+export function portalRatenStand(r: { status: string; betrag: string; faelligAm: string | null }, stichtag: string): PortalRatenStand {
+  if (Number(r.betrag) < 0) return r.status === "offen" || r.status === "anforderbar" || r.status === "gesperrt" ? "nicht_faellig" : "verrechnet";
+  if (r.status === "bezahlt") return "bezahlt";
+  if (r.status === "teilbezahlt") return r.faelligAm && r.faelligAm < stichtag ? "ueberfaellig" : "teilbezahlt";
+  if (r.status === "angefordert") return r.faelligAm && r.faelligAm < stichtag ? "ueberfaellig" : "angefordert";
+  if (r.status === "anforderbar") return "demnaechst";
+  return "nicht_faellig";
+}

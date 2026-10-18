@@ -1,3 +1,4 @@
+import { PORTAL_ORDNER } from "@bt/domain";
 import { FileText, Paperclip } from "lucide-react";
 import { dokumentAusblenden, dokumentHochladen } from "@/app/dokumente/aktionen";
 import { api } from "@/lib/api";
@@ -6,6 +7,7 @@ import { Formular } from "./Formular";
 interface Dokument {
   id: string;
   dateiname: string;
+  ordner: string | null;
   mimeType: string | null;
   groesse: number | null;
   beschreibung: string | null;
@@ -36,6 +38,7 @@ export async function Dokumente({ objektTyp, objektId, pfad }: { objektTyp: stri
                 )}
                 <a href={`/dokumente/${d.id}`} target="_blank" rel="noreferrer" className="dokname">
                   {d.dateiname}
+                  {objektTyp === "kaufvertrag" && (PORTAL_ORDNER as readonly string[]).includes(d.ordner ?? "") ? <span className="badge info klein">im Käuferportal</span> : null}
                   <small>
                     {[d.beschreibung, groesse(d.groesse), new Date(d.angelegtAm).toLocaleDateString("de-DE"), d.hochgeladenVon]
                       .filter(Boolean)
@@ -62,6 +65,11 @@ export async function Dokumente({ objektTyp, objektId, pfad }: { objektTyp: stri
         <div className="uploadfeld">
           <input type="file" name="datei" multiple required />
           <input name="beschreibung" placeholder="Beschreibung (optional)" />
+          {objektTyp === "kaufvertrag" ? (
+            <label className="haken-reihe portalfreigabe">
+              <input type="checkbox" name="ordner" value="Käuferportal" /> im Käuferportal zeigen
+            </label>
+          ) : null}
         </div>
       </Formular>
     </div>

@@ -19,8 +19,8 @@ export function PortalLinkErzeugen({
   const [kopiert, setKopiert] = useState(false);
   const [laeuft, starte] = useTransition();
   const mail = ergebnis.link
-    ? `mailto:${email ?? ""}?subject=${encodeURIComponent("Ihr Link für Mängelanzeigen")}&body=${encodeURIComponent(
-        `${anrede},\n\nüber den folgenden persönlichen Link können Sie uns Mängel an Ihrer Wohnung jederzeit mit Fotos melden und den Bearbeitungsstand verfolgen:\n\n${ergebnis.link}\n\nBitte geben Sie den Link nicht weiter.\n\nMit freundlichen Grüßen`,
+    ? `mailto:${email ?? ""}?subject=${encodeURIComponent("Ihr persönliches Käuferportal")}&body=${encodeURIComponent(
+        `${anrede},\n\nüber den folgenden persönlichen Link sehen Sie jederzeit den Zahlungsstand Ihres Kaufvertrags, Ihre Unterlagen und Sonderwünsche und können uns Mängel mit Fotos melden:\n\n${ergebnis.link}\n\nBitte geben Sie den Link nicht weiter.\n\nMit freundlichen Grüßen`,
       )}`
     : undefined;
   return (
