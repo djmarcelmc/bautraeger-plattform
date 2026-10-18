@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Query, StreamableFile } from "@nestjs/common";
 import { schema } from "@bt/db";
-import { ZahlungslaufEingabe, ibanGueltig, money, pain001, summe } from "@bt/domain";
+import { ZahlungslaufEingabe, bauabzugFrist, ibanGueltig, money, pain001, summe } from "@bt/domain";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { KontextService } from "../common/kontext.service.js";
@@ -12,11 +12,6 @@ import { VerkaufService } from "../verkauf/verkauf.service.js";
 const { zahlungslauf: zl, zahlungsausgang: za, eingangsrechnung: er, handwerkervertrag: hv, gewerk: gw, projekt: p, gesellschaft: g, geschaeftspartner: gp } = schema;
 const heute = () => new Date().toISOString().slice(0, 10);
 const istDatum = (d?: string) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : undefined);
-/** Bauabzugsteuer ist bis zum 10. des Folgemonats anzumelden und abzuführen (§ 48a EStG). */
-const bauabzugFaellig = (d: string) => {
-  const [j, m] = d.split("-").map(Number);
-  return new Date(Date.UTC(j!, m!, 10)).toISOString().slice(0, 10);
-};
 
 @Controller("zahlungslaeufe")
 export class ZahlungslaufController {
@@ -178,7 +173,7 @@ export class ZahlungslaufController {
       ...kopf,
       gesellschaft,
       zahlungen,
-      bauabzugsteuer: { summe: bauabzug.toFixed(2), faelligAm: bauabzug.gt(0) ? bauabzugFaellig(lauf.ausfuehrungAm) : null },
+      bauabzugsteuer: { summe: bauabzug.toFixed(2), faelligAm: bauabzug.gt(0) ? bauabzugFrist(lauf.ausfuehrungAm.slice(0, 7)) : null },
       skonto: summe(zahlungen.map((z) => money(z.skonto))).toFixed(2),
     };
   }

@@ -66,6 +66,8 @@ export const IMPORT_SPALTEN: Record<ImportArt, ImportSpalte[]> = {
       beispiel: "31.12.2027",
       hinweis: "Datum TT.MM.JJJJ (nur Handwerker, § 48b EStG)",
     },
+    { schluessel: "steuernummer", titel: "Steuernummer", aliase: ["StNr", "St.-Nr."], beispiel: "93815/08152", hinweis: "für die Bauabzugsteuer-Anmeldung" },
+    { schluessel: "finanzamt", titel: "Finanzamt", aliase: ["zuständiges Finanzamt"], beispiel: "Stuttgart II" },
   ],
   einheiten: [
     { schluessel: "nr", titel: "Nr.", aliase: ["Nummer", "Einheit", "Einheitennr", "WE-Nr", "Whg-Nr"], pflicht: true, beispiel: "W01" },

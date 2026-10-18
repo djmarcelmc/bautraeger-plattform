@@ -10,6 +10,7 @@ describe("Rollen und Rechte", () => {
     expect(r("POST", "/eingangsrechnungen/abc/freigeben")).toBe("kostenFreigeben");
     expect(r("POST", "/eingangsrechnungen/abc/zahlung")).toBe("zahlungen");
     expect(r("POST", "/zahlungslaeufe")).toBe("zahlungen");
+    expect(r("POST", "/bauabzug/anmeldungen")).toBe("zahlungen");
     expect(r("POST", "/kaufvertraege/abc/portal")).toBe("verkauf");
     expect(r("POST", "/projekte/abc/zahlungsanforderungen")).toBe("verkauf");
     expect(r("POST", "/zahlungseingaenge")).toBe("verkaufZahlungen");

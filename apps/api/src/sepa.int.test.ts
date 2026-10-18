@@ -97,7 +97,7 @@ describe.skipIf(!url)("Zahlungslauf und Bürgschaften (Integration)", () => {
     const d = (await http.get(`/api/zahlungslaeufe/${laufId}`)).body;
     expect(d.zahlungen).toHaveLength(2);
     expect(d.bauabzugsteuer.summe).toBe("1470.00");
-    expect(d.bauabzugsteuer.faelligAm).toMatch(/-10$/);
+    expect(d.bauabzugsteuer.faelligAm).toMatch(/-1[012]$/);
     expect(d.skonto).toBe("400.00");
     expect(d.xml).toBeUndefined();
 

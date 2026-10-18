@@ -156,6 +156,24 @@ describe("MCP-Server", () => {
     expect(d.summen.handlungsbedarf).toBe(1);
   });
 
+  it("zeigt die Bauabzugsteuer je Monat und Handwerker", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      expect(new URL(url).searchParams.get("monate")).toBe("12");
+      return new Response(
+        JSON.stringify({
+          monate: [{ monatText: "Oktober 2026", faelligAm: "2026-11-10", ueberfaellig: false, summe: { abzugsbetrag: "1800" }, zeilen: [{ handwerkerId: "h1", gegenleistung: "12000", abzugsbetrag: "1800", status: "offen", anmeldung: null }] }],
+          handwerker: [{ id: "h1", suchcode: "ROHBAU", firma: "Rohbau KG", nachname: null, finanzamt: "Stuttgart II" }],
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "bauabzugsteuer", arguments: {} });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d[0]).toMatchObject({ monat: "Oktober 2026", termin: "2026-11-10", abzugGesamt: "1.800,00 €" });
+    expect(d[0].handwerker[0]).toMatchObject({ name: "Rohbau KG", finanzamt: "Stuttgart II", abzug: "1.800,00 €", stand: "anzumelden" });
+  });
+
   it("fasst den MaBV-Prüfbericht mit Feststellungen zusammen", async () => {
     vi.stubGlobal("fetch", async (url: string) => {
       const u = new URL(url);

@@ -27,6 +27,8 @@ import { VerkaufService } from "./verkauf/verkauf.service.js";
 import { ZahlungenController } from "./verkauf/zahlungen.controller.js";
 import { EinheitenController } from "./einheiten/einheiten.controller.js";
 import { ImportController } from "./import/import.controller.js";
+import { BauabzugController } from "./bauabzug/bauabzug.controller.js";
+import { BauabzugService } from "./bauabzug/bauabzug.service.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
 import { KostenController } from "./kosten/kosten.controller.js";
 import { KostenService } from "./kosten/kosten.service.js";
@@ -55,6 +57,7 @@ class HealthController {
     ProjekteController,
     EinheitenController,
     ImportController,
+    BauabzugController,
     ProtokollController,
     DokumenteController,
     KaufvertraegeController,
@@ -85,6 +88,7 @@ class HealthController {
     BauzeitService,
     BuergschaftenService,
     CockpitService,
+    BauabzugService,
     NachrichtenService,
     Versandlauf,
     { provide: MAIL_VERSAND, useFactory: () => versandAusUmgebung() },

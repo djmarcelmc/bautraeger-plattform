@@ -71,6 +71,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET/POST /api/projekte/:id/bauzeitenplan`, `POST …/bauzeitenplan/verschieben`, `POST /api/projekte/:id/vorgaenge`, `PUT/DELETE /api/vorgaenge/:id` | Bauzeitenplan: Vorlage (25 Vorgänge mit Abhängigkeiten, alle MaBV-Meilensteine), Vorgänge mit Gewerken und Vorgängern (Nachfolger rücken bei Verzug automatisch nach, Zirkelbezüge werden abgewiesen), kritischer Pfad, Plan verschieben |
 | `GET /api/auswertungen/liquiditaetsplan?projektId=&wochen=&anfangsbestand=&unverkauft=1&skonto=0&stichtag=` | Liquiditätsplan nach Kalenderwochen; Kosten nach Prüfkette der Verträge (Nachlass, Umlagen, Einbehalte, Skonto), Schlusszahlungen und Gewährleistungseinbehalte (auch `format=xlsx`) |
 | `GET /api/zahlungslaeufe/vorschlag?ausfuehrungAm=`, `POST /api/zahlungslaeufe`, `GET /api/zahlungslaeufe[/:id]`, `GET …/:id/xml` | Zahlungsvorschlag, Zahlungslauf mit Verbuchung, SEPA-Datei (pain.001.001.09) |
+| `GET /api/bauabzug?monate=`, `GET /api/bauabzug/beleg?gesellschaftId=&handwerkerId=&monat=`, `POST /api/bauabzug/anmeldungen`, `DELETE /api/bauabzug/anmeldungen/:id` | Bauabzugsteuer (§ 48a EStG): Monatsübersicht je Handwerker mit Termin, Abrechnungsbeleg und Angaben für die Anmeldung, Erfassung von Anmeldung/Abführung |
 | `GET/POST /api/buergschaften?status=offen\|handlung&richtung=`, `GET/PUT/DELETE /api/buergschaften/:id` | Bürgschaften (erhalten/§ 7 MaBV) mit Ablauf- und Rückgabeüberwachung |
 | `GET /api/abnahmen?projektId=`, `POST /api/projekte/:id/abnahmen`, `GET/PUT/DELETE /api/abnahmen/:id`, `POST …/:id/maengel`, `POST …/:id/abschliessen` | Abnahmen (Sondereigentum, Gemeinschaftseigentum, Handwerker) mit Mängeln, Zählerständen, Schlüsseln; Abschluss setzt Übergabe/Abnahme und Gewährleistung |
 | `GET/POST /api/mangelvorlagen`, `POST /api/mangelvorlagen/standard`, `PUT/DELETE /api/mangelvorlagen/:id` | Standardmängel-Katalog |
@@ -105,7 +106,7 @@ DATABASE_URL=... node apps/mcp/dist/index.js --http   # http://localhost:3002/mc
 ```
 
 Tools: `mabv_ratenplan_berechnen`, `handwerker_pruefkette`, `projekte_auflisten`, `offene_zahlungsanforderungen`
-(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften` `mabv_pruefbericht` und `aufgaben` (über die REST-API, wenn
+(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften`, `bauabzugsteuer`, `mabv_pruefbericht` und `aufgaben` (über die REST-API, wenn
 `API_URL` gesetzt ist – dort gelten dieselben Prüfregeln wie in der Oberfläche).
 
 Dokumente werden lokal unter `DOKUMENTE_PFAD` (Standard `data/dokumente`) abgelegt; eine S3-Ablage kann über die
@@ -128,7 +129,7 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓ – Datenimport aus Excel/CSV ✓
 3. ~~Dokumentablage an Projekten, Einheiten, Partnern und Kaufverträgen~~ ✓
 4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – offen: Mahnwesen, Zusatzleistungen/Gutschriften, Versand per Outlook
-5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – SEPA-Zahlungslauf (pain.001.001.09) und Bürgschaften ✓; offen: Rollen für Prüfung/Freigabe, Bauabzugsteuer-Anmeldung
+5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – SEPA-Zahlungslauf (pain.001.001.09) und Bürgschaften ✓; Rollen für Prüfung/Freigabe ✓, Bauabzugsteuer-Anmeldung mit Abrechnungsbeleg ✓
 6. ~~Mängelverwaltung mit Fotos, Rügen und Fristen~~ ✓ – Standardmängel-Katalog und Abnahmeprotokolle ✓
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
 8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – MaBV-Prüfbericht (§ 16) ✓

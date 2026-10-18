@@ -361,6 +361,50 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
 
   if (apiUrl)
     server.registerTool(
+      "bauabzugsteuer",
+      {
+        title: "Bauabzugsteuer (§ 48a EStG)",
+        description:
+          "Einbehaltene Bauabzugsteuer je Monat und Handwerker mit Anmeldetermin (10. des Folgemonats) und Stand: anzumelden, angemeldet, abgeführt oder Anmeldung zu berichtigen. Standard: letzte 12 Monate.",
+        inputSchema: { monate: z.number().int().min(1).max(36).optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ monate }) => {
+        const d = await apiGet<{
+          monate: {
+            monatText: string;
+            faelligAm: string;
+            ueberfaellig: boolean;
+            summe: { abzugsbetrag: string };
+            zeilen: { handwerkerId: string; gegenleistung: string; abzugsbetrag: string; status: string; anmeldung: { angemeldetAm: string; abgefuehrtAm: string | null } | null }[];
+          }[];
+          handwerker: { id: string; suchcode: string; firma: string | null; nachname: string | null; finanzamt: string | null }[];
+        }>(`/bauabzug?monate=${monate ?? 12}`);
+        const statusText: Record<string, string> = { offen: "anzumelden", angemeldet: "angemeldet, nicht abgeführt", abgefuehrt: "abgeführt", abweichung: "Anmeldung berichtigen" };
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        const name = new Map(d.handwerker.map((h) => [h.id, { name: h.firma ?? h.nachname ?? h.suchcode, finanzamt: h.finanzamt }]));
+        return json(
+          d.monate.map((m) => ({
+            monat: m.monatText,
+            termin: m.faelligAm,
+            terminUeberschritten: m.ueberfaellig,
+            abzugGesamt: euro(m.summe.abzugsbetrag),
+            handwerker: m.zeilen.map((z) => ({
+              name: name.get(z.handwerkerId)?.name ?? "–",
+              finanzamt: name.get(z.handwerkerId)?.finanzamt ?? "fehlt",
+              gegenleistung: euro(z.gegenleistung),
+              abzug: euro(z.abzugsbetrag),
+              stand: statusText[z.status] ?? z.status,
+              angemeldetAm: z.anmeldung?.angemeldetAm ?? null,
+              abgefuehrtAm: z.anmeldung?.abgefuehrtAm ?? null,
+            })),
+          })),
+        );
+      },
+    );
+
+  if (apiUrl)
+    server.registerTool(
       "mabv_pruefbericht",
       {
         title: "MaBV-Prüfbericht (§ 16 MaBV)",
