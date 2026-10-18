@@ -14,7 +14,8 @@ Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artif
 | `apps/api` | REST-API (NestJS): Stammdaten, Kaufverträge, Bautenstand, Zahlungsanforderungen, Zahlungseingänge, offene Posten, Dokumente, Änderungsprotokoll, DATEV-Export |
 | `apps/mcp` | MCP-Server (stdio und Streamable HTTP) mit Tools für KI-Assistenten |
 | `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Geschäftspartner, Gesellschaften |
-| `docs/` | Anleitungen, z. B. [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) für den M365-Admin |
+| `docs/` | Anleitungen: [Deployment auf dem vServer](docs/deployment.md), [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) |
+| `deploy/`, `Dockerfile`, `docker-compose.prod.yml` | Produktivbetrieb: Caddy (HTTPS, Passwortschutz), PostgreSQL, tägliche Sicherungen, Update-Skript |
 
 ## Schnellstart
 
@@ -59,6 +60,17 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 
 Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Bis zur Microsoft-Anmeldung
 wird der Benutzer übergangsweise aus dem Header `x-benutzer` gelesen.
+
+## Produktivbetrieb
+
+Die Plattform läuft als Docker-Stack auf einem vServer (geplant: **projectx.cubivivit.de**). Schritt für Schritt in
+[docs/deployment.md](docs/deployment.md); kurz:
+
+```bash
+cp .env.prod.example .env.prod   # ausfüllen
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+./deploy/update.sh               # spätere Updates (inkl. Sicherung vorab)
+```
 
 ## MCP-Server
 

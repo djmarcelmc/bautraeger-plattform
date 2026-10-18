@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dezimal, datum, ganzzahl, geld, pflichttext, text, uuidOptional } from "./felder.js";
+import { datum, dezimal, ganzzahl, ganzzahlOptional, geld, leerAlsUndefiniert, pflichttext, text, uuidOptional } from "./felder.js";
 
 export { normalisiereDezimal } from "./felder.js";
 
@@ -21,10 +21,10 @@ export const GesellschaftEingabe = z.object({
   nr: ganzzahl().positive(),
   name: pflichttext(),
   anschrift: text(500),
-  datevBeraternr: ganzzahl().min(1000).max(9999999).nullish(),
-  datevMandantennr: ganzzahl().min(1).max(99999).nullish(),
+  datevBeraternr: ganzzahlOptional(1000, 9999999),
+  datevMandantennr: ganzzahlOptional(1, 99999),
   skr: z.enum(["03", "04"]).default("03"),
-  sachkontenlaenge: ganzzahl().min(4).max(8).default(4),
+  sachkontenlaenge: leerAlsUndefiniert(ganzzahl().min(4).max(8).default(4)),
 });
 export type GesellschaftEingabe = z.infer<typeof GesellschaftEingabe>;
 
@@ -115,7 +115,7 @@ export const EINHEIT_TYP_TEXT: Record<(typeof EINHEIT_TYPEN)[number], string> = 
 export const EinheitEingabe = z.object({
   nr: pflichttext(20),
   typ: z.enum(EINHEIT_TYPEN),
-  bauabschnitt: ganzzahl().min(1).default(1),
+  bauabschnitt: leerAlsUndefiniert(ganzzahl().min(1).default(1)),
   etage: text(40),
   art: text(100),
   wohnflaeche: dezimal(2),

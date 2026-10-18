@@ -6,3 +6,5 @@ dist/
 coverage/
 *.tsbuildinfo
 data/
+backups/
+.env.prod
