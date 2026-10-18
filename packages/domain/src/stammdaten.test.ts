@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EinheitEingabe, PartnerEingabe, ProjektEingabe, ibanGueltig, normalisiereDezimal } from "./stammdaten.js";
+import { EinheitEingabe, GesellschaftEingabe, PartnerEingabe, ProjektEingabe, ibanGueltig, normalisiereDezimal } from "./stammdaten.js";
 
 describe("normalisiereDezimal", () => {
   it.each([
@@ -44,5 +44,15 @@ describe("Schemas", () => {
     expect(PartnerEingabe.safeParse({ ...basis, nachname: "Muster", email: "kein-mail" }).success).toBe(false);
     const ok = PartnerEingabe.parse({ ...basis, nachname: "Muster", iban: "de89 3704 0044 0532 0130 00", email: "" });
     expect(ok).toMatchObject({ suchcode: "MUSTER", iban: "DE89370400440532013000", email: null });
+  });
+
+  it("Gesellschaft: leere DATEV-Felder aus dem Formular → null, ungültige mit deutscher Meldung", () => {
+    const g = GesellschaftEingabe.parse({ nr: "1", name: "Muster GmbH", datevBeraternr: "", datevMandantennr: "", sachkontenlaenge: "4", skr: "03" });
+    expect(g).toMatchObject({ datevBeraternr: null, datevMandantennr: null, sachkontenlaenge: 4 });
+    expect(GesellschaftEingabe.parse({ nr: 1, name: "X", datevBeraternr: "1234567" }).datevBeraternr).toBe(1234567);
+    const fehler = GesellschaftEingabe.safeParse({ nr: 1, name: "X", datevBeraternr: "12" }).error!.issues[0]!.message;
+    expect(fehler).toBe("Mindestens 1000");
+    const deutsch = GesellschaftEingabe.safeParse({ nr: 1, name: "X", skr: "05" }).error!.issues[0]!.message;
+    expect(deutsch).not.toMatch(/expected|Invalid/);
   });
 });

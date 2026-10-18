@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// Fehlermeldungen von zod auf Deutsch (eigene Meldungen in den Schemas haben Vorrang)
+z.config(z.locales.de());
+
 /** Leerer String → null, sonst getrimmter Text. */
 export const text = (max = 200) =>
   z
@@ -49,6 +52,17 @@ export const datum = () =>
     .transform((s) => (s === "" ? null : s))
     .nullish();
 export const ganzzahl = () => z.coerce.number().int("Ganze Zahl erwartet");
+
+/** Leeres Formularfeld → undefined, damit ein Standardwert (.default) greift. */
+export const leerAlsUndefiniert = <T extends z.ZodType>(schema: T) => z.preprocess((v) => (v === "" ? undefined : v), schema);
+
+/** Optionale ganze Zahl: leeres Formularfeld → null (statt 0). */
+export const ganzzahlOptional = (min?: number, max?: number) => {
+  let zahl = z.coerce.number().int("Ganze Zahl erwartet");
+  if (min !== undefined) zahl = zahl.min(min, `Mindestens ${min}`);
+  if (max !== undefined) zahl = zahl.max(max, `Höchstens ${max}`);
+  return z.preprocess((v) => (v === "" || v === undefined ? null : v), zahl.nullable());
+};
 export const uuidOptional = () =>
   z
     .string()

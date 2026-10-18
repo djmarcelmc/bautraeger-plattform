@@ -26,5 +26,9 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.11",
     "@bt/domain": "workspace:*"
-  }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ]
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { datum, dezimal, ganzzahl, geld, text } from "./felder.js";
+import { datum, dezimal, ganzzahl, geld, leerAlsUndefiniert, text } from "./felder.js";
 import { MABV_ABSCHNITTE, ratenplanPruefen, type MabvAbschnitt } from "./mabv.js";
 import { D, money, summe, type Money } from "./money.js";
 
@@ -22,7 +22,7 @@ export const KaufvertragKonditionen = z.object({
   vormerkungEingetragenAm: datum(),
   lastenfreistellungGesichert: z.boolean().default(false),
   buergschaftNach7: z.boolean().default(false),
-  zahlungszielTage: ganzzahl().min(0).max(90).default(10),
+  zahlungszielTage: leerAlsUndefiniert(ganzzahl().min(0).max(90).default(10)),
   verzugszinsProzent: dezimal(4),
   anforderungssperre: z.boolean().default(false),
   mahnsperre: z.boolean().default(false),

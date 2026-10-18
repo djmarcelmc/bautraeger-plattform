@@ -75,3 +75,11 @@ describe("Hilfsfunktionen", () => {
   });
   it("formatiert Rechnungsnummern", () => expect(rechnungsnummer("ZA", 2026, 42)).toBe("ZA-2026-00042"));
 });
+
+describe("Leere Formularfelder", () => {
+  it("setzt beim leeren Zahlungsziel den Standard von 10 Tagen", async () => {
+    const { KaufvertragKonditionen } = await import("./verkauf.js");
+    const k = KaufvertragKonditionen.parse({ zahlungsanforderungAn: "00000000-0000-4000-8000-000000000001", zahlungszielTage: "" });
+    expect(k.zahlungszielTage).toBe(10);
+  });
+});

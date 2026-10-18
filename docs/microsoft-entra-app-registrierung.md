@@ -19,7 +19,8 @@ Dafür wird eine App-Registrierung in eurem Mandanten benötigt.
    - **Unterstützte Kontotypen:** *Nur Konten in diesem Organisationsverzeichnis (einzelner Mandant)*
    - **Umleitungs-URI:** Plattform **Web**, Adresse
      `http://localhost:3000/api/auth/callback/microsoft-entra-id`
-     (für die Entwicklung; die Adresse des späteren Produktivsystems wird nachgetragen)
+     (für die Entwicklung). Danach unter **Authentifizierung → URI hinzufügen** zusätzlich das Produktivsystem:
+     `https://projectx.cubivivit.de/api/auth/callback/microsoft-entra-id`
 4. **Registrieren** klicken.
 5. Auf der Übersichtsseite notieren:
    - **Anwendungs-ID (Client)**
