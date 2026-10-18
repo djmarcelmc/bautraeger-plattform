@@ -4,6 +4,12 @@
 set -eu
 TAGE="${BACKUP_TAGE:-14}"
 mkdir -p /backups
+# Beim ersten Start warten, bis die API die Datenbank angelegt hat (sonst wäre die erste Sicherung leer)
+for i in $(seq 1 60); do
+  [ "$(psql -Atc "select to_regclass('drizzle.__drizzle_migrations') is not null" 2>/dev/null)" = "t" ] && break
+  echo "[$(date -Iseconds)] warte auf die Datenbank-Migrationen …"
+  sleep 10
+done
 while true; do
   STEMPEL=$(date +%Y-%m-%d_%H%M)
   echo "[$(date -Iseconds)] Sicherung $STEMPEL startet"
