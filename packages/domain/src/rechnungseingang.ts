@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { suchcodeVorschlag } from "./import.js";
 import { money } from "./money.js";
 
 // Rechnungseingang: Rechnungen kommen per E-Mail (Postfach) oder Upload. Strukturierte E-Rechnungen (XRechnung als
@@ -230,6 +231,11 @@ export function eingangVorschlag(d: Rechnungsdaten, text: string, absender: stri
   const h = treffer?.liste[0];
   let sicherheit: EingangVorschlag["sicherheit"] = treffer?.sicherheit ?? null;
   if (treffer) gruende.push(treffer.grund);
+  // Schutz vor Rechnungsbetrug: abweichende Bankverbindung deutlich anzeigen
+  if (h && iban && h.iban && ibanNorm(h.iban) !== iban) {
+    gruende.push(`Achtung: IBAN auf der Rechnung (${iban}) weicht von der hinterlegten ab – vor Zahlung telefonisch beim Handwerker bestätigen`);
+    if (sicherheit === "sicher") sicherheit = "wahrscheinlich";
+  }
   if (!h) return { handwerkerId: null, handwerkervertragId: null, sicherheit: null, gruende: ["Handwerker nicht erkannt"] };
   const eigene = vertraege.filter((v) => v.handwerkerId === h!.id && !v.abgeschlossen);
   const such = `${d.referenz ?? ""} ${text}`.toLowerCase();
@@ -243,4 +249,51 @@ export function eingangVorschlag(d: Rechnungsdaten, text: string, absender: stri
   }
   if (vertrag?.offeneRechnung) gruende.push("Achtung: frühere Rechnung dieses Vertrags ist noch nicht bezahlt");
   return { handwerkerId: h.id, handwerkervertragId: vertrag?.id ?? null, sicherheit: vertrag ? sicherheit : sicherheit === "sicher" ? "wahrscheinlich" : "moeglich", gruende };
+}
+
+const FREEMAIL = /@(gmail|googlemail|gmx|web|t-online|outlook|hotmail|yahoo|icloud|freenet|aol)\./i;
+
+/** Stammdaten für einen neuen Handwerker aus der Rechnung (Firma, Suchcode, IBAN, Steuernummer, Absender-Mail). */
+export function neuerHandwerker(d: Rechnungsdaten, absender: string | null) {
+  const firma = d.verkaeufer?.replace(/\s*[·|,].*$/, "").trim() || null;
+  return {
+    firma,
+    suchcode: suchcodeVorschlag(firma) || null,
+    iban: d.iban,
+    steuernummer: d.steuernummer,
+    email: absender && !FREEMAIL.test(absender) ? absender : null,
+  };
+}
+
+/** Bauvorhaben, auf das sich die Rechnung bezieht (Projektnummer, Suchcode oder Ort im Bezug bzw. Text). */
+export function projektVorschlag(d: Rechnungsdaten, text: string, projekte: { id: string; nr: number; suchcode: string; ort: string | null }[]): string | null {
+  const such = `${d.referenz ?? ""} ${text}`.toLowerCase();
+  const passend = projekte.filter((p) => new RegExp(`\\b${p.nr}\\b`).test(such) || such.includes(p.suchcode.toLowerCase()));
+  if (passend.length === 1) return passend[0]!.id;
+  const nachOrt = projekte.filter((p) => p.ort && such.includes(p.ort.toLowerCase()));
+  return nachOrt.length === 1 ? nachOrt[0]!.id : null;
+}
+
+const stamm = (s: string) =>
+  new Set(
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .split(/[^a-zß]+/)
+      .filter((w) => w.length >= 5)
+      .map((w) => w.slice(0, 5)),
+  );
+
+/**
+ * Gewerk für einen neuen Vertrag: Wortstamm der Gewerkbezeichnung im Firmennamen (z. B. „Fliesen Kaiser“ →
+ * „Fliesenarbeiten“), sonst im Rechnungstext – nur wenn eindeutig.
+ */
+export function gewerkVorschlag(gewerke: { id: string; bezeichnung: string }[], ...hinweise: string[]): string | null {
+  for (const h of hinweise) {
+    const w = stamm(h);
+    const treffer = gewerke.filter((g) => [...stamm(g.bezeichnung)].some((s) => w.has(s)));
+    if (treffer.length === 1) return treffer[0]!.id;
+  }
+  return null;
 }

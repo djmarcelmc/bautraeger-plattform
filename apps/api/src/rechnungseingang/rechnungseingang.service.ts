@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { schema } from "@bt/db";
-import { eingangVorschlag, type EingangsrechnungEingabe, type HandwerkerKandidat, type Rechnungsdaten, type VertragKandidat } from "@bt/domain";
+import { eingangVorschlag, gewerkVorschlag, neuerHandwerker, projektVorschlag, type EingangsrechnungEingabe, type HandwerkerKandidat, type Rechnungsdaten, type VertragKandidat } from "@bt/domain";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
@@ -110,7 +110,7 @@ export class RechnungseingangService {
   /** Handwerker und offene Verträge als Grundlage für Vorschläge und Auswahl. */
   async kandidaten() {
     const mandantId = await this.kontext.mandantId();
-    const [handwerker, vertraege] = await Promise.all([
+    const [handwerker, vertraege, gewerke] = await Promise.all([
       this.db
         .select({ id: gp.id, name: sql<string>`coalesce(${gp.firma}, concat_ws(' ', ${gp.vorname}, ${gp.nachname}), ${gp.suchcode})`, email: gp.email, iban: gp.iban, steuernummer: gp.steuernummer })
         .from(gp)
@@ -134,8 +134,15 @@ export class RechnungseingangService {
         .innerJoin(g, eq(p.gesellschaftId, g.id))
         .where(and(eq(g.mandantId, mandantId), eq(p.abgeschlossen, false)))
         .orderBy(p.nr, gw.nr),
+      this.db
+        .select({ id: gw.id, nr: gw.nr, bezeichnung: gw.bezeichnung, projektId: p.id, projektNr: p.nr, projektSuchcode: p.suchcode, projektOrt: p.ort })
+        .from(gw)
+        .innerJoin(p, eq(gw.projektId, p.id))
+        .innerJoin(g, eq(p.gesellschaftId, g.id))
+        .where(and(eq(g.mandantId, mandantId), eq(p.abgeschlossen, false)))
+        .orderBy(p.nr, gw.nr),
     ]);
-    return { handwerker: handwerker as HandwerkerKandidat[], vertraege: vertraege as (VertragKandidat & { nrIntern: string | null; gesellschaft: string })[] };
+    return { handwerker: handwerker as HandwerkerKandidat[], vertraege: vertraege as (VertragKandidat & { nrIntern: string | null; gesellschaft: string })[], gewerke };
   }
 
   async liste(status: "neu" | "erfasst" | "verworfen" | "alle") {
@@ -157,11 +164,21 @@ export class RechnungseingangService {
       postfach: this.postfach ? { adresse: this.postfach.adresse } : null,
       anzahl: anzahl!,
       ...k,
-      eingaenge: zeilen.map(({ text, ...z }) => ({
-        ...z,
-        daten: z.daten as unknown as Rechnungsdaten,
-        vorschlag: z.status === "neu" ? eingangVorschlag(z.daten as unknown as Rechnungsdaten, text ?? "", z.absender, k.handwerker, k.vertraege) : null,
-      })),
+      eingaenge: zeilen.map(({ text, ...z }) => {
+        const daten = z.daten as unknown as Rechnungsdaten;
+        const neu = z.status === "neu";
+        const projekte = [...new Map(k.gewerke.map((x) => [x.projektId, { id: x.projektId, nr: x.projektNr, suchcode: x.projektSuchcode, ort: x.projektOrt }])).values()];
+        const projektId = neu ? projektVorschlag(daten, text ?? "", projekte) : null;
+        return {
+          ...z,
+          daten,
+          vorschlag: neu ? eingangVorschlag(daten, text ?? "", z.absender, k.handwerker, k.vertraege) : null,
+          // für „Handwerker anlegen“ / „Vertrag anlegen“
+          neuerHandwerker: neu ? neuerHandwerker(daten, z.absender) : null,
+          projektId,
+          gewerkId: neu ? gewerkVorschlag(k.gewerke.filter((x) => !projektId || x.projektId === projektId), `${daten.verkaeufer ?? ""} ${z.betreff ?? ""} ${z.dateiname}`, text ?? "") : null,
+        };
+      }),
     };
   }
 

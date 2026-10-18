@@ -3,7 +3,7 @@ import { FileCheck2, FileUp, Inbox, Mail, RefreshCw, TriangleAlert } from "lucid
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deZahl, deZeit } from "@/lib/format";
-import { abrufen, erfassen, hochladen, verwerfen, wiederherstellen } from "./aktionen";
+import { abrufen, erfassen, handwerkerAnlegen, hochladen, verwerfen, vertragAnlegen, wiederherstellen } from "./aktionen";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,9 @@ interface Eingang {
   bemerkung: string | null;
   erledigtVon: string | null;
   vorschlag: EingangVorschlag | null;
+  neuerHandwerker: { firma: string | null; suchcode: string | null; iban: string | null; steuernummer: string | null; email: string | null } | null;
+  projektId: string | null;
+  gewerkId: string | null;
 }
 
 interface Liste {
@@ -28,6 +31,7 @@ interface Liste {
   anzahl: { neu: number; erfasst: number; verworfen: number };
   handwerker: { id: string; name: string }[];
   vertraege: { id: string; handwerkerId: string | null; nrIntern: string | null; projektNr: number; projektSuchcode: string; gewerk: string; gesellschaft: string; abgeschlossen: boolean; offeneRechnung: boolean }[];
+  gewerke: { id: string; nr: number; bezeichnung: string; projektId: string; projektNr: number; projektSuchcode: string }[];
   eingaenge: Eingang[];
 }
 
@@ -47,7 +51,7 @@ const QUELLE: Record<Rechnungsdaten["quelle"], { text: string; klasse: string }>
 export default async function Rechnungseingang({ searchParams }: { searchParams: Promise<{ status?: string; id?: string }> }) {
   const sp = await searchParams;
   const status = STATUS.some(([w]) => w === sp.status) ? sp.status! : "neu";
-  const d = await api<Liste>(`/rechnungseingang?status=${status}`);
+  const [d, { nr: naechsteNr }] = await Promise.all([api<Liste>(`/rechnungseingang?status=${status}`), api<{ nr: number }>("/partner/naechste-nr")]);
   const aktiv = d.eingaenge.find((e) => e.id === sp.id) ?? d.eingaenge[0];
   const hwName = new Map(d.handwerker.map((h) => [h.id, h.name]));
   const gruppen = new Map<string, Liste["vertraege"]>();
@@ -165,6 +169,80 @@ export default async function Rechnungseingang({ searchParams }: { searchParams:
                       </li>
                     ))}
                   </ul>
+                ) : null}
+
+                {aktiv.status === "neu" && aktiv.vorschlag && !aktiv.vorschlag.handwerkerId && aktiv.neuerHandwerker ? (
+                  <details className="eingang-neu" open>
+                    <summary>Handwerker noch nicht angelegt? Aus der Rechnung übernehmen</summary>
+                    <Formular aktion={handwerkerAnlegen} knopf="Handwerker anlegen">
+                      <div className="raster">
+                        <label>
+                          <span>Nr.</span>
+                          <input name="nr" defaultValue={naechsteNr} inputMode="numeric" required />
+                        </label>
+                        <label>
+                          <span>Suchcode</span>
+                          <input name="suchcode" defaultValue={aktiv.neuerHandwerker.suchcode ?? ""} required maxLength={40} />
+                        </label>
+                        <label className="breit">
+                          <span>Firma</span>
+                          <input name="firma" defaultValue={aktiv.neuerHandwerker.firma ?? ""} required />
+                        </label>
+                        <label>
+                          <span>IBAN</span>
+                          <input name="iban" defaultValue={aktiv.neuerHandwerker.iban ?? ""} />
+                        </label>
+                        <label>
+                          <span>E-Mail</span>
+                          <input name="email" type="email" defaultValue={aktiv.neuerHandwerker.email ?? ""} />
+                        </label>
+                        <label>
+                          <span>Steuernummer</span>
+                          <input name="steuernummer" defaultValue={aktiv.neuerHandwerker.steuernummer ?? ""} />
+                        </label>
+                        <label>
+                          <span>Freistellung § 48b gültig bis</span>
+                          <input name="freistellungGueltigBis" type="date" />
+                        </label>
+                      </div>
+                      <p className="hint">Ohne gültige Freistellungsbescheinigung werden bei der Zahlung 15 % Bauabzugsteuer einbehalten.</p>
+                    </Formular>
+                  </details>
+                ) : null}
+                {aktiv.status === "neu" && aktiv.vorschlag?.handwerkerId && !aktiv.vorschlag.handwerkervertragId ? (
+                  <details className="eingang-neu" open={!d.vertraege.some((v) => v.handwerkerId === aktiv.vorschlag!.handwerkerId && !v.abgeschlossen)}>
+                    <summary>Neuen Vertrag mit {hwName.get(aktiv.vorschlag.handwerkerId)} anlegen</summary>
+                    <Formular aktion={vertragAnlegen.bind(null, aktiv.vorschlag.handwerkerId)} knopf="Vertrag anlegen">
+                      <label>
+                        <span>Gewerk</span>
+                        <select name="gewerkId" defaultValue={aktiv.gewerkId ?? ""} required>
+                          <option value="">– bitte wählen –</option>
+                          {[...new Set(d.gewerke.map((g) => g.projektId))].map((pid) => {
+                            const liste = d.gewerke.filter((g) => g.projektId === pid);
+                            return (
+                              <optgroup key={pid} label={`${liste[0]!.projektNr} ${liste[0]!.projektSuchcode}${pid === aktiv.projektId ? " (laut Rechnung)" : ""}`}>
+                                {liste.map((g) => (
+                                  <option key={g.id} value={g.id}>
+                                    {g.nr} {g.bezeichnung}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            );
+                          })}
+                        </select>
+                      </label>
+                      <div className="raster">
+                        <label>
+                          <span>Auftragssumme brutto</span>
+                          <input name="vertragBrutto" inputMode="decimal" className="zahl" required />
+                        </label>
+                        <label>
+                          <span>Vertrag vom</span>
+                          <input name="vertragVom" type="date" />
+                        </label>
+                      </div>
+                    </Formular>
+                  </details>
                 ) : null}
 
                 {aktiv.status === "neu" ? (

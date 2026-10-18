@@ -3226,3 +3226,19 @@ table.saldentabelle tr.postenzeile ul {
     position: static;
   }
 }
+
+.eingang-neu {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px dashed var(--linie-stark);
+  border-radius: var(--radius-klein);
+  background: var(--flaeche-2);
+}
+.eingang-neu summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.eingang-neu .formular {
+  margin-top: 10px;
+}

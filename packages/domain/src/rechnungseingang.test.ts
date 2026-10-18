@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eRechnungLesen, eingangVorschlag, rechnungsdatenZusammenfuehren, rechnungstextLesen, type HandwerkerKandidat, type VertragKandidat } from "./rechnungseingang.js";
+import { eRechnungLesen, eingangVorschlag, gewerkVorschlag, neuerHandwerker, projektVorschlag, rechnungsdatenZusammenfuehren, rechnungstextLesen, type HandwerkerKandidat, type VertragKandidat } from "./rechnungseingang.js";
 
 const CII = `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
@@ -108,5 +108,43 @@ describe("eingangVorschlag", () => {
   });
   it("unbekannter Absender", () => {
     expect(eingangVorschlag(rechnungstextLesen("Fremdfirma\n"), "Fremdfirma", "x@gmail.com", hw, [])).toMatchObject({ handwerkerId: null, sicherheit: null });
+  });
+});
+
+describe("IBAN-Abweichung, neuer Handwerker, Projekt", () => {
+  const hw: HandwerkerKandidat[] = [{ id: "h2", name: "Elektro Sommer GmbH", email: "info@elektro-sommer.de", iban: "DE44500105175407324931", steuernummer: null }];
+  it("warnt, wenn die IBAN der Rechnung von der hinterlegten abweicht", () => {
+    const d = { ...eRechnungLesen(UBL)!, iban: "DE89370400440532013000" };
+    const r = eingangVorschlag(d, "", "info@elektro-sommer.de", hw, []);
+    expect(r.handwerkerId).toBe("h2");
+    expect(r.gruende.join(" ")).toMatch(/IBAN auf der Rechnung \(DE89370400440532013000\) weicht/);
+    expect(r.sicherheit).not.toBe("sicher");
+  });
+  it("schlägt Stammdaten für einen neuen Handwerker vor (ohne Freemail-Adresse)", () => {
+    expect(neuerHandwerker(rechnungstextLesen(TEXT), "buchhaltung@rohbau-muster.de")).toEqual({ firma: "Rohbau Muster KG", suchcode: "ROHBAUMUSTER", iban: "DE02120300000000202051", steuernummer: "93815/08152", email: "buchhaltung@rohbau-muster.de" });
+    expect(neuerHandwerker(rechnungstextLesen(TEXT), "maler.bunt@gmx.de").email).toBeNull();
+  });
+  it("erkennt das Bauvorhaben über Nummer, Suchcode oder Ort", () => {
+    const projekte = [
+      { id: "p1", nr: 101, suchcode: "LINDENWEG", ort: "Stuttgart" },
+      { id: "p2", nr: 102, suchcode: "PARKSTRASSE", ort: "Esslingen" },
+    ];
+    expect(projektVorschlag(eRechnungLesen(CII)!, "", projekte)).toBe("p1");
+    expect(projektVorschlag(rechnungstextLesen("Baustelle Esslingen"), "Baustelle Esslingen", projekte)).toBe("p2");
+    expect(projektVorschlag(rechnungstextLesen("x"), "x", projekte)).toBeNull();
+  });
+});
+
+describe("gewerkVorschlag", () => {
+  const gewerke = [
+    { id: "g1", bezeichnung: "Rohbau" },
+    { id: "g2", bezeichnung: "Fliesenarbeiten" },
+    { id: "g3", bezeichnung: "Elektroinstallation" },
+    { id: "g4", bezeichnung: "Fachingenieur Elektro" },
+  ];
+  it("findet das Gewerk über den Firmennamen, sonst über den Text; mehrdeutig → keins", () => {
+    expect(gewerkVorschlag(gewerke, "Fliesen Kaiser GmbH")).toBe("g2");
+    expect(gewerkVorschlag(gewerke, "Kaiser GmbH", "1. Abschlagsrechnung Fliesenarbeiten")).toBe("g2");
+    expect(gewerkVorschlag(gewerke, "Elektro Sommer GmbH")).toBeNull();
   });
 });
