@@ -67,7 +67,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/maengel?projektId=&status=offen\|ueberfaellig\|erledigt\|alle`, `POST /api/maengel`, `GET/PUT /api/maengel/:id` | Mängel mit Status und Fristen |
 | `POST /api/maengel/:id/ruegen`, `…/erledigt`, `…/wiedereroeffnen` | Rügen (höchstens drei, Standardfristen 14/10/7 Tage), Erledigung |
 | `GET /api/auswertungen/liquiditaet?gesellschaftId=&projekte=alle`, `…/controlling`, `…/kostenreport/:projektId`, `…/projektbericht/:projektId` | Auswertungen; mit `format=xlsx` als Excel-Datei |
-| `GET/POST /api/projekte/:id/bauzeitenplan`, `POST …/bauzeitenplan/verschieben`, `POST /api/projekte/:id/vorgaenge`, `PUT/DELETE /api/vorgaenge/:id` | Bauzeitenplan: Vorlage (25 Vorgänge, alle MaBV-Meilensteine), Vorgänge mit Gewerken, Plan verschieben |
+| `GET/POST /api/projekte/:id/bauzeitenplan`, `POST …/bauzeitenplan/verschieben`, `POST /api/projekte/:id/vorgaenge`, `PUT/DELETE /api/vorgaenge/:id` | Bauzeitenplan: Vorlage (25 Vorgänge mit Abhängigkeiten, alle MaBV-Meilensteine), Vorgänge mit Gewerken und Vorgängern (Nachfolger rücken bei Verzug automatisch nach, Zirkelbezüge werden abgewiesen), kritischer Pfad, Plan verschieben |
 | `GET /api/auswertungen/liquiditaetsplan?projektId=&wochen=&anfangsbestand=&unverkauft=1&stichtag=` | Liquiditätsplan nach Kalenderwochen (auch `format=xlsx`) |
 | `GET /api/zahlungslaeufe/vorschlag?ausfuehrungAm=`, `POST /api/zahlungslaeufe`, `GET /api/zahlungslaeufe[/:id]`, `GET …/:id/xml` | Zahlungsvorschlag, Zahlungslauf mit Verbuchung, SEPA-Datei (pain.001.001.09) |
 | `GET/POST /api/buergschaften?status=offen\|handlung&richtung=`, `GET/PUT/DELETE /api/buergschaften/:id` | Bürgschaften (erhalten/§ 7 MaBV) mit Ablauf- und Rückgabeüberwachung |
@@ -127,5 +127,5 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 6. ~~Mängelverwaltung mit Fotos, Rügen und Fristen~~ ✓ – Standardmängel-Katalog und Abnahmeprotokolle ✓
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
 8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – MaBV-Prüfbericht (§ 16) ✓
-9. ~~Bauzeitenplan (Gantt, MaBV-Meilensteine) und Liquiditätsplan nach Kalenderwochen~~ ✓ – offen: Abhängigkeiten zwischen Vorgängen, Einbehalte im Liquiditätsplan
+9. ~~Bauzeitenplan (Gantt, MaBV-Meilensteine) und Liquiditätsplan nach Kalenderwochen~~ ✓ – Abhängigkeiten und kritischer Pfad ✓; offen: Einbehalte im Liquiditätsplan
 10. Buchungsjournal automatisch aus Verkauf und Kosten befüllen

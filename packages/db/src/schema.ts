@@ -288,6 +288,8 @@ export const vorgang = pgTable(
     beginn: date("beginn").notNull(),
     ende: date("ende").notNull(),
     endeIst: date("ende_ist"),
+    /** Vorgänger (Ende → Anfang) mit Abstand in Tagen. */
+    abhaengigkeiten: jsonb("abhaengigkeiten").$type<{ vorgangId: string; abstandTage: number }[]>().notNull().default([]),
     ...zeitstempel,
   },
   (t) => [uniqueIndex("vorgang_abschnitt_je_projekt").on(t.projektId, t.mabvAbschnitt).where(sql`${t.mabvAbschnitt} is not null`)],

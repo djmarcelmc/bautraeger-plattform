@@ -489,6 +489,8 @@ export interface Vorgang {
   gewerke: { id: string; nr: number; bezeichnung: string; trend: string; berechnet: string }[];
   meilenstein: string | null;
   gemeldet: number | null;
+  kritisch: boolean;
+  vorgaenger: { id: string; nr: number; abstandTage: number }[];
 }
 
 export interface Bauzeitenplan {

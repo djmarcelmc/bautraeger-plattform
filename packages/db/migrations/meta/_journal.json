@@ -85,6 +85,13 @@
       "when": 1792327148158,
       "tag": "0011_benachrichtigungen",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792328248326,
+      "tag": "0012_abhaengigkeiten",
+      "breakpoints": true
     }
   ]
 }

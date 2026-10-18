@@ -1,0 +1,1 @@
+ALTER TABLE "vorgang" ADD COLUMN "abhaengigkeiten" jsonb DEFAULT '[]'::jsonb NOT NULL;

@@ -82,3 +82,77 @@ describe("liquiditaetsplan", () => {
     expect(p.summe).toEqual({ ein: "6000.00", aus: "8500.00", endbestand: "-500.00" });
   });
 });
+
+import { abstandAusTerminen, kritischerPfad, mindestAbstand, nachfolgerAnpassen, zirkelbezug, type PlanVorgang } from "./bauzeit.js";
+
+describe("Abhängigkeiten", () => {
+  const v = (id: string, beginn: string, ende: string, nach: [string, number][] = [], endeIst: string | null = null): PlanVorgang => ({
+    id,
+    beginn,
+    ende,
+    endeIst,
+    abhaengigkeiten: nach.map(([vorgangId, abstandTage]) => ({ vorgangId, abstandTage })),
+  });
+
+  it("erkennt Zirkelbezüge", () => {
+    expect(zirkelbezug([v("a", "2027-01-04", "2027-01-08", [["c", 0]]), v("b", "2027-01-11", "2027-01-15", [["a", 0]]), v("c", "2027-01-18", "2027-01-22", [["b", 0]])])).toEqual(["a", "c", "b"]);
+    expect(zirkelbezug([v("a", "2027-01-04", "2027-01-08"), v("b", "2027-01-11", "2027-01-15", [["a", 0]])])).toBeNull();
+    expect(zirkelbezug([v("a", "2027-01-04", "2027-01-08", [["a", 0]])])).toEqual(["a"]);
+  });
+
+  it("schiebt Nachfolger über mehrere Stufen und behält die Dauer", () => {
+    // Rohbau verlängert sich um 2 Wochen → Zimmerer (Abstand 2 Tage) und Dachdecker rücken nach
+    const plan = [
+      v("roh", "2027-03-01", "2027-06-25"),
+      v("zim", "2027-06-28", "2027-07-16", [["roh", 2]]),
+      v("dach", "2027-07-19", "2027-08-13", [["zim", 2]]),
+      v("fertig", "2027-02-01", "2027-02-05", [], "2027-02-05"),
+    ];
+    // Zimmerer startete laut Plan schon vor dem Mindestabstand: 25.06. + 1 + 2 = 28.06. passt genau
+    expect(nachfolgerAnpassen(plan, ["roh"])).toEqual([]);
+    plan[0]!.ende = "2027-07-09";
+    expect(nachfolgerAnpassen(plan, ["roh"])).toEqual([
+      { id: "zim", beginn: "2027-07-12", ende: "2027-07-30", tage: 14 },
+      { id: "dach", beginn: "2027-08-02", ende: "2027-08-27", tage: 14 },
+    ]);
+  });
+
+  it("verschiebt keine erledigten Vorgänge und zieht nichts nach vorne", () => {
+    const plan = [v("a", "2027-01-04", "2027-01-29"), v("b", "2027-02-01", "2027-02-12", [["a", 0]], "2027-02-10"), v("c", "2027-03-01", "2027-03-05", [["a", 0]])];
+    expect(nachfolgerAnpassen(plan, ["a"])).toEqual([]);
+  });
+
+  it("berücksichtigt Überlappung (negativer Abstand) und das Ist-Ende", () => {
+    const plan = [v("a", "2027-01-04", "2027-01-29", [], "2027-02-05"), v("b", "2027-01-25", "2027-02-05", [["a", -5]])];
+    expect(nachfolgerAnpassen(plan, ["a"])).toEqual([{ id: "b", beginn: "2027-02-01", ende: "2027-02-12", tage: 7 }]);
+    expect(abstandAusTerminen("2027-01-29", "2027-01-25")).toBe(-5);
+    expect(abstandAusTerminen("2027-06-25", "2027-06-28")).toBe(2);
+  });
+
+  it("findet den kritischen Pfad", () => {
+    const plan = [
+      v("a", "2027-01-04", "2027-01-15"),
+      v("b", "2027-01-18", "2027-02-26", [["a", 2]]), // lang, schließt direkt an
+      v("c", "2027-01-18", "2027-01-29", [["a", 2]]), // kurz, mit Puffer
+      v("d", "2027-03-01", "2027-03-12", [["b", 2], ["c", 2]]),
+    ];
+    expect([...kritischerPfad(plan)].sort()).toEqual(["a", "b", "d"]);
+  });
+
+  it("hat in der Vorlage stimmige Abhängigkeiten ohne Zirkelbezug", () => {
+    const plan = bauzeitenplanAusVorlage("2027-03-01");
+    const mitIds = plan.map((x, i) => ({ id: String(i), beginn: x.beginn, ende: x.ende, endeIst: null, abhaengigkeiten: x.nach.map((n) => ({ vorgangId: String(n), abstandTage: mindestAbstand(plan[n]!.ende, x.beginn) })) }));
+    expect(zirkelbezug(mitIds)).toBeNull();
+    expect(nachfolgerAnpassen(mitIds, mitIds.map((x) => x.id))).toEqual([]);
+    const kritisch = kritischerPfad(mitIds);
+    // Bauende = Restarbeiten (24) nach Endreinigung (23); die Außenanlage (22) überlappt die Endreinigung und
+    // bestimmt damit das Ende. Der Innenausbau (Bodenbeläge, Fliesen) hat laut Vorlage eine Woche Puffer.
+    expect([...kritisch].sort()).toEqual(["22", "23", "24"]);
+    expect(kritisch.has("2")).toBe(false); // Finanzierung läuft nur begleitend
+    expect(mindestAbstand("2027-06-25", "2027-07-05")).toBe(2);
+    expect(mindestAbstand("2027-06-25", "2027-06-28")).toBe(2);
+    expect(mindestAbstand("2027-06-25", "2027-06-26")).toBe(0);
+    expect(mindestAbstand("2027-06-25", "2027-06-21")).toBe(-5);
+    expect(mitIds.filter((x) => x.abhaengigkeiten.length).length).toBe(20);
+  });
+});
