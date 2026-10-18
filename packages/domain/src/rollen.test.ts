@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { benoetigtesRecht, darf, rechteVon, rollenAus, rollenText } from "./rollen.js";
+import { benoetigtesRecht, nurSteuerberater, darf, rechteVon, rollenAus, rollenText } from "./rollen.js";
 
 describe("Rollen und Rechte", () => {
   it("ordnet API-Aufrufe Rechten zu", () => {
@@ -54,5 +54,11 @@ describe("Rollen und Rechte", () => {
     expect(rollenAus(["Bautraeger.Vertrieb", 5])).toEqual(["Bautraeger.Vertrieb"]);
     expect(rollenAus(undefined)).toEqual([]);
     expect(rollenText(["Bautraeger.Geschaeftsfuehrung", "Bautraeger.Vertrieb"])).toBe("Geschäftsführung, Vertrieb");
+  });
+
+  it("erkennt den reinen Steuerberater-Zugang", () => {
+    expect(nurSteuerberater(["Bautraeger.Steuerberater"])).toBe(true);
+    expect(nurSteuerberater(["Bautraeger.Steuerberater", "Bautraeger.Buchhaltung"])).toBe(false);
+    expect(nurSteuerberater(["Bautraeger.Admin"])).toBe(false);
   });
 });

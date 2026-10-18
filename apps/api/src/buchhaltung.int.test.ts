@@ -212,6 +212,17 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(werte).toMatch(/12345\|Müller\|60000\|S\|60000\|0\|59000\|1000/);
   });
 
+  it("Steuerberater-Übersicht je Gesellschaft", async () => {
+    const d = (await http.get("/api/steuerberater")).body;
+    expect(d.gesellschaften).toHaveLength(1);
+    const g = d.gesellschaften[0];
+    expect(g.gesellschaft).toMatchObject({ nr: 1, name: "Muster Wohnbau GmbH" });
+    expect(g.datev.bereit).toBe(true);
+    expect(g.datev.letzteExporte.length).toBeGreaterThan(0);
+    expect(typeof g.datev.nichtExportiert).toBe("number");
+    expect(g.rechnungenOhneScan).toBe(0); // die Rechnung hat einen Scan
+  });
+
   it("protokolliert Abgleich und Export", async () => {
     const p = (await http.get(`/api/protokoll/${ids.g}`)).body as { neu: Record<string, unknown> }[];
     expect(p.some((e) => e.neu && "export" in e.neu)).toBe(true);

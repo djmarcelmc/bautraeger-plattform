@@ -35,6 +35,7 @@ import { BauabzugService } from "./bauabzug/bauabzug.service.js";
 import { BankabgleichController } from "./bankabgleich/bankabgleich.controller.js";
 import { BankabgleichService } from "./bankabgleich/bankabgleich.service.js";
 import { IbanController } from "./sepa/iban.controller.js";
+import { SteuerberaterController } from "./steuerberater/steuerberater.controller.js";
 import { IbanService } from "./sepa/iban.service.js";
 import { Abruflauf, RechnungseingangController } from "./rechnungseingang/rechnungseingang.controller.js";
 import { RechnungseingangService } from "./rechnungseingang/rechnungseingang.service.js";
@@ -72,6 +73,7 @@ class HealthController {
     BauabzugController,
     BankabgleichController,
     IbanController,
+    SteuerberaterController,
     RechnungseingangController,
     BuchhaltungController,
     SonderwuenscheController,

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { nurSteuerberater } from "@bt/domain";
 import { auth, authAktiv } from "./auth";
 
 /** Ohne Anmeldung erreichbar: Käuferportal, Anmeldeseite und die Auth.js-Endpunkte. */
@@ -11,8 +12,10 @@ const oeffentlich = (pfad: string) => OEFFENTLICH.some((p) => pfad === p || pfad
  * - Mit Microsoft-Anmeldung: ohne Sitzung → Anmeldeseite (mit Rücksprung).
  * - Der Pfad wird für das Layout weitergereicht (Portal und Anmeldung ohne interne Navigation).
  */
-function weiter(req: NextRequest, angemeldet: boolean) {
+function weiter(req: NextRequest, angemeldet: boolean, rollen: string[] = []) {
   const pfad = req.nextUrl.pathname;
+  // Reiner Steuerberater-Zugang startet auf der eigenen Übersicht
+  if (pfad === "/" && nurSteuerberater(rollen)) return NextResponse.redirect(new URL("/steuerberater", req.nextUrl.origin));
   if (pfad.startsWith("/portal") && req.headers.has("next-action")) return new NextResponse("Nicht erlaubt", { status: 403 });
   if (authAktiv && !angemeldet && !oeffentlich(pfad)) {
     const ziel = new URL("/anmelden", req.nextUrl.origin);
@@ -24,7 +27,7 @@ function weiter(req: NextRequest, angemeldet: boolean) {
   return NextResponse.next({ request: { headers: kopf } });
 }
 
-const mitAnmeldung = auth((req) => weiter(req, !!req.auth?.user));
+const mitAnmeldung = auth((req) => weiter(req, !!req.auth?.user, (req.auth?.user as { rollen?: string[] } | undefined)?.rollen ?? []));
 
 export default function middleware(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
   return authAktiv ? mitAnmeldung(req, ctx) : weiter(req, false);

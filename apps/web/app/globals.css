@@ -3321,3 +3321,59 @@ table.saldentabelle tr.postenzeile ul {
   gap: 4px;
   font-size: 13.5px;
 }
+
+/* ------------------------------------------------------------------ Steuerberater */
+.stb-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 16px;
+}
+.stb-karte {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.stb-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.stb-kopf h2 {
+  margin: 0;
+}
+.stb-block {
+  border-top: 1px solid var(--linie);
+  padding-top: 12px;
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.stb-block h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.stb-block p {
+  margin: 0;
+}
+.stb-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.stb-liste li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media screen and (max-width: 700px) {
+  .stb-raster {
+    grid-template-columns: 1fr;
+  }
+}
