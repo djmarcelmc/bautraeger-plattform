@@ -2226,6 +2226,188 @@ h2.kartentitel {
   }
 }
 
+/* ------------------------------------------------------------------ Käuferportal */
+main.portal {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+.portal-kopf {
+  margin-bottom: 18px;
+}
+.portal-kopf h1 {
+  margin: 6px 0 4px;
+  font-size: 26px;
+}
+.portal-kopf p {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.portal-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  color: var(--akzent);
+}
+.portal-karte {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  box-shadow: var(--schatten);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.portal-karte h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+.portal-leer {
+  text-align: center;
+  margin-top: 15vh;
+}
+.portal-leer svg {
+  color: var(--warnung);
+}
+.portal-formular {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.portal-formular label,
+.portal-formular fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+.portal-formular label > span,
+.portal-formular legend {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.portal-formular input:not([type="radio"]),
+.portal-formular select,
+.portal-formular textarea {
+  font-size: 16px;
+}
+.portal-wahl {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  box-shadow: none;
+}
+.portal-wahl label {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 400;
+}
+.portal-wahl input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  margin: 1px 0 0;
+  flex: none;
+  box-shadow: none;
+  accent-color: var(--akzent);
+}
+.portal-wahl label {
+  cursor: pointer;
+}
+.portal-formular button {
+  align-self: stretch;
+  justify-content: center;
+  padding: 12px;
+  font-size: 15px;
+}
+.portal-hinweis {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-klein);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.portal-hinweis.erfolg {
+  background: var(--gut-weich);
+  color: var(--gut);
+}
+.portal-hinweis.fehler {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.portal-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.portal-liste li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linie);
+}
+.portal-liste li:last-child {
+  border-bottom: 0;
+}
+.portal-liste b {
+  display: block;
+  font-weight: 600;
+}
+.portal-liste small,
+.portal-klein {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.portal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--warnung-weich);
+  color: var(--warnung);
+}
+.portal-status.in_bearbeitung {
+  background: var(--akzent-weich);
+  color: var(--akzent-text);
+}
+.portal-status.erledigt {
+  background: var(--gut-weich);
+  color: var(--gut);
+}
+.portal-fuss {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.portallink-ergebnis code {
+  display: block;
+  word-break: break-all;
+  background: var(--flaeche);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+.knopfleiste {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

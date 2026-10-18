@@ -71,6 +71,13 @@
       "when": 1792323873949,
       "tag": "0009_abnahme",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792326400250,
+      "tag": "0010_kaeuferportal",
+      "breakpoints": true
     }
   ]
 }

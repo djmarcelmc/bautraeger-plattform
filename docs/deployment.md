@@ -166,3 +166,7 @@ $C restart web        # einzelnen Dienst neu starten
 - Bis dahin keine echten personenbezogenen Daten von Kunden einpflegen, ohne dass ein AV-Vertrag mit dem Hoster besteht
   (DSGVO) – Testdaten sind unkritisch.
 - `.env.prod` nie ins Repository einchecken (ist in `.gitignore`).
+- **Käuferportal** (`/portal/…`): bewusst ohne Passwort erreichbar, damit Käufer Mängel über ihren persönlichen Link
+  melden können. Geschützt durch einen zufälligen Token je Kaufvertrag (gespeichert nur als SHA-256), Ablaufdatum,
+  Widerruf, höchstens 10 Meldungen je Link und Tag und eine Prüfung der Fotos auf echte Bildformate. Caddy und die
+  Weboberfläche blockieren auf diesem Pfad interne Server-Aktionen. Alle anderen Seiten bleiben passwortgeschützt.

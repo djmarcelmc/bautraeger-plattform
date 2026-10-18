@@ -425,6 +425,22 @@ export const mangel = pgTable("mangel", {
   ...zeitstempel,
 }, (t) => [uniqueIndex("mangel_nr_je_projekt").on(t.projektId, t.nr)]);
 
+/** Persönlicher Link für Käufer (Mängelanzeige ohne Konto); gespeichert wird nur der SHA-256 des Tokens. */
+export const portalzugang = pgTable(
+  "portalzugang",
+  {
+    id: id(),
+    kaufvertragId: uuid("kaufvertrag_id").notNull().references(() => kaufvertrag.id),
+    tokenHash: text("token_hash").notNull(),
+    gueltigBis: date("gueltig_bis").notNull(),
+    widerrufenAm: timestamp("widerrufen_am", { withTimezone: true }),
+    letzterZugriffAm: timestamp("letzter_zugriff_am", { withTimezone: true }),
+    erstelltVon: text("erstellt_von"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("portalzugang_token").on(t.tokenHash)],
+);
+
 /** Abnahmeprotokoll (Sondereigentum, Gemeinschaftseigentum oder Handwerkerleistung). */
 export const abnahme = pgTable(
   "abnahme",

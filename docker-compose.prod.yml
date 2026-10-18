@@ -41,6 +41,8 @@ services:
     restart: unless-stopped
     environment:
       API_URL: http://api:3001
+      # Öffentliche Adresse für Links im Käuferportal
+      PUBLIC_URL: https://${DOMAIN}
     depends_on:
       api: { condition: service_healthy }
 

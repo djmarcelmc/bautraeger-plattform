@@ -14,6 +14,7 @@ import { ZahlungslaufController } from "./sepa/zahlungslauf.controller.js";
 import { AbnahmenController } from "./abnahme/abnahmen.controller.js";
 import { MangelvorlagenController } from "./abnahme/mangelvorlagen.controller.js";
 import { CockpitController } from "./cockpit/cockpit.controller.js";
+import { PortalController, PortalLinkController } from "./portal/portal.controller.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
 import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
@@ -57,6 +58,8 @@ class HealthController {
     MahnwesenController,
     AuswertungenController,
     BauzeitController,
+    PortalController,
+    PortalLinkController,
     CockpitController,
     AbnahmenController,
     MangelvorlagenController,
