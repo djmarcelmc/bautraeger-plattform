@@ -179,4 +179,27 @@ describe.skipIf(!url)("Kosten (Integration)", () => {
     expect((await zeile()).budget.stufe).toBe("ok");
     expect((await http.get(`/api/projekte/${ids.p}/kosten`)).body.budgetSchwelleProzent).toBe(95);
   });
+
+  it("schichtet Budget zwischen Gewerken um – höchstens das freie Budget, protokolliert", async () => {
+    const k = (await http.get(`/api/projekte/${ids.p}/kosten`)).body;
+    const ziel = k.gewerke.find((x: { nr: number }) => x.nr === 999); // 50.000 geschätzt, 46.000 vergeben, Rechnung 53.000 offen
+    const quelle = k.gewerke.find((x: { nr: number }) => x.nr === 300); // Rohbau mit großer Einsparung
+    const zuviel = await als(http.post(`/api/projekte/${ids.p}/budgetumbuchungen`)).send({ vonGewerkId: ziel.id, nachGewerkId: quelle.id, betrag: "5000", begruendung: "Test" });
+    expect(zuviel.status).toBe(409);
+    expect(zuviel.body.message).toMatch(/nur 4\.000,00 € freies Budget/);
+    expect((await als(http.post(`/api/projekte/${ids.p}/budgetumbuchungen`)).send({ vonGewerkId: quelle.id, nachGewerkId: quelle.id, betrag: "1", begruendung: "x" })).status).toBe(400);
+    const r = await als(http.post(`/api/projekte/${ids.p}/budgetumbuchungen`)).send({ vonGewerkId: quelle.id, nachGewerkId: ziel.id, betrag: "5.000,00", begruendung: "Einsparung Rohbau für Außenanlagen" });
+    expect(r.status).toBe(201);
+    const nachher = (await http.get(`/api/projekte/${ids.p}/kosten`)).body;
+    const z2 = nachher.gewerke.find((x: { id: string }) => x.id === ziel.id);
+    expect(z2.stand.geschaetzt).toBe("55000.00");
+    expect(nachher.gewerke.find((x: { id: string }) => x.id === quelle.id).stand.geschaetzt).toBe((Number(quelle.stand.geschaetzt) - 5000).toFixed(2));
+    expect(nachher.summe.geschaetzt).toBe(k.summe.geschaetzt); // Gesamtbudget unverändert
+    expect(z2.budget).toMatchObject({ stufe: "ok", auslastungProzent: 84 }); // 46.000 von 55.000
+    const liste = (await http.get(`/api/projekte/${ids.p}/budgetumbuchungen`)).body;
+    expect(liste[0]).toMatchObject({ betrag: "5000.00", begruendung: "Einsparung Rohbau für Außenanlagen", von: { nr: 300 }, nach: { nr: 999 } });
+    const prot = (await http.get(`/api/protokoll/${ziel.id}`)).body as { neu: Record<string, unknown> }[];
+    expect(prot.some((x) => x.neu?.umbuchung === r.body.id)).toBe(true);
+  });
 });
+

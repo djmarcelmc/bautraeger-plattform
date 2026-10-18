@@ -66,6 +66,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET/POST /api/dokumente`, `GET /api/dokumente/:id/datei`, `DELETE /api/dokumente/:id` | Dokumentablage (SHA-256, nur Ausblenden statt Löschen) |
 | `GET /api/projekte/:id/kosten`, `POST /api/projekte/:id/gewerkeplan`, `POST /api/projekte/:id/gewerke`, `PUT/DELETE /api/gewerke/:id` | Kostenkontrolle mit Budgetwarnung je Gewerk, Gewerkeplan aus Vorlage (65 Gewerke), Gewerke |
 | `GET/PUT /api/einstellungen/kosten` | Schwelle der Budgetwarnung (Standard 90 %) |
+| `GET/POST /api/projekte/:id/budgetumbuchungen` | Budget zwischen Gewerken umschichten (höchstens freies Budget der Quelle, nur Leitung, protokolliert) |
 | `POST /api/handwerkervertraege`, `GET/PUT /api/handwerkervertraege/:id`, `POST /api/handwerkervertraege/:id/nachtraege`, `PUT /api/nachtraege/:id` | Handwerkerverträge (Nachlass, Skonto, Umlagen, Einbehalte) und Nachträge |
 | `GET /api/maengel?projektId=&status=offen\|ueberfaellig\|erledigt\|alle`, `POST /api/maengel`, `GET/PUT /api/maengel/:id` | Mängel mit Status und Fristen |
 | `POST /api/maengel/:id/ruegen`, `…/erledigt`, `…/wiedereroeffnen` | Rügen (höchstens drei, Standardfristen 14/10/7 Tage), Erledigung |

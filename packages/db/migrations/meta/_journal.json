@@ -169,6 +169,13 @@
       "when": 1792347852394,
       "tag": "0023_steuerberater_email",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792348529965,
+      "tag": "0024_budgetumbuchung",
+      "breakpoints": true
     }
   ]
 }

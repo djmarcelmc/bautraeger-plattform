@@ -25,6 +25,7 @@ describe("Rollen und Rechte", () => {
     expect(r("PUT", "/vorgaenge/abc")).toBe("bau");
     expect(r("POST", "/projekte/abc/bauzeitenplan/verschieben")).toBe("bau");
     expect(r("POST", "/projekte/abc/gewerkeplan")).toBe("kostenBearbeiten");
+    expect(r("POST", "/projekte/abc/budgetumbuchungen")).toBe("kostenFreigeben");
     expect(r("POST", "/projekte")).toBe("projekte");
     expect(r("PUT", "/projekte/abc")).toBe("projekte");
     expect(r("POST", "/projekte/abc/einheiten")).toBe("projekte");

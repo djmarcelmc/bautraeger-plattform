@@ -296,6 +296,18 @@ export const gewerk = pgTable(
   (t) => [uniqueIndex("gewerk_nr_je_projekt").on(t.projektId, t.nr)],
 );
 
+/** Budgetumbuchung zwischen zwei Gewerken eines Projekts (verändert die Schätzungen; Korrektur nur per Gegenbuchung). */
+export const budgetumbuchung = pgTable("budgetumbuchung", {
+  id: id(),
+  projektId: uuid("projekt_id").notNull().references(() => projekt.id),
+  vonGewerkId: uuid("von_gewerk_id").notNull().references(() => gewerk.id),
+  nachGewerkId: uuid("nach_gewerk_id").notNull().references(() => gewerk.id),
+  betrag: geld("betrag").notNull(),
+  begruendung: text("begruendung").notNull(),
+  benutzer: text("benutzer").notNull(),
+  ...zeitstempel,
+});
+
 /** Vorgang im Bauzeitenplan; optional mit Gewerken (Kostenabfluss) und MaBV-Bauabschnitt (Meilenstein für Raten). */
 export const vorgang = pgTable(
   "vorgang",

@@ -241,3 +241,53 @@ export function auftragsrahmen(kumuliert: string, vertragBrutto: string, nachtra
   if (!schlussrechnung && auslastung !== null && auslastung >= 90) return { ...basis, stufe: "nahe", text: `Auftrag zu ${auslastung} % ausgeschöpft (${de(k)} von ${de(auftrag)}).` };
   return { ...basis, stufe: "ok", text: null };
 }
+
+// ---------------------------------------------------------------- Budget umschichten
+
+export const BudgetumbuchungEingabe = z
+  .object({
+    vonGewerkId: z.uuid("Gewerk wählen, von dem umgebucht wird"),
+    nachGewerkId: z.uuid("Gewerk wählen, auf das umgebucht wird"),
+    betrag: positiv("Betrag"),
+    begruendung: pflichttext(500),
+  })
+  .refine((x) => x.vonGewerkId !== x.nachGewerkId, { message: "Von- und Nach-Gewerk müssen verschieden sein", path: ["nachGewerkId"] });
+export type BudgetumbuchungEingabe = z.infer<typeof BudgetumbuchungEingabe>;
+
+/** Freies Budget eines Gewerks: Schätzung − gebundene Kosten (nie negativ). */
+export function freiesBudget(stand: Pick<Kostenstand, "geschaetzt" | "summeVergeben" | "berechnet">): Money {
+  const vergeben = money(stand.summeVergeben);
+  const berechnet = money(stand.berechnet);
+  const frei = money(stand.geschaetzt).minus(berechnet.gt(vergeben) ? berechnet : vergeben);
+  return frei.gt(0) ? frei : ZERO;
+}
+
+export interface UmbuchungsQuelle {
+  id: string;
+  nr: number;
+  bezeichnung: string;
+  frei: string;
+  /** Vergeben → die Einsparung ist realisiert; sonst wird Budget eines noch offenen Gewerks verbraucht. */
+  gesichert: boolean;
+}
+
+/**
+ * Mögliche Quellen für eine Umbuchung auf `zielId`: Gewerke mit freiem Budget, zuerst vergebene (realisierte
+ * Einsparungen), dann noch nicht vergebene; jeweils nach freiem Betrag absteigend.
+ */
+export function umbuchungsQuellen(gewerke: { id: string; nr: number; bezeichnung: string; stand: Kostenstand; vertraege: unknown[] }[], zielId: string): UmbuchungsQuelle[] {
+  return gewerke
+    .filter((g) => g.id !== zielId)
+    .map((g) => ({ id: g.id, nr: g.nr, bezeichnung: g.bezeichnung, frei: freiesBudget(g.stand), gesichert: g.vertraege.length > 0 }))
+    .filter((g) => g.frei.gt(0))
+    .sort((a, b) => Number(b.gesichert) - Number(a.gesichert) || b.frei.comparedTo(a.frei) || a.nr - b.nr)
+    .map((g) => ({ ...g, frei: g.frei.toFixed(2) }));
+}
+
+/** Prüft, ob die Quelle den Betrag hergibt; liefert sonst eine Fehlermeldung. */
+export function umbuchungPruefen(quelle: { nr: number; bezeichnung: string; stand: Pick<Kostenstand, "geschaetzt" | "summeVergeben" | "berechnet"> }, betrag: string): string | null {
+  const frei = freiesBudget(quelle.stand);
+  if (money(betrag).gt(frei))
+    return `Gewerk ${quelle.nr} ${quelle.bezeichnung} hat nur ${frei.toNumber().toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € freies Budget (Schätzung abzüglich gebundener Kosten).`;
+  return null;
+}

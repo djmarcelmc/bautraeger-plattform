@@ -10,6 +10,7 @@ import type { Gesellschaft, KaufvertragListe, Kostenkontrolle, MangelListe, Proj
 import { MangelStatus } from "@/components/MangelStatus";
 import { Abweichung } from "../../kosten/Abweichung";
 import { BudgetBadge, BudgetHinweis } from "../../kosten/Budget";
+import { UmbuchungenListe, type Budgetumbuchung } from "../../kosten/Umbuchung";
 import { gewerkAnlegen, gewerkeplanAnlegen } from "../../kosten/aktionen";
 import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "../../verkauf/aktionen";
 import { EinheitFelder } from "../../einheiten/EinheitFelder";
@@ -362,7 +363,7 @@ async function BautenstandReiter({ projektId }: { projektId: string }) {
 }
 
 async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nurVergeben: boolean }) {
-  const k = await api<Kostenkontrolle>(`/projekte/${projektId}/kosten`);
+  const [k, umbuchungen] = await Promise.all([api<Kostenkontrolle>(`/projekte/${projektId}/kosten`), api<Budgetumbuchung[]>(`/projekte/${projektId}/budgetumbuchungen`)]);
   if (!k.gewerke.length)
     return (
       <div className="zweispaltig">
@@ -493,6 +494,14 @@ async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nur
           </tfoot>
         </table>
       </div>
+      {umbuchungen.length ? (
+        <details className="umbuchungen">
+          <summary>
+            Budgetumbuchungen ({umbuchungen.length}) – zuletzt {deDatum(umbuchungen[0]!.angelegtAm.slice(0, 10))}
+          </summary>
+          <UmbuchungenListe liste={umbuchungen} projektId={projektId} />
+        </details>
+      ) : null}
       <details className="karte">
         <summary>Weiteres Gewerk anlegen</summary>
         <Formular aktion={gewerkAnlegen.bind(null, projektId)} knopf="Gewerk anlegen" className="formular">

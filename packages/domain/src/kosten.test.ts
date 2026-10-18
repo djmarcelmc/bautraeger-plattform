@@ -3,6 +3,10 @@ import { STANDARD_GEWERKEPLAN } from "./gewerkeplan.js";
 import {
   auftragsrahmen,
   budgetPruefung,
+  BudgetumbuchungEingabe,
+  freiesBudget,
+  umbuchungPruefen,
+  umbuchungsQuellen,
   HandwerkervertragEingabe,
   freistellungGueltig,
   gewerkeplanAusVorlage,
@@ -151,5 +155,33 @@ describe("kostenstand – Trend", () => {
   it("höherer geprüfter Rechnungsstand geht in den Trend ein", () => {
     const k = kostenstand("20000", [{ vertragBrutto: "18500", nachtraege: [{ betragBrutto: "4000", status: "angeboten" }], berechnet: "21420", abgegolten: "0" }]);
     expect(k).toMatchObject({ trend: "21420.00", abweichung: "-1420.00", angeboten: "4000.00" });
+  });
+});
+
+describe("Budget umschichten", () => {
+  const st = (geschaetzt: string, summeVergeben = "0", berechnet = "0") => kostenstand(geschaetzt, summeVergeben === "0" && berechnet === "0" ? [] : [{ vertragBrutto: summeVergeben, nachtraege: [], berechnet, abgegolten: "0" }]);
+  it("freies Budget = Schätzung − gebundene Kosten, nie negativ", () => {
+    expect(freiesBudget(st("100000", "80000")).toFixed(2)).toBe("20000.00");
+    expect(freiesBudget(st("100000", "80000", "90000")).toFixed(2)).toBe("10000.00");
+    expect(freiesBudget(st("20000", "18500", "21420")).toFixed(2)).toBe("0.00");
+  });
+  it("Quellen: vergebene Einsparungen zuerst, Ziel und Gewerke ohne freies Budget ausgenommen", () => {
+    const g = [
+      { id: "a", nr: 300, bezeichnung: "Rohbau", stand: st("100000", "80000"), vertraege: [1] },
+      { id: "b", nr: 355, bezeichnung: "Fliesen", stand: st("20000", "18500", "21420"), vertraege: [1] },
+      { id: "c", nr: 600, bezeichnung: "Außenanlagen", stand: st("50000"), vertraege: [] },
+      { id: "d", nr: 400, bezeichnung: "Dach", stand: st("40000", "35000"), vertraege: [1] },
+    ];
+    expect(umbuchungsQuellen(g, "b").map((x) => [x.id, x.frei, x.gesichert])).toEqual([
+      ["a", "20000.00", true],
+      ["d", "5000.00", true],
+      ["c", "50000.00", false],
+    ]);
+  });
+  it("prüft Betrag gegen freies Budget und Eingabe", () => {
+    expect(umbuchungPruefen({ nr: 400, bezeichnung: "Dach", stand: st("40000", "35000") }, "5000")).toBeNull();
+    expect(umbuchungPruefen({ nr: 400, bezeichnung: "Dach", stand: st("40000", "35000") }, "5000.01")).toMatch(/nur 5\.000,00 € freies Budget/);
+    expect(BudgetumbuchungEingabe.safeParse({ vonGewerkId: "6f1c2a52-6c5e-4c38-9c55-2b7e0f3b1a11", nachGewerkId: "6f1c2a52-6c5e-4c38-9c55-2b7e0f3b1a11", betrag: "100", begruendung: "x" }).success).toBe(false);
+    expect(BudgetumbuchungEingabe.safeParse({ vonGewerkId: "6f1c2a52-6c5e-4c38-9c55-2b7e0f3b1a11", nachGewerkId: "7f1c2a52-6c5e-4c38-9c55-2b7e0f3b1a11", betrag: "1.420,00", begruendung: "Einsparung Rohbau" }).data?.betrag).toBe("1420.00");
   });
 });
