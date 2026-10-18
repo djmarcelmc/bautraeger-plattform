@@ -65,8 +65,8 @@ const KONTEN: [keyof Kontierung, string, string?][] = [
   ["bauleistungenBu", "BU-Schlüssel Bauleistungen", "optional, z. B. für § 13b UStG"],
   ["skonto", "Erhaltene Skonti"],
   ["bauabzug", "Verbindlichkeit Bauabzugsteuer"],
-  ["debitorBasis", "Debitoren ab", "Basis + Partnernummer"],
-  ["kreditorBasis", "Kreditoren ab", "Basis + Partnernummer"],
+  ["debitorBasis", "Debitoren ab", "Basis + Partnernummer, wenn am Partner kein eigenes Konto steht"],
+  ["kreditorBasis", "Kreditoren ab", "Basis + Partnernummer, wenn am Partner kein eigenes Konto steht"],
 ];
 
 export default async function Buchhaltung({ searchParams }: { searchParams: Promise<{ g?: string; von?: string; bis?: string; status?: string; quelle?: string }> }) {

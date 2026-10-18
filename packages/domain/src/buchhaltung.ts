@@ -90,13 +90,13 @@ export interface JournalPosten {
 }
 
 export interface JournalQuellen {
-  anforderungen: { id: string; kaufvertragId: string; rechnungsnr: string; angefordertAm: string; betrag: string; debitorNr: number; name: string; kostenstelle: string | null }[];
+  anforderungen: { id: string; kaufvertragId: string; rechnungsnr: string; angefordertAm: string; betrag: string; debitorNr: number; debitorKonto?: string | null; name: string; kostenstelle: string | null }[];
   /** Kaufverträge mit Übergabe (Besitzübergang = Gewinnrealisierung) */
   uebergaben: { kaufvertragId: string; datum: string; vertragNr: string; name: string; kostenstelle: string | null }[];
-  eingaenge: { id: string; datum: string; betrag: string; debitorNr: number; name: string; rechnungsnr: string | null; kostenstelle: string | null }[];
+  eingaenge: { id: string; datum: string; betrag: string; debitorNr: number; debitorKonto?: string | null; name: string; rechnungsnr: string | null; kostenstelle: string | null }[];
   /** Freigegebene oder bezahlte Rechnungen; Betrag = geprüft fällig (nach Nachlass, Umlagen und Einbehalt, vor Skonto). */
-  rechnungen: { id: string; rechnungsnr: string; rechnungsdatum: string; betrag: string; kreditorNr: number; name: string; kostenstelle: string | null }[];
-  ausgaenge: { id: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; kreditorNr: number; name: string; rechnungsnr: string; kostenstelle: string | null }[];
+  rechnungen: { id: string; rechnungsnr: string; rechnungsdatum: string; betrag: string; kreditorNr: number; kreditorKonto?: string | null; name: string; kostenstelle: string | null }[];
+  ausgaenge: { id: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; kreditorNr: number; kreditorKonto?: string | null; name: string; rechnungsnr: string; kostenstelle: string | null }[];
   abfuehrungen: { id: string; abgefuehrtAm: string; abzugsbetrag: string; monat: string; name: string }[];
 }
 
@@ -110,24 +110,25 @@ export function journalSoll(q: JournalQuellen, k: Kontierung): JournalPosten[] {
     if (b.isZero()) return;
     liste.push(b.isNegative() ? { ...p, konto: p.gegenkonto, gegenkonto: p.konto, betrag: b.negated().toFixed(2), sollHaben: "S" } : { ...p, betrag: b.toFixed(2), sollHaben: "S" });
   };
-  const deb = (nr: number) => personenkonto(nr, k.debitorBasis);
-  const kred = (nr: number) => personenkonto(nr, k.kreditorBasis);
+  // eigenes Personenkonto am Geschäftspartner hat Vorrang vor Basis + Partnernummer
+  const deb = (x: { debitorNr: number; debitorKonto?: string | null }) => x.debitorKonto || personenkonto(x.debitorNr, k.debitorBasis);
+  const kred = (x: { kreditorNr: number; kreditorKonto?: string | null }) => x.kreditorKonto || personenkonto(x.kreditorNr, k.kreditorBasis);
   const uebergabe = new Map(q.uebergaben.map((u) => [u.kaufvertragId, u]));
   for (const a of q.anforderungen) {
     // nach der Übergabe direkt auf Erlöse, vorher auf Erhaltene Anzahlungen
     const nachUebergabe = (uebergabe.get(a.kaufvertragId)?.datum ?? "9999") < a.angefordertAm;
-    add({ quelleTyp: "zahlungsanforderung", quelleId: a.id, belegdatum: a.angefordertAm, belegnr: belegnummer(a.rechnungsnr), konto: deb(a.debitorNr), gegenkonto: nachUebergabe ? k.erloese : k.anzahlungen, betrag: a.betrag, steuerschluessel: nachUebergabe ? k.erloeseBu : k.anzahlungenBu, buchungstext: text60(`Zahlungsanforderung ${a.name}`), kostenstelle: a.kostenstelle });
+    add({ quelleTyp: "zahlungsanforderung", quelleId: a.id, belegdatum: a.angefordertAm, belegnr: belegnummer(a.rechnungsnr), konto: deb(a), gegenkonto: nachUebergabe ? k.erloese : k.anzahlungen, betrag: a.betrag, steuerschluessel: nachUebergabe ? k.erloeseBu : k.anzahlungenBu, buchungstext: text60(`Zahlungsanforderung ${a.name}`), kostenstelle: a.kostenstelle });
   }
   for (const u of q.uebergaben) {
     const bisher = summe(q.anforderungen.filter((a) => a.kaufvertragId === u.kaufvertragId && a.angefordertAm <= u.datum).map((a) => money(a.betrag)));
     add({ quelleTyp: "uebergabe", quelleId: u.kaufvertragId, belegdatum: u.datum, belegnr: belegnummer(u.vertragNr), konto: k.anzahlungen, gegenkonto: k.erloese, betrag: bisher.toFixed(2), steuerschluessel: k.erloeseBu, buchungstext: text60(`Übergabe ${u.vertragNr} ${u.name}`), kostenstelle: u.kostenstelle });
   }
   for (const e of q.eingaenge)
-    add({ quelleTyp: "zahlungseingang", quelleId: e.id, belegdatum: e.datum, belegnr: belegnummer(e.rechnungsnr), konto: k.bank, gegenkonto: deb(e.debitorNr), betrag: e.betrag, steuerschluessel: null, buchungstext: text60(`Zahlung ${e.name}`), kostenstelle: e.kostenstelle });
+    add({ quelleTyp: "zahlungseingang", quelleId: e.id, belegdatum: e.datum, belegnr: belegnummer(e.rechnungsnr), konto: k.bank, gegenkonto: deb(e), betrag: e.betrag, steuerschluessel: null, buchungstext: text60(`Zahlung ${e.name}`), kostenstelle: e.kostenstelle });
   for (const r of q.rechnungen)
-    add({ quelleTyp: "eingangsrechnung", quelleId: r.id, belegdatum: r.rechnungsdatum, belegnr: belegnummer(r.rechnungsnr), konto: k.bauleistungen, gegenkonto: kred(r.kreditorNr), betrag: r.betrag, steuerschluessel: k.bauleistungenBu, buchungstext: text60(`Rechnung ${r.name}`), kostenstelle: r.kostenstelle });
+    add({ quelleTyp: "eingangsrechnung", quelleId: r.id, belegdatum: r.rechnungsdatum, belegnr: belegnummer(r.rechnungsnr), konto: k.bauleistungen, gegenkonto: kred(r), betrag: r.betrag, steuerschluessel: k.bauleistungenBu, buchungstext: text60(`Rechnung ${r.name}`), kostenstelle: r.kostenstelle });
   for (const z of q.ausgaenge) {
-    const basis = { quelleId: z.id, belegdatum: z.datum, belegnr: belegnummer(z.rechnungsnr), konto: kred(z.kreditorNr), steuerschluessel: null, kostenstelle: z.kostenstelle };
+    const basis = { quelleId: z.id, belegdatum: z.datum, belegnr: belegnummer(z.rechnungsnr), konto: kred(z), steuerschluessel: null, kostenstelle: z.kostenstelle };
     add({ ...basis, quelleTyp: "zahlungsausgang", gegenkonto: k.bank, betrag: z.betrag, buchungstext: text60(`Zahlung ${z.name}`) });
     add({ ...basis, quelleTyp: "zahlungsausgang.skonto", gegenkonto: k.skonto, betrag: z.skonto, buchungstext: text60(`Skonto ${z.name}`) });
     add({ ...basis, quelleTyp: "zahlungsausgang.bauabzug", gegenkonto: k.bauabzug, betrag: z.bauabzugsteuer, buchungstext: text60(`Bauabzugsteuer ${z.name}`) });

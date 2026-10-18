@@ -139,4 +139,4 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
 8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – MaBV-Prüfbericht (§ 16) ✓
 9. ~~Bauzeitenplan (Gantt, MaBV-Meilensteine) und Liquiditätsplan nach Kalenderwochen~~ ✓ – Abhängigkeiten und kritischer Pfad ✓, Einbehalte und Skonto im Liquiditätsplan ✓
-10. ~~Buchungsjournal automatisch aus Verkauf und Kosten befüllen~~ ✓ – DATEV-Export mit Festschreibung und Storno, Umbuchung auf Erlöse bei Übergabe, Kontenzuordnung je Gesellschaft (mit Steuerberater abstimmen); Bankabgleich mit CAMT.053/MT940 ✓
+10. ~~Buchungsjournal automatisch aus Verkauf und Kosten befüllen~~ ✓ – DATEV-Export mit Festschreibung und Storno, Umbuchung auf Erlöse bei Übergabe, Kontenzuordnung je Gesellschaft (mit Steuerberater abstimmen); Bankabgleich mit CAMT.053/MT940 ✓, eigene DATEV-Personenkonten am Geschäftspartner ✓

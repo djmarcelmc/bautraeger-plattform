@@ -134,6 +134,13 @@
       "when": 1792340168729,
       "tag": "0018_bankabgleich",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792340924226,
+      "tag": "0019_personenkonten",
+      "breakpoints": true
     }
   ]
 }

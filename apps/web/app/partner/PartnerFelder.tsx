@@ -50,6 +50,10 @@ export function PartnerFelder({ p, vorschlagNr }: { p?: Partner; vorschlagNr?: n
         <Feld label="Steuernummer" name="steuernummer" wert={p?.steuernummer} hinweis="für die Bauabzugsteuer-Anmeldung" />
         <Feld label="Zuständiges Finanzamt" name="finanzamt" wert={p?.finanzamt} hinweis="dort wird die Bauabzugsteuer angemeldet" />
       </Gruppe>
+      <Gruppe titel="Buchhaltung (DATEV)">
+        <Feld label="Debitorenkonto" name="debitorKonto" wert={p?.debitorKonto} hinweis="für Käufer; leer = 10000 + Partnernummer" />
+        <Feld label="Kreditorenkonto" name="kreditorKonto" wert={p?.kreditorKonto} hinweis="für Handwerker und Lieferanten; leer = 70000 + Partnernummer" />
+      </Gruppe>
     </>
   );
 }

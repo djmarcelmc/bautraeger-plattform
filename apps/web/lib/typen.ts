@@ -31,6 +31,8 @@ export interface Partner {
   freistellungGueltigBis: string | null;
   steuernummer: string | null;
   finanzamt: string | null;
+  debitorKonto: string | null;
+  kreditorKonto: string | null;
 }
 
 export interface ProjektListe {

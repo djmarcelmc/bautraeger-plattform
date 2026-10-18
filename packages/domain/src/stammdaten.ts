@@ -54,6 +54,14 @@ export type GesellschaftEingabe = z.infer<typeof GesellschaftEingabe>;
 
 export const PARTNER_ROLLEN = ["kunde", "interessent", "handwerker", "lieferant", "notar", "makler", "bank", "sonstige"] as const;
 
+const personenkontoFeld = (name: string) =>
+  z
+    .union([z.string(), z.number()])
+    .transform((v) => String(v).trim().replace(/\s/g, ""))
+    .pipe(z.string().regex(/^(\d{5,9})?$/, `${name}: 5 bis 9 Ziffern (Sachkontenlänge + 1)`))
+    .transform((s) => s || null)
+    .nullish();
+
 export const PartnerEingabe = z
   .object({
     nr: ganzzahl().positive(),
@@ -78,6 +86,9 @@ export const PartnerEingabe = z
     freistellungGueltigBis: datum(),
     steuernummer: text(30),
     finanzamt: text(100),
+    /** Eigenes DATEV-Personenkonto; leer = Basis + Partnernummer */
+    debitorKonto: personenkontoFeld("Debitorenkonto"),
+    kreditorKonto: personenkontoFeld("Kreditorenkonto"),
   })
   .refine((p) => p.firma || p.nachname, { message: "Firma oder Nachname angeben", path: ["nachname"] });
 export type PartnerEingabe = z.infer<typeof PartnerEingabe>;
