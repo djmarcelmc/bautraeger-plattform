@@ -1,4 +1,5 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
+import { Dokumente } from "@/components/Dokumente";
 import { Protokoll } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
@@ -30,6 +31,8 @@ export default async function EinheitSeite({ params }: { params: Promise<{ id: s
       <Formular aktion={einheitAendern.bind(null, id)}>
         <EinheitFelder e={e} andere={projekt.einheiten} />
       </Formular>
+      <h2>Dokumente</h2>
+      <Dokumente objektTyp="einheit" objektId={id} pfad={`/einheiten/${id}`} />
       <details className="karte">
         <summary>Änderungsprotokoll ({protokoll.length})</summary>
         <Protokoll eintraege={protokoll} />

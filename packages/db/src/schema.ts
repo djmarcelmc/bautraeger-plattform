@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   boolean,
   date,
   integer,
@@ -132,14 +133,18 @@ export const einheit = pgTable("einheit", {
 }, (t) => [uniqueIndex("einheit_nr_je_projekt").on(t.projektId, t.nr)]);
 
 /** Fertigmeldung eines MaBV-Bauabschnitts je Einheit. */
-export const bautenstand = pgTable("bautenstand", {
-  id: id(),
-  einheitId: uuid("einheit_id").notNull().references(() => einheit.id),
-  abschnitt: text("abschnitt").notNull(),
-  fertigAm: date("fertig_am").notNull(),
-  gemeldetVon: text("gemeldet_von"),
-  ...zeitstempel,
-});
+export const bautenstand = pgTable(
+  "bautenstand",
+  {
+    id: id(),
+    einheitId: uuid("einheit_id").notNull().references(() => einheit.id),
+    abschnitt: text("abschnitt").notNull(),
+    fertigAm: date("fertig_am").notNull(),
+    gemeldetVon: text("gemeldet_von"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("bautenstand_einheit_abschnitt").on(t.einheitId, t.abschnitt)],
+);
 
 // ---------------------------------------------------------------- Verkauf
 
@@ -162,7 +167,7 @@ export const kaufvertrag = pgTable("kaufvertrag", {
   uebergabeIst: timestamp("uebergabe_ist", { withTimezone: true }),
   gewaehrleistungBis: date("gewaehrleistung_bis"),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("kaufvertrag_nr_je_projekt").on(t.projektId, t.nr)]);
 
 export const kaufvertragKaeufer = pgTable("kaufvertrag_kaeufer", {
   id: id(),
@@ -171,12 +176,17 @@ export const kaufvertragKaeufer = pgTable("kaufvertrag_kaeufer", {
   anteilProzent: prozent("anteil_prozent").notNull().default("100"),
 });
 
-export const kaufvertragEinheit = pgTable("kaufvertrag_einheit", {
-  id: id(),
-  kaufvertragId: uuid("kaufvertrag_id").notNull().references(() => kaufvertrag.id),
-  einheitId: uuid("einheit_id").notNull().references(() => einheit.id),
-  vkBrutto: geld("vk_brutto").notNull(),
-});
+/** Eine Einheit kann nur in einem Kaufvertrag stehen. */
+export const kaufvertragEinheit = pgTable(
+  "kaufvertrag_einheit",
+  {
+    id: id(),
+    kaufvertragId: uuid("kaufvertrag_id").notNull().references(() => kaufvertrag.id),
+    einheitId: uuid("einheit_id").notNull().references(() => einheit.id),
+    vkBrutto: geld("vk_brutto").notNull(),
+  },
+  (t) => [uniqueIndex("einheit_nur_ein_kaufvertrag").on(t.einheitId)],
+);
 
 export const rateTyp = pgEnum("rate_typ", ["mabv", "zusatzleistung", "gutschrift"]);
 
@@ -189,12 +199,14 @@ export const rate = pgTable("rate", {
   prozent: prozent("prozent"),
   betrag: geld("betrag").notNull(),
   text: text("text"),
+  /** Anforderung, mit der die Rate angefordert wurde (mehrere Raten können zusammengefasst werden). */
+  zahlungsanforderungId: uuid("zahlungsanforderung_id").references((): AnyPgColumn => zahlungsanforderung.id),
   ...zeitstempel,
 });
 
 export const zahlungsanforderung = pgTable("zahlungsanforderung", {
   id: id(),
-  rateId: uuid("rate_id").notNull().references(() => rate.id),
+  kaufvertragId: uuid("kaufvertrag_id").notNull().references(() => kaufvertrag.id),
   rechnungsnr: text("rechnungsnr").notNull(),
   angefordertAm: date("angefordert_am").notNull(),
   faelligAm: date("faellig_am").notNull(),
@@ -373,9 +385,27 @@ export const dokument = pgTable("dokument", {
   mimeType: text("mime_type"),
   speicherKey: text("speicher_key").notNull(),
   sha256: text("sha256").notNull(),
+  groesse: integer("groesse"),
   beschreibung: text("beschreibung"),
+  hochgeladenVon: text("hochgeladen_von"),
+  /** GoBD: Dokumente werden nicht physisch gelöscht, sondern ausgeblendet. */
+  geloeschtAm: timestamp("geloescht_am", { withTimezone: true }),
+  geloeschtVon: text("geloescht_von"),
   ...zeitstempel,
 });
+
+/** Fortlaufende Nummern je Gesellschaft, Art (z. B. "ZA") und Jahr. */
+export const nummernkreis = pgTable(
+  "nummernkreis",
+  {
+    id: id(),
+    gesellschaftId: uuid("gesellschaft_id").notNull().references(() => gesellschaft.id),
+    art: text("art").notNull(),
+    jahr: integer("jahr").notNull(),
+    letzte: integer("letzte").notNull().default(0),
+  },
+  (t) => [uniqueIndex("nummernkreis_eindeutig").on(t.gesellschaftId, t.art, t.jahr)],
+);
 
 /** GoBD-Änderungsprotokoll. */
 export const aenderungsprotokoll = pgTable("aenderungsprotokoll", {

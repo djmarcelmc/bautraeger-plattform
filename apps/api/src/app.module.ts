@@ -4,6 +4,11 @@ import { DbFehlerFilter } from "./common/db-fehler.filter.js";
 import { KontextService } from "./common/kontext.service.js";
 import { dbProvider } from "./db.provider.js";
 import { DatevController } from "./datev/datev.controller.js";
+import { DokumenteController } from "./dokumente/dokumente.controller.js";
+import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
+import { KaufvertraegeController } from "./verkauf/kaufvertraege.controller.js";
+import { VerkaufService } from "./verkauf/verkauf.service.js";
+import { ZahlungenController } from "./verkauf/zahlungen.controller.js";
 import { EinheitenController } from "./einheiten/einheiten.controller.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
 import { MabvController } from "./mabv/mabv.controller.js";
@@ -28,8 +33,17 @@ class HealthController {
     ProjekteController,
     EinheitenController,
     ProtokollController,
+    DokumenteController,
+    KaufvertraegeController,
+    ZahlungenController,
     DatevController,
   ],
-  providers: [dbProvider, KontextService, { provide: APP_FILTER, useClass: DbFehlerFilter }],
+  providers: [
+    dbProvider,
+    KontextService,
+    VerkaufService,
+    { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
+    { provide: APP_FILTER, useClass: DbFehlerFilter },
+  ],
 })
 export class AppModule {}

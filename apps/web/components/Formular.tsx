@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 interface Ergebnis {
   fehler?: string[];
@@ -18,14 +18,19 @@ export function Formular({
   knopfArt,
   bestaetigen,
   className = "formular",
+  zuruecksetzen,
 }: {
   aktion: (fd: FormData) => Promise<Ergebnis | void>;
   children?: ReactNode;
-  knopf?: string;
+  /** Beschriftung des Absende-Knopfs; null = kein Knopf. */
+  knopf?: string | null;
   knopfArt?: "zweitrangig" | "gefahr";
   bestaetigen?: string;
   className?: string;
+  /** Formular nach Erfolg leeren (z. B. nach Upload oder Zahlungserfassung). */
+  zuruecksetzen?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [ergebnis, setErgebnis] = useState<Ergebnis>({});
   const [laeuft, starte] = useTransition();
 
@@ -33,11 +38,15 @@ export function Formular({
     ev.preventDefault();
     if (bestaetigen && !window.confirm(bestaetigen)) return;
     const fd = new FormData(ev.currentTarget);
-    starte(async () => setErgebnis((await aktion(fd)) ?? {}));
+    starte(async () => {
+      const r = (await aktion(fd)) ?? {};
+      setErgebnis(r);
+      if (zuruecksetzen && !r.fehler?.length) formRef.current?.reset();
+    });
   }
 
   return (
-    <form onSubmit={absenden} className={className}>
+    <form ref={formRef} onSubmit={absenden} className={className}>
       {ergebnis.fehler?.length ? (
         <div className="fehler" role="alert">
           {ergebnis.fehler.map((f) => (
@@ -47,11 +56,13 @@ export function Formular({
       ) : null}
       {ergebnis.meldung ? <div className="meldung">{ergebnis.meldung}</div> : null}
       {children}
-      <div className="aktionen">
-        <button type="submit" disabled={laeuft} className={knopfArt}>
-          {laeuft ? "Bitte warten …" : knopf}
-        </button>
-      </div>
+      {knopf !== null && (
+        <div className="aktionen">
+          <button type="submit" disabled={laeuft} className={knopfArt}>
+            {laeuft ? "Bitte warten …" : knopf}
+          </button>
+        </div>
+      )}
     </form>
   );
 }
