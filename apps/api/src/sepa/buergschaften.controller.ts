@@ -1,20 +1,19 @@
 import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query } from "@nestjs/common";
 import { schema } from "@bt/db";
-import { BUERGSCHAFT_ART_TEXT, BuergschaftEingabe, buergschaftStatus, money, rueckgabeFaelligAb, summe, type BuergschaftArt, type BuergschaftEingabe as Werte } from "@bt/domain";
+import { BuergschaftEingabe, money, summe, type BuergschaftEingabe as Werte } from "@bt/domain";
 import { and, asc, eq, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { KontextService } from "../common/kontext.service.js";
 import { differenz, protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
+import { BuergschaftenService } from "./buergschaften.service.js";
 
 const { buergschaft: b, handwerkervertrag: hv, gewerk: gw, kaufvertrag: kv, geschaeftspartner: gp } = schema;
 const p1 = alias(schema.projekt, "p1");
 const p2 = alias(schema.projekt, "p2");
 const g1 = alias(schema.gesellschaft, "g1");
 const g2 = alias(schema.gesellschaft, "g2");
-const hw = alias(schema.geschaeftspartner, "hw");
-const heute = () => new Date().toISOString().slice(0, 10);
 const uuid = (v?: string) => (v && /^[0-9a-f-]{36}$/.test(v) ? v : undefined);
 
 @Controller("buergschaften")
@@ -22,55 +21,8 @@ export class BuergschaftenController {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(KontextService) private readonly kontext: KontextService,
+    @Inject(BuergschaftenService) private readonly service: BuergschaftenService,
   ) {}
-
-  private async abfrage(filter: { id?: string; projektId?: string; handwerkervertragId?: string; kaufvertragId?: string; richtung?: string }) {
-    const mandantId = await this.kontext.mandantId();
-    const zeilen = await this.db
-      .select({
-        b,
-        projekt: sql<{ id: string; nr: number; suchcode: string } | null>`case when ${p1.id} is not null then json_build_object('id', ${p1.id}, 'nr', ${p1.nr}, 'suchcode', ${p1.suchcode}) when ${p2.id} is not null then json_build_object('id', ${p2.id}, 'nr', ${p2.nr}, 'suchcode', ${p2.suchcode}) end`,
-        bezug: sql<string>`coalesce(${gw.nr} || ' ' || ${gw.bezeichnung} || ' – ' || coalesce(${hw.firma}, ${hw.nachname}, ${hw.suchcode}), 'Kaufvertrag ' || ${kv.nr})`,
-        buerge: sql<string | null>`coalesce(${gp.firma}, ${gp.nachname})`,
-        abnahmeAm: hv.abnahmeAm,
-        gewaehrleistungMonate: hv.gewaehrleistungMonate,
-        uebergabeAm: sql<string | null>`to_char(${kv.uebergabeIst} at time zone 'Europe/Berlin', 'YYYY-MM-DD')`,
-      })
-      .from(b)
-      .leftJoin(hv, eq(b.handwerkervertragId, hv.id))
-      .leftJoin(gw, eq(hv.gewerkId, gw.id))
-      .leftJoin(p1, eq(gw.projektId, p1.id))
-      .leftJoin(g1, eq(p1.gesellschaftId, g1.id))
-      .leftJoin(hw, eq(hv.handwerkerId, hw.id))
-      .leftJoin(kv, eq(b.kaufvertragId, kv.id))
-      .leftJoin(p2, eq(kv.projektId, p2.id))
-      .leftJoin(g2, eq(p2.gesellschaftId, g2.id))
-      .leftJoin(gp, eq(b.buergeId, gp.id))
-      .where(
-        and(
-          or(eq(g1.mandantId, mandantId), eq(g2.mandantId, mandantId)),
-          filter.id ? eq(b.id, filter.id) : undefined,
-          filter.projektId ? or(eq(p1.id, filter.projektId), eq(p2.id, filter.projektId)) : undefined,
-          filter.handwerkervertragId ? eq(b.handwerkervertragId, filter.handwerkervertragId) : undefined,
-          filter.kaufvertragId ? eq(b.kaufvertragId, filter.kaufvertragId) : undefined,
-          filter.richtung === "erhalten" || filter.richtung === "ausgegeben" ? eq(b.richtung, filter.richtung) : undefined,
-        ),
-      )
-      .orderBy(asc(b.gueltigBis), asc(b.angelegtAm));
-    const stichtag = heute();
-    return zeilen.map((z) => {
-      const faellig = rueckgabeFaelligAb(z.b.art, z);
-      return {
-        ...z.b,
-        artText: BUERGSCHAFT_ART_TEXT[z.b.art as BuergschaftArt] ?? z.b.art,
-        projekt: z.projekt,
-        bezug: z.bezug,
-        buerge: z.buerge,
-        rueckgabeFaelligAb: faellig,
-        status: buergschaftStatus({ gueltigBis: z.b.gueltigBis, rueckgabeAm: z.b.rueckgabeAm, rueckgabeFaelligAb: faellig }, stichtag),
-      };
-    });
-  }
 
   /** Bezug (Vertrag) und Bürge müssen zum Mandanten gehören. */
   private async pruefeBezug(w: Werte) {
@@ -117,7 +69,7 @@ export class BuergschaftenController {
     @Query("richtung") richtung?: string,
     @Query("status") status?: string,
   ) {
-    let liste = await this.abfrage({ projektId: uuid(projektId), handwerkervertragId: uuid(handwerkervertragId), kaufvertragId: uuid(kaufvertragId), richtung });
+    let liste = await this.service.abfrage({ projektId: uuid(projektId), handwerkervertragId: uuid(handwerkervertragId), kaufvertragId: uuid(kaufvertragId), richtung });
     if (status === "offen") liste = liste.filter((x) => x.status !== "zurueckgegeben");
     else if (status === "handlung") liste = liste.filter((x) => ["abgelaufen", "rueckgabe_faellig", "laeuft_ab"].includes(x.status));
     const aktiv = liste.filter((x) => x.status !== "zurueckgegeben");
@@ -127,7 +79,7 @@ export class BuergschaftenController {
 
   @Get(":id")
   async eine(@Param("id", ParseUUIDPipe) id: string) {
-    const [x] = await this.abfrage({ id });
+    const [x] = await this.service.abfrage({ id });
     if (!x) throw new NotFoundException("Bürgschaft nicht gefunden");
     return x;
   }

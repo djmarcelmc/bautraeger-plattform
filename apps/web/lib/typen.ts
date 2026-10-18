@@ -689,3 +689,21 @@ export interface MabvPruefbericht {
   }[];
   summen: { vertraege: number; vertragssumme: string; angefordertImZeitraum: string; eingegangenImZeitraum: string; anforderungen: number; verstoesse: number; hinweise: number; mitParagraph7: number };
 }
+
+export interface CockpitAufgabe {
+  bereich: "verkauf" | "kosten" | "maengel" | "sicherheiten" | "bau" | "steuern" | "einstellungen";
+  dringlichkeit: "hoch" | "mittel" | "info";
+  titel: string;
+  text: string;
+  datum?: string | null;
+  betrag?: string | null;
+  projekt?: string | null;
+  link: string;
+}
+
+export interface Cockpit {
+  stichtag: string;
+  aufgaben: CockpitAufgabe[];
+  anzahl: { hoch: number; mittel: number; info: number };
+  kennzahlen: { projekte: number; offeneForderungen: string; ueberfaellig: string; zuZahlen: string; offeneMaengel: number };
+}

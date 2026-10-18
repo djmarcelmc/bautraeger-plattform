@@ -2080,6 +2080,152 @@ h2.kartentitel {
   }
 }
 
+/* ------------------------------------------------------------------ Cockpit */
+.cockpit {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.cockpit aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cockpit aside .karte {
+  margin: 0;
+}
+.cockpitkopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.cockpitkopf h2 {
+  margin: 0;
+}
+.cockpitkopf .segment {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.aufgaben {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.aufgabe a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-left: 4px solid var(--linie-stark);
+  border-radius: var(--radius-klein);
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--schatten);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.aufgabe a:hover {
+  box-shadow: var(--schatten-hoch);
+  transform: translateY(-1px);
+}
+.aufgabe.hoch a {
+  border-left-color: var(--gefahr);
+}
+.aufgabe.mittel a {
+  border-left-color: var(--warnung);
+}
+.aufgabe.info a {
+  border-left-color: var(--akzent);
+}
+.aufgabe-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--flaeche-2);
+  color: var(--text-2);
+}
+.aufgabe.hoch .aufgabe-icon {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.aufgabe.mittel .aufgabe-icon {
+  background: var(--warnung-weich);
+  color: var(--warnung);
+}
+.aufgabe.info .aufgabe-icon {
+  background: var(--akzent-weich);
+  color: var(--akzent);
+}
+.aufgabe-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.aufgabe-inhalt b {
+  font-weight: 600;
+  font-size: 14px;
+}
+.aufgabe-inhalt small {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.aufgabe-inhalt .badge {
+  align-self: flex-start;
+  margin-top: 3px;
+  font-size: 11px;
+}
+.aufgabe-rechts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.aufgabe-rechts small {
+  color: var(--text-3);
+  font-size: 12px;
+}
+.aufgabe-pfeil {
+  color: var(--text-3);
+}
+.schnellzugriff {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.schnellzugriff a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+@media (max-width: 960px) {
+  .cockpit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .aufgabe a {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .aufgabe-pfeil {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {
