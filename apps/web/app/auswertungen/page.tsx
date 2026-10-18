@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, FileText, Wallet } from "lucide-react";
+import { BarChart3, ClipboardList, FileText, LineChart, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ProjektListe } from "@/lib/typen";
 
@@ -19,6 +19,11 @@ export default async function Auswertungen() {
           <Wallet size={22} />
           <div className="kacheltitel">Liquiditätsbetrachtung</div>
           <div className="kachelzeile">Erlöse, Kosten und Saldo je Projekt und Gesellschaft – Trend, angefordert, bezahlt, offen</div>
+        </a>
+        <a href="/auswertungen/liquiditaetsplan" className="projektkachel">
+          <LineChart size={22} />
+          <div className="kacheltitel">Liquiditätsplan</div>
+          <div className="kachelzeile">Erwartete Ein- und Auszahlungen nach Kalenderwochen aus Bauzeitenplan, Raten und Gewerken – mit Bestand und Tiefststand</div>
         </a>
         <a href="/auswertungen/controlling" className="projektkachel">
           <BarChart3 size={22} />

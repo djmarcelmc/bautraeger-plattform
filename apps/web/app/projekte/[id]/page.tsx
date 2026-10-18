@@ -14,6 +14,7 @@ import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "
 import { EinheitFelder } from "../../einheiten/EinheitFelder";
 import { einheitAnlegen, projektAendern, projektKopieren } from "../aktionen";
 import { ProjektFelder } from "../ProjektFelder";
+import { BauzeitReiter } from "./Bauzeitenplan";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ const REITER = [
   ["einheiten", "Einheiten"],
   ["verkauf", "Verkauf"],
   ["bautenstand", "Bautenstand"],
+  ["bauzeit", "Bauzeitenplan"],
   ["kosten", "Kosten"],
   ["maengel", "Mängel"],
   ["dokumente", "Dokumente"],
@@ -189,6 +191,7 @@ export default async function ProjektSeite({
 
       {reiter === "verkauf" && <VerkaufReiter projektId={id} />}
       {reiter === "bautenstand" && <BautenstandReiter projektId={id} />}
+      {reiter === "bauzeit" && <BauzeitReiter projektId={id} baubeginnSoll={p.baubeginnSoll} />}
       {reiter === "maengel" && <MaengelReiter projektId={id} />}
       {reiter === "kosten" && <KostenReiter projektId={id} nurVergeben={nurVergeben === "1"} />}
       {reiter === "dokumente" && <Dokumente objektTyp="projekt" objektId={id} pfad={`/projekte/${id}`} />}

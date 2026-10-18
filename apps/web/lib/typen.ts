@@ -472,3 +472,53 @@ export interface MahnungDruck extends Mahnung {
   kaeufer: Partner[];
   vorherige: Mahnung[];
 }
+
+export interface Vorgang {
+  id: string;
+  projektId: string;
+  nr: number;
+  bezeichnung: string;
+  gewerkIds: string[];
+  mabvAbschnitt: string | null;
+  beginn: string;
+  ende: string;
+  endeIst: string | null;
+  gewerke: { id: string; nr: number; bezeichnung: string; trend: string; berechnet: string }[];
+  meilenstein: string | null;
+  gemeldet: number | null;
+}
+
+export interface Bauzeitenplan {
+  vorgaenge: Vorgang[];
+  einheiten: number;
+  beginn: string | null;
+  ende: string | null;
+  gewerkeOhneVorgang: { id: string; nr: number; bezeichnung: string; trend: string }[];
+}
+
+export interface LiquiditaetsWoche {
+  jahr: number;
+  woche: number;
+  von: string;
+  bis: string;
+  ein: Record<string, string>;
+  aus: Record<string, string>;
+  einSumme: string;
+  ausSumme: string;
+  saldo: string;
+  bestand: string;
+}
+
+export interface Liquiditaetsplan {
+  stichtag: string;
+  projekte: { id: string; nr: number; suchcode: string; gesellschaft: string; hatPlan: boolean }[];
+  artText: { ein: Record<string, string>; aus: Record<string, string> };
+  anfangsbestand: string;
+  arten: { ein: string[]; aus: string[] };
+  wochen: LiquiditaetsWoche[];
+  summe: { ein: string; aus: string; endbestand: string };
+  tiefstand: { bestand: string; woche: { jahr: number; woche: number } | null };
+  ueberfaellig: { ein: string; aus: string };
+  spaeter: { ein: string; aus: string };
+  ohneTermin: { ein: string; aus: string };
+}

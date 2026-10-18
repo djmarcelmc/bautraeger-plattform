@@ -258,6 +258,62 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "liquiditaetsplan",
+      {
+        title: "Liquiditätsplan nach Kalenderwochen",
+        description:
+          "Erwartete Ein- und Auszahlungen je Kalenderwoche aus Bauzeitenplan, MaBV-Raten und Gewerken, mit Bestand und Tiefststand (Finanzierungsbedarf). Optional für ein Projekt (Projektnummer), mit Anfangsbestand und unverkauften Einheiten.",
+        inputSchema: {
+          projektNr: z.number().int().optional(),
+          wochen: z.number().int().min(4).max(104).optional(),
+          anfangsbestand: z.number().optional(),
+          unverkaufteEinheiten: z.boolean().optional(),
+        },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ projektNr, wochen, anfangsbestand, unverkaufteEinheiten }) => {
+        const q = new URLSearchParams({ wochen: String(wochen ?? 26) });
+        if (projektNr !== undefined) {
+          const projekte = await apiGet<{ id: string; nr: number }[]>(`/projekte?abgeschlossen=alle&suche=${projektNr}`);
+          const id = projekte.find((x) => x.nr === projektNr)?.id;
+          if (!id) return text(`Projekt ${projektNr} nicht gefunden.`);
+          q.set("projektId", id);
+        }
+        if (anfangsbestand !== undefined) q.set("anfangsbestand", anfangsbestand.toFixed(2));
+        if (unverkaufteEinheiten) q.set("unverkauft", "1");
+        const d = await apiGet<{
+          stichtag: string;
+          projekte: { nr: number; suchcode: string; hatPlan: boolean }[];
+          artText: { ein: Record<string, string>; aus: Record<string, string> };
+          wochen: { jahr: number; woche: number; ein: Record<string, string>; aus: Record<string, string>; einSumme: string; ausSumme: string; bestand: string }[];
+          summe: { ein: string; aus: string; endbestand: string };
+          tiefstand: { bestand: string; woche: { jahr: number; woche: number } | null };
+          ueberfaellig: { ein: string; aus: string };
+          spaeter: { ein: string; aus: string };
+          ohneTermin: { ein: string; aus: string };
+        }>(`/auswertungen/liquiditaetsplan?${q}`);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        const posten = (r: Record<string, string>, t: Record<string, string>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [t[k] ?? k, euro(v)]));
+        return json({
+          stichtag: d.stichtag,
+          projekte: d.projekte.map((p) => `${p.nr} ${p.suchcode}${p.hatPlan ? "" : " (ohne Bauzeitenplan)"}`),
+          summe: { einnahmen: euro(d.summe.ein), ausgaben: euro(d.summe.aus), endbestand: euro(d.summe.endbestand) },
+          tiefstand: { bestand: euro(d.tiefstand.bestand), kw: d.tiefstand.woche ? `KW ${d.tiefstand.woche.woche}/${d.tiefstand.woche.jahr}` : null },
+          davonUeberfaellig: { einnahmen: euro(d.ueberfaellig.ein), ausgaben: euro(d.ueberfaellig.aus) },
+          spaeter: { einnahmen: euro(d.spaeter.ein), ausgaben: euro(d.spaeter.aus) },
+          ohneTermin: { einnahmen: euro(d.ohneTermin.ein), ausgaben: euro(d.ohneTermin.aus) },
+          wochen: d.wochen.map((w) => ({
+            kw: `KW ${w.woche}/${w.jahr}`,
+            einnahmen: posten(w.ein, d.artText.ein),
+            ausgaben: posten(w.aus, d.artText.aus),
+            bestand: euro(w.bestand),
+          })),
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(
