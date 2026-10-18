@@ -55,6 +55,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `POST /api/projekte`, `GET/PUT /api/projekte/:id`, `POST /api/projekte/:id/kopieren` | Projekt anlegen, lesen (inkl. Einheiten), ändern, kopieren |
 | `POST /api/projekte/:id/einheiten`, `GET/PUT/DELETE /api/einheiten/:id` | Einheiten |
 | `GET /api/protokoll/:datensatzId` | Änderungsprotokoll (GoBD) |
+| `GET /api/import/:art/vorlage`, `POST /api/import/:art/pruefen`, `POST /api/import/:art/ausfuehren` | Datenimport aus Excel/CSV für `partner` und `einheiten` (Prüflauf ohne Speichern, Übernahme ganz oder gar nicht) |
 | `GET/POST /api/kaufvertraege`, `GET /api/kaufvertraege/:id`, `PUT /api/kaufvertraege/:id/konditionen` | Kaufvertrag inkl. automatischem MaBV-Ratenplan, Ratenstatus und Summen |
 | `GET/POST /api/projekte/:id/bautenstand`, `DELETE /api/bautenstand/:id` | Bautenstand melden / zurücknehmen (gesperrt nach Anforderung) |
 | `POST /api/zahlungsanforderungen`, `POST /api/projekte/:id/zahlungsanforderungen`, `GET /api/zahlungsanforderungen/:id` | Raten anfordern (einzeln, zusammengefasst oder als Sammelanforderung je Projekt) |
@@ -82,6 +83,8 @@ die API prüft jedes Kommando gegen die Rechte der Rolle (Rechtematrix in der En
 bei der Rechnungsfreigabe). Ohne Anmeldung läuft die Plattform wie bisher hinter dem Passwortschutz.
 
 ## Produktivbetrieb
+
+Für den ersten echten Betrieb mit Datenübernahme gibt es eine Checkliste: [docs/inbetriebnahme.md](docs/inbetriebnahme.md).
 
 Die Plattform läuft als Docker-Stack auf einem vServer (geplant: **projectx.cubivivit.de**). Schritt für Schritt in
 [docs/deployment.md](docs/deployment.md); kurz:
@@ -122,7 +125,7 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 ## Nächste Schritte (Roadmap Phase 0/1)
 
 1. ~~Login über Microsoft Entra ID mit App-Rollen~~ ✓ eingebaut, wird mit den Daten der [App-Registrierung](docs/microsoft-entra-app-registrierung.md) eingeschaltet
-2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓
+2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓ – Datenimport aus Excel/CSV ✓
 3. ~~Dokumentablage an Projekten, Einheiten, Partnern und Kaufverträgen~~ ✓
 4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – offen: Mahnwesen, Zusatzleistungen/Gutschriften, Versand per Outlook
 5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – SEPA-Zahlungslauf (pain.001.001.09) und Bürgschaften ✓; offen: Rollen für Prüfung/Freigabe, Bauabzugsteuer-Anmeldung

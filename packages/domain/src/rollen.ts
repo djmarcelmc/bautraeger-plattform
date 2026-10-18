@@ -70,6 +70,8 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/buergschaften(\/|$)/, "sicherheiten"],
   [/^\/dokumente(\/|$)/, "dokumente"],
   [/^\/partner(\/|$)/, "stammdaten"],
+  [/^\/import\/partner\//, "stammdaten"],
+  [/^\/import\/einheiten\//, "projekte"],
   [/^\/(einheiten)(\/|$)/, "projekte"],
   [/^\/projekte(\/[^/]+(\/(einheiten|kopieren))?)?$/, "projekte"],
 ];

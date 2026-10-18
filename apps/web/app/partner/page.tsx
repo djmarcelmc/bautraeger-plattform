@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Upload } from "lucide-react";
 import { api } from "@/lib/api";
 import { deDatum } from "@/lib/format";
 import { partnerName, type Partner } from "@/lib/typen";
@@ -18,9 +18,14 @@ export default async function PartnerListe({ searchParams }: { searchParams: Pro
           <h1>Geschäftspartner</h1>
           <p className="untertitel">Kunden, Interessenten, Handwerker, Notare und weitere Partner</p>
         </div>
-        <a className="knopf" href="/partner/neu">
-          <Plus size={16} /> Neuer Partner
-        </a>
+        <div className="knopfleiste">
+          <a className="knopf zweitrangig" href="/einstellungen/import?art=partner">
+            <Upload size={16} /> Importieren
+          </a>
+          <a className="knopf" href="/partner/neu">
+            <Plus size={16} /> Neuer Partner
+          </a>
+        </div>
       </div>
       <form className="filterleiste">
         <div className="suchfeld">
