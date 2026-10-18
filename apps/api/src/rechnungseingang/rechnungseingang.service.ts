@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { schema } from "@bt/db";
-import { eingangVorschlag, gewerkVorschlag, neuerHandwerker, projektVorschlag, type EingangsrechnungEingabe, type HandwerkerKandidat, type Rechnungsdaten, type VertragKandidat } from "@bt/domain";
+import { auftragsrahmen, eingangVorschlag, gewerkVorschlag, neuerHandwerker, projektVorschlag, type EingangsrechnungEingabe, type HandwerkerKandidat, type Rechnungsdaten, type VertragKandidat } from "@bt/domain";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
@@ -127,6 +127,8 @@ export class RechnungseingangService {
           gesellschaft: g.name,
           abgeschlossen: sql<boolean>`exists (select 1 from ${er} where ${er.handwerkervertragId} = ${hv.id} and ${er.schlussrechnung})`,
           offeneRechnung: sql<boolean>`exists (select 1 from ${er} where ${er.handwerkervertragId} = ${hv.id} and ${er.status} <> 'bezahlt')`,
+          vertragBrutto: hv.vertragBrutto,
+          nachtraege: sql<{ betragBrutto: string; status: string }[]>`(select coalesce(json_agg(json_build_object('betragBrutto', ${schema.nachtrag.betragBrutto}::text, 'status', ${schema.nachtrag.status})), '[]') from ${schema.nachtrag} where ${schema.nachtrag.handwerkervertragId} = ${hv.id})`,
         })
         .from(hv)
         .innerJoin(gw, eq(hv.gewerkId, gw.id))
@@ -142,7 +144,7 @@ export class RechnungseingangService {
         .where(and(eq(g.mandantId, mandantId), eq(p.abgeschlossen, false)))
         .orderBy(p.nr, gw.nr),
     ]);
-    return { handwerker: handwerker as HandwerkerKandidat[], vertraege: vertraege as (VertragKandidat & { nrIntern: string | null; gesellschaft: string })[], gewerke };
+    return { handwerker: handwerker as HandwerkerKandidat[], vertraege: vertraege as (VertragKandidat & { nrIntern: string | null; gesellschaft: string; vertragBrutto: string; nachtraege: { betragBrutto: string; status: string }[] })[], gewerke };
   }
 
   async liste(status: "neu" | "erfasst" | "verworfen" | "alle") {
@@ -169,10 +171,14 @@ export class RechnungseingangService {
         const neu = z.status === "neu";
         const projekte = [...new Map(k.gewerke.map((x) => [x.projektId, { id: x.projektId, nr: x.projektNr, suchcode: x.projektSuchcode, ort: x.projektOrt }])).values()];
         const projektId = neu ? projektVorschlag(daten, text ?? "", projekte) : null;
+        const vorschlag = neu ? eingangVorschlag(daten, text ?? "", z.absender, k.handwerker, k.vertraege) : null;
+        const vertrag = vorschlag?.handwerkervertragId ? k.vertraege.find((v) => v.id === vorschlag.handwerkervertragId) : undefined;
         return {
           ...z,
           daten,
-          vorschlag: neu ? eingangVorschlag(daten, text ?? "", z.absender, k.handwerker, k.vertraege) : null,
+          vorschlag,
+          // Rechnung (kumuliert) gegen Auftrag inkl. beauftragter Nachträge des vorgeschlagenen Vertrags
+          auftragsrahmen: vertrag && daten.betragBrutto ? auftragsrahmen(daten.betragBrutto, vertrag.vertragBrutto, vertrag.nachtraege, daten.schlussrechnung) : null,
           // für „Handwerker anlegen“ / „Vertrag anlegen“
           neuerHandwerker: neu ? neuerHandwerker(daten, z.absender) : null,
           projektId,

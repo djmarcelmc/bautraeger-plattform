@@ -148,3 +148,42 @@ export function kostenstandSumme(liste: Kostenstand[]): Kostenstand {
   const felder = ["geschaetzt", "vergeben", "nachtraege", "summeVergeben", "berechnet", "bezahlt", "trend", "abweichung"] as const;
   return Object.fromEntries(felder.map((k) => [k, liste.reduce((s, x) => s.plus(x[k]), ZERO).toFixed(2)])) as Kostenstand;
 }
+
+export interface Auftragsrahmen {
+  stufe: "ok" | "nahe" | "ueber";
+  /** Vertrag + beauftragte/abgerechnete Nachträge */
+  auftrag: string;
+  /** Angebotene, noch nicht beauftragte Nachträge */
+  angeboten: string;
+  ueberschreitung: string;
+  auslastungProzent: number | null;
+  text: string | null;
+}
+
+/**
+ * Abgleich des kumulierten Rechnungsbetrags mit dem Auftrag (Vertragssumme inkl. beauftragter Nachträge).
+ * Ab 90 % Hinweis (außer Schlussrechnung), darüber Warnung – mit Hinweis auf angebotene, noch nicht beauftragte Nachträge.
+ */
+export function auftragsrahmen(kumuliert: string, vertragBrutto: string, nachtraege: { betragBrutto: string; status: string }[], schlussrechnung = false): Auftragsrahmen {
+  const k = money(kumuliert);
+  const auftrag = money(vertragBrutto).plus(summe(nachtraege.filter((n) => n.status === "beauftragt" || n.status === "abgerechnet").map((n) => money(n.betragBrutto))));
+  const angeboten = summe(nachtraege.filter((n) => n.status === "angeboten").map((n) => money(n.betragBrutto)));
+  const f = (m: Money) => m.toFixed(2);
+  const de = (m: Money) => `${m.toNumber().toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const ueber = k.minus(auftrag);
+  const auslastung = auftrag.gt(0) ? Math.round(k.div(auftrag).toNumber() * 100) : null;
+  const basis = { auftrag: f(auftrag), angeboten: f(angeboten), ueberschreitung: f(ueber.gt(0) ? ueber : ZERO), auslastungProzent: auslastung };
+  if (ueber.gt(0)) {
+    const deckung = angeboten.gt(0)
+      ? angeboten.gte(ueber)
+        ? ` Angebotene Nachträge über ${de(angeboten)} würden das decken – vor der Freigabe beauftragen.`
+        : ` Auch die angebotenen Nachträge (${de(angeboten)}) reichen nicht.`
+      : " Es liegt kein Nachtrag vor.";
+    const text = auftrag.isZero()
+      ? `Für diesen Vertrag ist keine Auftragssumme hinterlegt (Rechnung kumuliert ${de(k)}).`
+      : `Rechnung (kumuliert ${de(k)}) übersteigt den Auftrag von ${de(auftrag)} um ${de(ueber)}.${deckung}`;
+    return { ...basis, stufe: "ueber", text };
+  }
+  if (!schlussrechnung && auslastung !== null && auslastung >= 90) return { ...basis, stufe: "nahe", text: `Auftrag zu ${auslastung} % ausgeschöpft (${de(k)} von ${de(auftrag)}).` };
+  return { ...basis, stufe: "ok", text: null };
+}

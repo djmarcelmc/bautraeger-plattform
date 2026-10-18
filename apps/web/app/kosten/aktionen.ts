@@ -75,8 +75,9 @@ export async function rechnungPruefen(id: string, fd: FormData) {
   return ausfuehren(() => api(`/eingangsrechnungen/${id}/pruefen`, { method: "POST", body: formularDaten(fd) }), rechnungPfade(id), "Prüfung gespeichert.");
 }
 
-export async function rechnungFreigeben(id: string) {
-  return ausfuehren(() => api(`/eingangsrechnungen/${id}/freigeben`, { method: "POST" }), rechnungPfade(id), "Zur Zahlung freigegeben.");
+export async function rechnungFreigeben(id: string, fd?: FormData) {
+  const body = { ueberschreitungBestaetigt: fd?.get("ueberschreitungBestaetigt") === "on" };
+  return ausfuehren(() => api(`/eingangsrechnungen/${id}/freigeben`, { method: "POST", body }), rechnungPfade(id), "Zur Zahlung freigegeben.");
 }
 
 export async function rechnungBezahlen(id: string, fd: FormData) {

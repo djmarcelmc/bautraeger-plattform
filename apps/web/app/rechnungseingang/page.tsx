@@ -21,6 +21,7 @@ interface Eingang {
   bemerkung: string | null;
   erledigtVon: string | null;
   vorschlag: EingangVorschlag | null;
+  auftragsrahmen: { stufe: "ok" | "nahe" | "ueber"; text: string | null } | null;
   neuerHandwerker: { firma: string | null; suchcode: string | null; iban: string | null; steuernummer: string | null; email: string | null } | null;
   projektId: string | null;
   gewerkId: string | null;
@@ -159,6 +160,11 @@ export default async function Rechnungseingang({ searchParams }: { searchParams:
                 {aktiv.betreff || aktiv.absender ? (
                   <p className="hint">
                     {aktiv.absender ? `von ${aktiv.absender}` : ""} {aktiv.betreff ? `· „${aktiv.betreff}“` : ""}
+                  </p>
+                ) : null}
+                {aktiv.auftragsrahmen?.text ? (
+                  <p className={`eingang-rahmen ${aktiv.auftragsrahmen.stufe}`}>
+                    <TriangleAlert size={14} /> {aktiv.auftragsrahmen.text}
                   </p>
                 ) : null}
                 {aktiv.vorschlag ? (

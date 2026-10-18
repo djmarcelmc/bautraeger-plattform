@@ -3285,3 +3285,24 @@ table.saldentabelle tr.postenzeile ul {
   align-items: center;
   gap: 6px;
 }
+
+.eingang-rahmen {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-klein);
+  font-size: 13px;
+  background: var(--warnung-weich);
+}
+.eingang-rahmen.ueber {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.warnhaken {
+  padding: 8px 10px;
+  border-radius: var(--radius-klein);
+  background: var(--gefahr-weich);
+  font-size: 13px;
+}

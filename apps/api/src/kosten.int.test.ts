@@ -135,4 +135,25 @@ describe.skipIf(!url)("Kosten (Integration)", () => {
     expect(z.status).toBe(409);
     expect(z.body.message).toMatch(/kein Zahlbetrag offen/i);
   });
+
+  it("warnt bei Überschreitung des Auftrags inkl. Nachträgen und verlangt bei der Freigabe eine Bestätigung", async () => {
+    const v = (await als(http.post("/api/handwerkervertraege")).send({ gewerkId: ids.rohbau, handwerkerId: ids.hw, vertragBrutto: "20000" })).body.id;
+    await als(http.post(`/api/handwerkervertraege/${v}/nachtraege`)).send({ text: "Mehrmengen Beton", betragBrutto: "2000", status: "beauftragt" });
+    await als(http.post(`/api/handwerkervertraege/${v}/nachtraege`)).send({ text: "Zusatzleistung Drainage", betragBrutto: "3000" });
+    const r = (await als(http.post("/api/eingangsrechnungen")).send({ handwerkervertragId: v, rechnungsnr: "U-1", rechnungsdatum: "2026-10-01", eingangAm: "2026-10-01", betragBrutto: "24000" })).body.id;
+    const d = (await als(http.post(`/api/eingangsrechnungen/${r}/pruefen`)).send({ geprueftKumuliert: "24000" })).body;
+    expect(d.auftragsrahmen).toMatchObject({ stufe: "ueber", auftrag: "22000.00", angeboten: "3000.00", ueberschreitung: "2000.00" });
+    expect(d.auftragsrahmen.text).toMatch(/Angebotene Nachträge über 3\.000,00 € würden das decken/);
+    const ohne = await als(http.post(`/api/eingangsrechnungen/${r}/freigeben`));
+    expect(ohne.status).toBe(409);
+    expect(ohne.body.message).toMatch(/Freigabe nur mit ausdrücklicher Bestätigung/);
+    expect((await als(http.post(`/api/eingangsrechnungen/${r}/freigeben`)).send({ ueberschreitungBestaetigt: true })).status).toBe(201);
+    const prot = (await http.get(`/api/protokoll/${r}`)).body as { neu: Record<string, unknown> }[];
+    expect(prot.some((x) => x.neu?.auftragUeberschritten === "2000.00")).toBe(true);
+    // geprüfter Betrag innerhalb des Auftrags → keine Bestätigung nötig, ab 90 % Hinweis
+    const v2 = (await als(http.post("/api/handwerkervertraege")).send({ gewerkId: ids.rohbau, handwerkerId: ids.hw, vertragBrutto: "10000" })).body.id;
+    const r2 = (await als(http.post("/api/eingangsrechnungen")).send({ handwerkervertragId: v2, rechnungsnr: "U-2", rechnungsdatum: "2026-10-01", eingangAm: "2026-10-01", betragBrutto: "9500" })).body.id;
+    expect((await als(http.post(`/api/eingangsrechnungen/${r2}/pruefen`)).send({ geprueftKumuliert: "9500" })).body.auftragsrahmen).toMatchObject({ stufe: "nahe", auslastungProzent: 95 });
+    expect((await als(http.post(`/api/eingangsrechnungen/${r2}/freigeben`))).status).toBe(201);
+  });
 });
