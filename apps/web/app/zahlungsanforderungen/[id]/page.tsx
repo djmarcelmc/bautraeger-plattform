@@ -21,6 +21,8 @@ interface Druckdaten extends Omit<Anforderung, "raten"> {
 export default async function Zahlungsanforderung({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const a = await api<Druckdaten>(`/zahlungsanforderungen/${id}`);
+  const sonderwuensche = a.raten.some((r) => r.typ !== "mabv");
+  const nurSonderwuensche = a.raten.every((r) => r.typ !== "mabv");
   const e = a.empfaenger;
   const anrede = e.anrede === "Frau" ? `Sehr geehrte Frau ${e.nachname}` : e.anrede === "Herr" ? `Sehr geehrter Herr ${e.nachname}` : "Sehr geehrte Damen und Herren";
   return (
@@ -64,7 +66,7 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
             ) : null}
           </dl>
         </header>
-        <h2>Zahlungsanforderung nach § 3 Abs. 2 MaBV</h2>
+        <h2>{nurSonderwuensche ? "Rechnung über Sonderleistungen" : "Zahlungsanforderung nach § 3 Abs. 2 MaBV"}</h2>
         <p className="betreff">
           Bauvorhaben {a.projekt.suchcode}
           {a.projekt.strasse ? `, ${a.projekt.strasse}` : ""}
@@ -73,15 +75,25 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
         </p>
         <p>{anrede},</p>
         <p>
-          gemäß dem Kaufvertrag {a.vertrag.urkundennr ? `(UR-Nr. ${a.vertrag.urkundennr}) ` : ""}
-          {a.vertrag.datum ? `vom ${deDatum(a.vertrag.datum)} ` : ""}ist der folgende Bautenstand erreicht. Wir bitten um Zahlung der fälligen
-          {a.raten.length > 1 ? " Raten" : " Rate"}:
+          {nurSonderwuensche ? (
+            <>
+              zu Ihrem Kaufvertrag {a.vertrag.urkundennr ? `(UR-Nr. ${a.vertrag.urkundennr}) ` : ""}
+              {a.vertrag.datum ? `vom ${deDatum(a.vertrag.datum)} ` : ""}berechnen wir die von Ihnen beauftragten Sonderleistungen:
+            </>
+          ) : (
+            <>
+              gemäß dem Kaufvertrag {a.vertrag.urkundennr ? `(UR-Nr. ${a.vertrag.urkundennr}) ` : ""}
+              {a.vertrag.datum ? `vom ${deDatum(a.vertrag.datum)} ` : ""}ist der folgende Bautenstand erreicht. Wir bitten um Zahlung der fälligen
+              {a.raten.length > 1 ? " Raten" : " Rate"}
+              {sonderwuensche ? " einschließlich der beauftragten Sonderwünsche" : ""}:
+            </>
+          )}
         </p>
         <table className="druckliste">
           <thead>
             <tr>
               <th>Rate</th>
-              <th>Bauabschnitt</th>
+              <th>{sonderwuensche ? "Bauabschnitt / Leistung" : "Bauabschnitt"}</th>
               <th className="num">%</th>
               <th className="num">Betrag €</th>
             </tr>
@@ -116,6 +128,12 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
               <td>Kaufpreis gesamt</td>
               <td className="num">{deZahl(a.vertrag.summen.vertragssumme)} €</td>
             </tr>
+            {Number(a.vertrag.summen.sonderwuensche) ? (
+              <tr>
+                <td>Sonderwünsche (beauftragt, abzüglich Gutschriften)</td>
+                <td className="num">{deZahl(a.vertrag.summen.sonderwuensche)} €</td>
+              </tr>
+            ) : null}
             <tr>
               <td>bisher angefordert (inkl. dieser Anforderung)</td>
               <td className="num">

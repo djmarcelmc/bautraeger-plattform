@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus, Search } from "lucide-react";
+import { AlertTriangle, Plus, Search, Sparkles } from "lucide-react";
 import { Feld } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
 import { mahnlauf } from "./aktionen";
@@ -26,9 +26,14 @@ export default async function Verkauf({ searchParams }: { searchParams: Promise<
           <h1>Verkauf</h1>
           <p className="untertitel">Kaufverträge, Zahlungsanforderungen und offene Posten</p>
         </div>
-        <a className="knopf" href="/kaufvertraege/neu">
-          <Plus size={16} /> Neuer Kaufvertrag
-        </a>
+        <div className="knopfleiste">
+          <a className="knopf zweitrangig" href="/sonderwuensche">
+            <Sparkles size={16} /> Sonderwünsche
+          </a>
+          <a className="knopf" href="/kaufvertraege/neu">
+            <Plus size={16} /> Neuer Kaufvertrag
+          </a>
+        </div>
       </div>
       <div className="kpis">
         <div className="kpi">

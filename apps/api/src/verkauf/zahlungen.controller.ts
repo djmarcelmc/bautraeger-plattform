@@ -117,8 +117,10 @@ export class ZahlungenController {
     const erstellt = [];
     for (const v of vertraege) {
       const detail = await this.verkauf.vertrag(v.id);
-      const ids = detail.raten.filter((r) => r.status === "anforderbar").map((r) => r.id);
-      if (ids.length) erstellt.push(await this.anforderungErstellen(v.id, ids, datum, benutzer));
+      const anforderbar = detail.raten.filter((r) => r.status === "anforderbar");
+      const ids = anforderbar.map((r) => r.id);
+      // reine Gutschriften warten auf die nächste Rate
+      if (ids.length && summe(anforderbar.map((r) => money(r.betrag))).gt(0)) erstellt.push(await this.anforderungErstellen(v.id, ids, datum, benutzer));
     }
     return { anzahl: erstellt.length, anforderungen: erstellt };
   }
@@ -131,6 +133,7 @@ export class ZahlungenController {
     if (nicht.length)
       throw new ConflictException(`Nicht anforderbar: ${nicht.map((r) => `Rate ${r.nr} (${r.status})`).join(", ")}`);
     const betrag = summe(raten.map((r) => money(r.betrag)));
+    if (!betrag.gt(0)) throw new ConflictException("Gutschriften werden mit einer Rate verrechnet – bitte zusammen mit einer anforderbaren Rate anfordern.");
     return this.db.transaction(async (tx) => {
       const lfd = await this.verkauf.nummerZiehen(tx, v.gesellschaft.id, "ZA", Number(datum.slice(0, 4)));
       const nr = rechnungsnummer("ZA", Number(datum.slice(0, 4)), lfd);

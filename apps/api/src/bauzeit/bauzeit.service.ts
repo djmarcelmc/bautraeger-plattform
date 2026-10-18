@@ -152,7 +152,7 @@ export class BauzeitService {
       for (const a of v.anforderungen) if (money(a.offen).gt(0)) posten.push({ richtung: "ein", art: "angefordert", datum: a.faelligAm, betrag: a.offen });
       const fertig = new Set(v.fertigeAbschnitte);
       for (const r of v.raten) {
-        if (r.zahlungsanforderungId || r.typ !== "mabv") continue;
+        if (r.zahlungsanforderungId) continue; // Sonderwünsche ohne Abschnitt: sofort anforderbar
         const offeneAbschnitte = r.abschnitte.filter((a) => !fertig.has(a as MabvAbschnitt));
         if (!offeneAbschnitte.length) posten.push({ richtung: "ein", art: "anforderbar", datum: datumPlusTage(stichtag, v.zahlungszielTage), betrag: r.betrag });
         else posten.push({ richtung: "ein", art: "raten", datum: zahltermin(offeneAbschnitte, v.zahlungszielTage), betrag: r.betrag });

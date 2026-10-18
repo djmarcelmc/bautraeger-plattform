@@ -174,6 +174,24 @@ describe("MCP-Server", () => {
     expect(d[0].handwerker[0]).toMatchObject({ name: "Rohbau KG", finanzamt: "Stuttgart II", abzug: "1.800,00 €", stand: "anzumelden" });
   });
 
+  it("listet Sonderwünsche mit Summen", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      expect(new URL(url).searchParams.get("status")).toBe("angebot");
+      return new Response(
+        JSON.stringify({
+          sonderwuensche: [{ nr: 3, art: "zusatzleistung", bezeichnung: "Parkett", betragBrutto: "5200", kostenBrutto: "3900", status: "angebot", gueltigBis: "2026-10-01", abgelaufen: true, vertrag: { nr: "KV-101-002" }, projekt: { nr: 101, suchcode: "LINDENWEG" } }],
+          summen: { angebote: "5200", beauftragt: "0", marge: null, offeneAngebote: 1 },
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "sonderwuensche", arguments: { status: "angebot" } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.sonderwuensche[0]).toMatchObject({ projekt: "101 LINDENWEG", preis: "5.200,00 €", stand: "Angebot abgelaufen" });
+    expect(d.summen).toMatchObject({ offeneAngebote: 1, angebotsvolumen: "5.200,00 €" });
+  });
+
   it("fasst den MaBV-Prüfbericht mit Feststellungen zusammen", async () => {
     vi.stubGlobal("fetch", async (url: string) => {
       const u = new URL(url);
