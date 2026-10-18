@@ -104,15 +104,16 @@ export async function bautenstandZuruecknehmen(projektId: string, id: string): P
 }
 
 export async function sammelanforderung(projektId: string, fd: FormData): Promise<AktionsErgebnis> {
-  let anzahl: number;
+  let r: { anzahl: number; anforderungen: { id: string }[] };
   try {
-    anzahl = (await api<{ anzahl: number }>(`/projekte/${projektId}/zahlungsanforderungen`, { method: "POST", body: { datum: fd.get("datum") } })).anzahl;
+    r = await api<{ anzahl: number; anforderungen: { id: string }[] }>(`/projekte/${projektId}/zahlungsanforderungen`, { method: "POST", body: { datum: fd.get("datum") } });
   } catch (e) {
     return alsErgebnis(e);
   }
   revalidatePath(`/projekte/${projektId}`);
   revalidatePath("/verkauf");
-  return anzahl ? { meldung: `${anzahl} Zahlungsanforderung(en) erstellt – zu finden unter Verkauf › Offene Posten.` } : { fehler: ["Derzeit ist keine Rate anforderbar."] };
+  if (!r.anzahl) return { fehler: ["Derzeit ist keine Rate anforderbar."] };
+  redirect(`/schreiben/sammelversand?art=zahlungsanforderung&ids=${r.anforderungen.map((a) => a.id).join(",")}`);
 }
 
 export async function mahnlauf(fd: FormData): Promise<AktionsErgebnis> {
@@ -126,7 +127,7 @@ export async function mahnlauf(fd: FormData): Promise<AktionsErgebnis> {
   }
   revalidatePath("/verkauf");
   if (!r.erstellt.length) return { fehler: ["Keine Mahnung erstellt: " + r.uebersprungen.map((u) => `${u.rechnungsnr} (${u.grund})`).join(", ")] };
-  redirect(`/mahnungen/druck?ids=${r.erstellt.join(",")}`);
+  redirect(`/schreiben/sammelversand?art=mahnung&ids=${r.erstellt.join(",")}`);
 }
 
 export async function basiszinsSpeichern(fd: FormData): Promise<AktionsErgebnis> {

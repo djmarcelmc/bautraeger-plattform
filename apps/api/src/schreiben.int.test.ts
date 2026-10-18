@@ -50,8 +50,15 @@ describe.skipIf(!url)("Schreiben per E-Mail (Integration)", () => {
     const k = (await als(http.post("/api/partner")).send({ nr: 10001, suchcode: "beispiel", anrede: "Herr", vorname: "Max", nachname: "Beispiel", email: "max@beispiel.de", rollen: ["kunde"] })).body.id;
     ids.kv = (await als(http.post("/api/kaufvertraege")).send({ projektId: p, zahlungsanforderungAn: k, kaeufer: [{ partnerId: k }], einheiten: [{ einheitId: we, vkBrutto: "100000" }] })).body.id;
     await als(http.put(`/api/kaufvertraege/${ids.kv}/konditionen`)).send({ zahlungsanforderungAn: k, vertragWirksam: true, vormerkungEingetragenAm: "2026-02-01", lastenfreistellungGesichert: true, zahlungszielTage: 10 });
-    await als(http.post(`/api/projekte/${p}/bautenstand`)).send({ einheitIds: [we], abschnitt: "erdarbeiten", fertigAm: "2026-03-01" });
-    ids.za = (await als(http.post(`/api/projekte/${p}/zahlungsanforderungen`)).send({ datum: "2026-10-05" })).body.anforderungen[0].id;
+    // zweiter Vertrag: Käuferin ohne E-Mail-Adresse
+    const we2 = (await als(http.post(`/api/projekte/${p}/einheiten`)).send({ nr: "03", typ: "wohnung", vkBrutto: "200000" })).body.id;
+    const k2 = (await als(http.post("/api/partner")).send({ nr: 10002, suchcode: "ohnemail", anrede: "Frau", vorname: "Olga", nachname: "Ohnemail", rollen: ["kunde"] })).body.id;
+    const kv2 = (await als(http.post("/api/kaufvertraege")).send({ projektId: p, zahlungsanforderungAn: k2, kaeufer: [{ partnerId: k2 }], einheiten: [{ einheitId: we2, vkBrutto: "200000" }] })).body.id;
+    await als(http.put(`/api/kaufvertraege/${kv2}/konditionen`)).send({ zahlungsanforderungAn: k2, vertragWirksam: true, vormerkungEingetragenAm: "2026-02-01", lastenfreistellungGesichert: true, zahlungszielTage: 10 });
+    await als(http.post(`/api/projekte/${p}/bautenstand`)).send({ einheitIds: [we, we2], abschnitt: "erdarbeiten", fertigAm: "2026-03-01" });
+    const sammel = (await als(http.post(`/api/projekte/${p}/zahlungsanforderungen`)).send({ datum: "2026-10-05" })).body.anforderungen as { id: string; kaufvertragId: string }[];
+    ids.za = sammel.find((a) => a.kaufvertragId === ids.kv)!.id;
+    ids.za2 = sammel.find((a) => a.kaufvertragId === kv2)!.id;
     ids.sw = (await als(http.post(`/api/kaufvertraege/${ids.kv}/sonderwuensche`)).send({ bezeichnung: "Parkett Eiche", betragBrutto: "5200", gueltigBis: "2026-11-30" })).body.id;
   });
 
@@ -101,5 +108,23 @@ describe.skipIf(!url)("Schreiben per E-Mail (Integration)", () => {
 
     const vermerke = (await http.get(`/api/schreiben/zahlungsanforderung/${ids.za}`)).body.vermerke;
     expect(vermerke[0]).toMatchObject({ status: "gesendet", anlass: "schreiben_zahlungsanforderung", an: ["max@beispiel.de", "buchhaltung@muster.de"] });
+  });
+
+  it("listet einen Sammelversand und versendet mit Standardtext", async () => {
+    const l = (await http.get(`/api/schreiben/zahlungsanforderung?ids=${ids.za},${ids.za2}`)).body;
+    expect(l.schreiben.map((x: { nummer: string; an: string[]; vermerke: unknown[]; kaeufer: string }) => [x.nummer, x.an, x.vermerke.length, x.kaeufer])).toEqual([
+      ["ZA-2026-00001", ["max@beispiel.de"], 1, "Max Beispiel"],
+      ["ZA-2026-00002", [], 0, "Olga Ohnemail"],
+    ]);
+    expect((await http.get("/api/schreiben/zahlungsanforderung?ids=")).status).toBe(400);
+    const ohne = await als(http.post(`/api/schreiben/zahlungsanforderung/${ids.za2}/versenden-standard`)).attach("datei", pdf, "x.pdf");
+    expect(ohne.status).toBe(400);
+    expect(ohne.body.fehler[0]).toMatch(/keine E-Mail-Adresse/);
+    const ok = await als(http.post(`/api/schreiben/sonderwunsch/${ids.sw}/versenden-standard`)).attach("datei", pdf, "x.pdf");
+    expect(ok.status).toBe(201);
+    expect(ok.body.dateiname).toMatch(/^Angebot-Sonderwunsch-KV-[\d-]+-1\.pdf$/);
+    const { NachrichtenService } = await import("./benachrichtigung/nachrichten.service.js");
+    await app.get(NachrichtenService).versendeAusstehende();
+    expect(versand.gesendet.at(-1)).toMatchObject({ an: ["max@beispiel.de"], betreff: "Angebot: Parkett Eiche – Bauvorhaben LINDENWEG, Wohneinheit 02" });
   });
 });
