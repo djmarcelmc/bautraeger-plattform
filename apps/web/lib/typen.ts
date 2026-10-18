@@ -719,7 +719,7 @@ export interface MabvPruefbericht {
 }
 
 export interface CockpitAufgabe {
-  bereich: "verkauf" | "kosten" | "maengel" | "sicherheiten" | "bau" | "steuern" | "einstellungen";
+  bereich: "verkauf" | "kosten" | "maengel" | "sicherheiten" | "bau" | "steuern" | "buchhaltung" | "einstellungen";
   dringlichkeit: "hoch" | "mittel" | "info";
   titel: string;
   text: string;

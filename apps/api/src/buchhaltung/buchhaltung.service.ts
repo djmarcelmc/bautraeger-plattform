@@ -159,6 +159,20 @@ export class BuchhaltungService {
     });
   }
 
+  /** Wie viele Buchungen wären nach dem Abgleich noch nicht exportiert? (nur lesend, z. B. fürs Cockpit) */
+  async nichtExportiert(gesellschaftId: string, stichtag = heute()) {
+    const ges = await this.gesellschaft(gesellschaftId);
+    const { q } = await this.quellen(this.db, gesellschaftId);
+    const ist = (await this.db
+      .select({ id: b.id, quelleTyp: b.quelleTyp, quelleId: b.quelleId, belegdatum: b.belegdatum, belegnr: b.belegnr, konto: b.konto, gegenkonto: b.gegenkonto, betrag: b.betrag, sollHaben: b.sollHaben, steuerschluessel: b.steuerschluessel, buchungstext: b.buchungstext, kostenstelle: b.kostenstelle, exportiertAm: b.exportiertAm, stornoVon: b.stornoVon })
+      .from(b)
+      .where(eq(b.gesellschaftId, gesellschaftId))) as JournalIst[];
+    const r = journalAbgleich(journalSoll(q, kontierungFuer(ges)), ist, stichtag);
+    const weg = new Set([...r.loeschen, ...r.aendern.map((x) => x.id)]);
+    const daten = [...ist.filter((x) => !x.exportiertAm && !weg.has(x.id)).map((x) => x.belegdatum), ...r.aendern.map((x) => x.werte.belegdatum), ...r.neu.map((x) => x.belegdatum)].sort();
+    return { anzahl: daten.length, aeltestes: daten[0] ?? null, datevBereit: !!(ges.datevBeraternr && ges.datevMandantennr) };
+  }
+
   /** Journal (nach Abgleich) mit Filter, Summen und Verweisen auf die Vorgänge. */
   async journal(gesellschaftId: string, f: JournalFilter, benutzer: string) {
     const ges = await this.gesellschaft(gesellschaftId);

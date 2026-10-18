@@ -1,6 +1,7 @@
 import { BEREICH_TEXT } from "@bt/domain";
 import {
   ArrowRight,
+  BookOpenCheck,
   Banknote,
   CheckCircle2,
   Circle,
@@ -27,6 +28,7 @@ const ICON: Record<CockpitAufgabe["bereich"], LucideIcon> = {
   sicherheiten: ShieldCheck,
   bau: HardHat,
   steuern: Landmark,
+  buchhaltung: BookOpenCheck,
   einstellungen: Settings,
 };
 

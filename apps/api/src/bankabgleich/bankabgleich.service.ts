@@ -125,6 +125,19 @@ export class BankabgleichService {
     return { anforderungen, zahlungslaeufe: aus.laeufe, zahlungsausgaenge: aus.ausgaenge };
   }
 
+  /** Kurzstand fürs Cockpit: offene Umsätze, letzter Auszug, Zahlungsläufe ohne Kontobeleg. */
+  async stand(gesellschaftId: string) {
+    const [[u], [imp], aus] = await Promise.all([
+      this.db
+        .select({ offen: sql<number>`count(*)::int`, aeltestes: sql<string | null>`min(${bu.buchungsdatum})::text` })
+        .from(bu)
+        .where(and(eq(bu.gesellschaftId, gesellschaftId), eq(bu.status, "offen"))),
+      this.db.select({ bis: sql<string | null>`max(${bi.bis})::text` }).from(bi).where(eq(bi.gesellschaftId, gesellschaftId)),
+      this.offeneAusgaenge(this.db, gesellschaftId),
+    ]);
+    return { offen: u?.offen ?? 0, aeltestes: u?.aeltestes ?? null, letzterAuszugBis: imp?.bis ?? null, laeufeOhneBeleg: aus.laeufe };
+  }
+
   /** Umsätze mit Vorschlägen (offene) bzw. Zuordnung (erledigte). */
   async liste(gesellschaftId: string, status: "offen" | "zugeordnet" | "ignoriert" | "alle") {
     const ges = await this.gesellschaft(gesellschaftId);
