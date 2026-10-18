@@ -405,6 +405,7 @@ export const mangel = pgTable("mangel", {
   handwerkervertragId: uuid("handwerkervertrag_id").references(() => handwerkervertrag.id),
   handwerkerId: uuid("handwerker_id").references(() => geschaeftspartner.id),
   kaufvertragId: uuid("kaufvertrag_id").references(() => kaufvertrag.id),
+  abnahmeId: uuid("abnahme_id").references((): AnyPgColumn => abnahme.id),
   eigentum: text("eigentum", { enum: ["sonder", "gemeinschaft"] }).notNull().default("sonder"),
   festgestelltAm: date("festgestellt_am").notNull(),
   festgestelltDurch: text("festgestellt_durch"),
@@ -423,6 +424,44 @@ export const mangel = pgTable("mangel", {
   erledigtVon: text("erledigt_von"),
   ...zeitstempel,
 }, (t) => [uniqueIndex("mangel_nr_je_projekt").on(t.projektId, t.nr)]);
+
+/** Abnahmeprotokoll (Sondereigentum, Gemeinschaftseigentum oder Handwerkerleistung). */
+export const abnahme = pgTable(
+  "abnahme",
+  {
+    id: id(),
+    projektId: uuid("projekt_id").notNull().references(() => projekt.id),
+    nr: integer("nr").notNull(),
+    art: text("art").notNull(),
+    kaufvertragId: uuid("kaufvertrag_id").references(() => kaufvertrag.id),
+    einheitId: uuid("einheit_id").references(() => einheit.id),
+    handwerkervertragId: uuid("handwerkervertrag_id").references(() => handwerkervertrag.id),
+    datum: date("datum").notNull(),
+    ort: text("ort"),
+    teilnehmer: text("teilnehmer"),
+    bemerkung: text("bemerkung"),
+    schluessel: text("schluessel"),
+    zaehler: jsonb("zaehler").$type<Record<string, string | null>>().notNull().default({}),
+    ergebnis: text("ergebnis"),
+    vorbehaltVertragsstrafe: boolean("vorbehalt_vertragsstrafe").notNull().default(false),
+    gewaehrleistungMonate: integer("gewaehrleistung_monate"),
+    abgeschlossenAm: timestamp("abgeschlossen_am", { withTimezone: true }),
+    abgeschlossenVon: text("abgeschlossen_von"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("abnahme_nr_je_projekt").on(t.projektId, t.nr)],
+);
+
+/** Standardmängel-Katalog je Mandant. */
+export const mangelvorlage = pgTable("mangelvorlage", {
+  id: id(),
+  mandantId: uuid("mandant_id").notNull().references(() => mandant.id),
+  kategorie: text("kategorie").notNull(),
+  gewerkNr: integer("gewerk_nr"),
+  titel: text("titel").notNull(),
+  beschreibung: text("beschreibung"),
+  ...zeitstempel,
+});
 
 export const ruege = pgTable("ruege", {
   id: id(),

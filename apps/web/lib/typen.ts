@@ -591,3 +591,54 @@ export interface BuergschaftListe {
   buergschaften: Buergschaft[];
   summen: { erhalten: string; ausgegeben: string; handlungsbedarf: number };
 }
+
+export interface AbnahmeListe {
+  id: string;
+  nr: number;
+  art: string;
+  artText: string;
+  datum: string;
+  ergebnis: string | null;
+  abgeschlossenAm: string | null;
+  projektId: string;
+  projekt: string;
+  bezug: string | null;
+  einheit: string | null;
+  maengel: number;
+  maengelOffen: number;
+}
+
+export interface AbnahmeDetail {
+  id: string;
+  nr: number;
+  art: "sondereigentum" | "gemeinschaftseigentum" | "handwerker";
+  artText: string;
+  datum: string;
+  ort: string | null;
+  teilnehmer: string | null;
+  bemerkung: string | null;
+  schluessel: string | null;
+  zaehler: Record<string, string | null>;
+  kaufvertragId: string | null;
+  einheitId: string | null;
+  handwerkervertragId: string | null;
+  ergebnis: "abgenommen" | "vorbehalt" | "verweigert" | null;
+  vorbehaltVertragsstrafe: boolean;
+  gewaehrleistungMonate: number | null;
+  abgeschlossenAm: string | null;
+  abgeschlossenVon: string | null;
+  projekt: { id: string; nr: number; suchcode: string; strasse: string | null; plz: string | null; ort: string | null };
+  gesellschaft: { id: string; name: string; anschrift: string | null };
+  kaufvertrag: { id: string; nr: string; urkundennr: string | null; kaeufer: Partner[]; einheiten: { id: string; nr: string; typ: string }[]; uebergabeIst: string | null; gewaehrleistungBis: string | null } | null;
+  handwerkervertrag: { id: string; nrIntern: string | null; gewerk: string; handwerker: Partner | null } | null;
+  einheit: { id: string; nr: string; typ: string; art: string | null; etage: string | null } | null;
+  maengel: { id: string; nr: number; titel: string; ort: string | null; beschreibung: string | null; gewerk: string | null; handwerker: string | null; erledigtAm: string | null; status: string }[];
+}
+
+export interface Mangelvorlage {
+  id: string;
+  kategorie: string;
+  gewerkNr: number | null;
+  titel: string;
+  beschreibung: string | null;
+}

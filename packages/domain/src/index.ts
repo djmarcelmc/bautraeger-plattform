@@ -10,3 +10,4 @@ export * from "./maengel.js";
 export * from "./mahnwesen.js";
 export * from "./bauzeit.js";
 export * from "./sepa.js";
+export * from "./abnahme.js";

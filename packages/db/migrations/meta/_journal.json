@@ -64,6 +64,13 @@
       "when": 1792322978767,
       "tag": "0008_sepa_buergschaften",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792323873949,
+      "tag": "0009_abnahme",
+      "breakpoints": true
     }
   ]
 }
