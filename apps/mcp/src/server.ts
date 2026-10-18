@@ -224,6 +224,40 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "liquiditaet",
+      {
+        title: "Liquiditätsbetrachtung",
+        description:
+          "Erlöse, Kosten und Saldo je Projekt und Gesellschaft mit Trend (Prognose), angefordert, bezahlt und offen. Standardmäßig nur laufende Projekte; optional alle Projekte.",
+        inputSchema: { alleProjekte: z.boolean().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ alleProjekte }) => {
+        type Block = { trend: string; angefordert: string; bezahlt: string; offen: string };
+        type Zeile = { erloese: Block; kosten: Block; saldo: Block };
+        const d = await apiGet<{
+          gesellschaften: { gesellschaft: { name: string }; projekte: (Zeile & { projekt: { nr: number; suchcode: string } })[]; summe: Zeile }[];
+          gesamt: Zeile;
+          stand: string;
+        }>(`/auswertungen/liquiditaet${alleProjekte ? "?projekte=alle" : ""}`);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        const block = (b: Block) => ({ trend: euro(b.trend), angefordert: euro(b.angefordert), bezahlt: euro(b.bezahlt), offen: euro(b.offen) });
+        const zeile = (z: Zeile) => ({ erloese: block(z.erloese), kosten: block(z.kosten), saldo: block(z.saldo) });
+        return json({
+          stand: d.stand,
+          hinweis: "Beträge brutto. Erlöse-Trend = Vertragspreise + Listenpreise unverkaufter Einheiten; Kosten-Trend = Vergaben inkl. Nachträge, sonst Schätzung.",
+          gesellschaften: d.gesellschaften.map((g) => ({
+            gesellschaft: g.gesellschaft.name,
+            projekte: g.projekte.map((p) => ({ projekt: `${p.projekt.nr} ${p.projekt.suchcode}`, ...zeile(p) })),
+            summe: zeile(g.summe),
+          })),
+          gesamt: zeile(d.gesamt),
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(

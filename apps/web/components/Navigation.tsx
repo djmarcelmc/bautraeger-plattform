@@ -31,7 +31,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
       { href: "/maengel", text: "Mängel", icon: Wrench },
-      { href: "#", text: "Auswertungen", icon: BarChart3, bald: true },
+      { href: "/auswertungen", text: "Auswertungen", icon: BarChart3 },
     ],
   },
   {

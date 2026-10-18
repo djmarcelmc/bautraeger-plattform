@@ -93,6 +93,9 @@ export default async function ProjektSeite({
           </div>
         </div>
         <div className="badges">
+          <a className="badge akzent" href={`/auswertungen/projektbericht/${p.id}`}>
+            Projektbericht
+          </a>
           <span className="badge">{PROJEKTART_TEXT[p.art as keyof typeof PROJEKTART_TEXT]}</span>
           {p.para13bAnwendbar ? <span className="badge">§ 13b</span> : null}
           {p.abgeschlossen ? <span className="badge">abgeschlossen</span> : <span className="badge gut">laufend</span>}

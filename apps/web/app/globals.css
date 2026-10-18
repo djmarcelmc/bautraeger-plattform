@@ -1442,6 +1442,123 @@ textarea:focus {
   white-space: pre-line;
 }
 
+/* ------------------------------------------------------------------ Auswertungen */
+.auswertungskacheln .projektkachel svg {
+  color: var(--akzent);
+}
+.berichtlinks {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.berichtlinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.knopf.zweitrangig-link {
+  background: var(--flaeche);
+  color: var(--text);
+  border-color: var(--linie-stark);
+}
+.knopf.zweitrangig-link:hover {
+  background: var(--flaeche-2);
+  color: var(--text);
+}
+table.berichtstabelle td,
+table.berichtstabelle th {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+table.berichtstabelle.eng td,
+table.berichtstabelle.eng th {
+  padding: 6px 8px;
+}
+table.berichtstabelle td.num {
+  white-space: nowrap;
+}
+table.berichtstabelle tr.saldozeile td {
+  font-weight: 650;
+  border-bottom: 1px solid var(--linie-stark);
+}
+table.berichtstabelle tr.summenzeile td {
+  background: var(--flaeche-2);
+  font-weight: 650;
+}
+table.berichtstabelle tr.obergruppe th {
+  text-align: center;
+  color: var(--text-2);
+  border-bottom: 0;
+}
+table.berichtstabelle .trenner {
+  border-left: 1px solid var(--linie-stark);
+}
+.stand {
+  display: inline-block;
+  width: 40px;
+  height: 5px;
+  background: var(--flaeche-2);
+  border-radius: 99px;
+  margin-right: 6px;
+  vertical-align: middle;
+  overflow: hidden;
+}
+.stand span {
+  display: block;
+  height: 100%;
+  background: var(--akzent);
+}
+
+@page quer {
+  size: A4 landscape;
+  margin: 12mm 12mm;
+}
+@media print {
+  .bericht {
+    page: quer;
+  }
+  .bericht .karte {
+    box-shadow: none;
+    border-color: #bbb;
+    break-inside: auto;
+    overflow: visible;
+  }
+  .bericht tfoot {
+    display: table-row-group;
+  }
+  .bericht h2 {
+    break-after: avoid;
+  }
+  .bericht .hint {
+    font-size: 9px;
+  }
+  .bericht .kpi {
+    box-shadow: none;
+    padding: 8px 12px;
+  }
+  .bericht .kpi b {
+    font-size: 16px;
+  }
+  .bericht table.berichtstabelle td,
+  .bericht table.berichtstabelle th {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  .bericht thead {
+    display: table-header-group;
+  }
+  .bericht tr {
+    break-inside: avoid;
+  }
+  .bericht a {
+    color: inherit;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {
