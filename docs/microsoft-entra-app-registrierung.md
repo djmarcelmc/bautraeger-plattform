@@ -100,6 +100,46 @@ AUTH_MICROSOFT_ENTRA_ID_SECRET=<Wert des Clientschlüssels>
 AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/<Verzeichnis-ID>/v2.0
 ```
 
+## 7. Umstellung in der Plattform (durch den Betreiber)
+
+Die Anmeldung ist fertig eingebaut und wird nur per Konfiguration eingeschaltet. In `.env.prod` auf dem Server:
+
+```bash
+AUTH_SECRET=<openssl rand -base64 32>
+AUTH_MICROSOFT_ENTRA_ID_ID=<Anwendungs-ID>
+AUTH_MICROSOFT_ENTRA_ID_SECRET=<Wert des Clientschlüssels>
+AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/<Verzeichnis-ID>/v2.0
+AUTH_AKTIV=true
+```
+
+1. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d` – jetzt erscheint nach dem Passwort die
+   Microsoft-Anmeldung. Mit jeder Rolle einmal anmelden und testen.
+2. Funktioniert alles: `CADDYFILE=Caddyfile.entra` setzen und erneut `up -d` – der gemeinsame Passwortschutz entfällt,
+   das Käuferportal bleibt über die persönlichen Links erreichbar.
+3. Zurück (Notfall): `AUTH_AKTIV=false`, `CADDYFILE=Caddyfile` und die `AUTH_MICROSOFT_*`-Werte leeren.
+
+### Rechte je Rolle
+
+| Recht | Admin | Geschäftsführung | Buchhaltung | Vertrieb | Bauleitung | Steuerberater |
+| --- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Alles ansehen, Auswertungen, Excel | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Geschäftspartner, Dokumente | ✓ | ✓ | ✓ | ✓ | ✓ | – |
+| Projekte und Einheiten | ✓ | ✓ | – | ✓ | – | – |
+| Kaufverträge, Raten, Zahlungsanforderungen, Käuferportal | ✓ | ✓ | – | ✓ | – | – |
+| Zahlungseingänge, Mahnungen | ✓ | ✓ | ✓ | ✓ | – | – |
+| Bautenstand, Bauzeitenplan, Mängel, Abnahmen | ✓ | ✓ | – | – | ✓ | – |
+| Gewerke, Handwerkerverträge, Nachträge | ✓ | ✓ | – | – | ✓ | – |
+| Rechnungen erfassen und prüfen | ✓ | ✓ | ✓ | – | ✓ | – |
+| Rechnungen freigeben | ✓ | ✓ | – | – | – | – |
+| Rechnungen bezahlen, Zahlungsläufe (SEPA) | ✓ | ✓ | ✓ | – | – | – |
+| Bürgschaften | ✓ | ✓ | ✓ | – | ✓ | – |
+| Gesellschaften, Einstellungen, Benachrichtigungen | ✓ | ✓ | – | – | – | – |
+
+- **Vier-Augen-Prinzip:** Wer eine Rechnung geprüft hat, kann sie nicht selbst freigeben.
+- Die Rechte prüft die API bei jedem Aufruf; die Oberfläche blendet zusätzlich aus (z. B. „Einstellungen“).
+- Im Änderungsprotokoll steht die E-Mail-Adresse der angemeldeten Person.
+- Personen mit mehreren Rollen erhalten die Rechte aller Rollen.
+
 ---
 
 ## Checkliste
@@ -111,3 +151,4 @@ AUTH_MICROSOFT_ENTRA_ID_ISSUER=https://login.microsoftonline.com/<Verzeichnis-ID
 - [ ] Delegierte Berechtigungen hinzugefügt und Administratorzustimmung erteilt
 - [ ] „Zuweisung erforderlich“ aktiviert, Benutzer den Rollen zugewiesen
 - [ ] Werte sicher übermittelt
+- [ ] Optional: `Mail.Send` (Anwendung) mit Application Access Policy für Benachrichtigungen

@@ -1,16 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { auth, authAktiv } from "./auth";
+
+/** Ohne Anmeldung erreichbar: Käuferportal, Anmeldeseite und die Auth.js-Endpunkte. */
+const OEFFENTLICH = ["/portal", "/anmelden", "/api/auth"];
+const oeffentlich = (pfad: string) => OEFFENTLICH.some((p) => pfad === p || pfad.startsWith(`${p}/`));
 
 /**
- * - Das Käuferportal (/portal) ist ohne Anmeldung erreichbar. Server Actions dürfen dort nicht aufgerufen werden,
- *   sonst wären interne Aktionen über diesen Pfad am Passwortschutz vorbei erreichbar.
- * - Der Pfad wird für das Layout weitergereicht (Portal ohne interne Navigation).
+ * - Käuferportal: Server Actions sind dort verboten, sonst wären interne Aktionen über diesen Pfad
+ *   am Zugangsschutz vorbei erreichbar.
+ * - Mit Microsoft-Anmeldung: ohne Sitzung → Anmeldeseite (mit Rücksprung).
+ * - Der Pfad wird für das Layout weitergereicht (Portal und Anmeldung ohne interne Navigation).
  */
-export function middleware(req: NextRequest) {
+function weiter(req: NextRequest, angemeldet: boolean) {
   const pfad = req.nextUrl.pathname;
   if (pfad.startsWith("/portal") && req.headers.has("next-action")) return new NextResponse("Nicht erlaubt", { status: 403 });
+  if (authAktiv && !angemeldet && !oeffentlich(pfad)) {
+    const ziel = new URL("/anmelden", req.nextUrl.origin);
+    ziel.searchParams.set("ziel", `${pfad}${req.nextUrl.search}`);
+    return NextResponse.redirect(ziel);
+  }
   const kopf = new Headers(req.headers);
   kopf.set("x-pfad", pfad);
   return NextResponse.next({ request: { headers: kopf } });
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+const mitAnmeldung = auth((req) => weiter(req, !!req.auth?.user));
+
+export default function middleware(req: NextRequest, ctx: { params: Promise<Record<string, string>> }) {
+  return authAktiv ? mitAnmeldung(req, ctx) : weiter(req, false);
+}
+
+export const config = { runtime: "nodejs", matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };

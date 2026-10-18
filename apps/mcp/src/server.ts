@@ -27,7 +27,8 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
 
   /** Lesender Aufruf der REST-API – dort gelten dieselben Prüfregeln wie in der Oberfläche. */
   const apiGet = async <T>(pfad: string): Promise<T> => {
-    const res = await fetch(`${apiUrl}/api${pfad}`, { headers: { "x-benutzer": "mcp" } });
+    // Technische Lese-Identität: bei aktiver Microsoft-Anmeldung darf der MCP-Server nur lesen
+    const res = await fetch(`${apiUrl}/api${pfad}`, { headers: { "x-benutzer": "mcp", "x-rollen": "System.Lesen" } });
     if (!res.ok) throw new Error(`API-Fehler ${res.status} bei ${pfad}`);
     return (await res.json()) as T;
   };

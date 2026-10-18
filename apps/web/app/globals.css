@@ -2412,6 +2412,37 @@ main.portal {
   flex-wrap: wrap;
 }
 
+/* ------------------------------------------------------------------ Anmeldung */
+.anmelden {
+  max-width: 420px;
+  margin: 12vh auto 0;
+}
+.anmelden h1 {
+  margin: 8px 0 14px;
+}
+.anmelden form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.anmelden button {
+  justify-content: center;
+  padding: 12px;
+}
+.benutzer form {
+  margin-left: auto;
+}
+.benutzer .abmelden {
+  background: none;
+  border: 0;
+  color: var(--text-3);
+  padding: 6px;
+  box-shadow: none;
+}
+.benutzer .abmelden:hover {
+  color: var(--gefahr);
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

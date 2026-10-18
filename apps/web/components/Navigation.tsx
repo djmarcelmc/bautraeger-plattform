@@ -10,6 +10,7 @@ import {
   FolderKanban,
   HandCoins,
   LayoutDashboard,
+  LogOut,
   Settings,
   Users,
   Wrench,
@@ -47,7 +48,14 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
   },
 ];
 
-export function Navigation() {
+export function Navigation({
+  benutzer,
+  abmelden,
+}: {
+  benutzer: { name: string; email: string; rollen: string[]; rollenText: string } | null;
+  abmelden: () => Promise<void>;
+}) {
+  const verwaltung = !benutzer || benutzer.rollen.some((r) => r === "Bautraeger.Admin" || r === "Bautraeger.Geschaeftsfuehrung");
   const pfad = usePathname();
   const aktiv = (href: string) =>
     href === "/"
@@ -69,7 +77,7 @@ export function Navigation() {
       {BEREICHE.map((b) => (
         <div key={b.titel} className="navgruppe">
           <div className="navtitel">{b.titel}</div>
-          {b.eintraege.map(({ href, text, icon: Icon, bald }) =>
+          {b.eintraege.filter((e) => e.href !== "/einstellungen" || verwaltung).map(({ href, text, icon: Icon, bald }) =>
             bald ? (
               <span key={text} className="navlink deaktiviert" title="Folgt in Phase 1">
                 <Icon size={18} /> {text} <em>bald</em>
@@ -82,13 +90,28 @@ export function Navigation() {
           )}
         </div>
       ))}
-      <div className="benutzer">
-        <span className="avatar">?</span>
-        <span>
-          Nicht angemeldet
-          <small>Microsoft-Anmeldung folgt</small>
-        </span>
-      </div>
+      {benutzer ? (
+        <div className="benutzer">
+          <span className="avatar">{benutzer.name.split(/\s+/).map((t) => t[0]).join("").slice(0, 2).toUpperCase()}</span>
+          <span>
+            {benutzer.name}
+            <small title={benutzer.email}>{benutzer.rollenText}</small>
+          </span>
+          <form action={abmelden}>
+            <button type="submit" className="abmelden" title="Abmelden" aria-label="Abmelden">
+              <LogOut size={16} />
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="benutzer">
+          <span className="avatar">?</span>
+          <span>
+            Gemeinsamer Zugang
+            <small>Microsoft-Anmeldung vorbereitet</small>
+          </span>
+        </div>
+      )}
     </aside>
   );
 }

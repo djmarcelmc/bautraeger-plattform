@@ -1,4 +1,5 @@
 import "server-only";
+import { aktuellerBenutzer } from "./benutzer";
 
 const BASIS = process.env.API_URL ?? "http://localhost:3001";
 
@@ -11,14 +12,20 @@ export class ApiFehler extends Error {
   }
 }
 
-/** Serverseitiger API-Aufruf. Benutzer wird bis zur Entra-Anmeldung als Platzhalter übergeben. */
+/** Benutzer und Rollen für die API (ohne Microsoft-Anmeldung: Platzhalter, die API prüft dann keine Rollen). */
+async function kennung(): Promise<Record<string, string>> {
+  const b = await aktuellerBenutzer();
+  return b ? { "x-benutzer": b.email || b.name, "x-rollen": b.rollen.join(",") } : { "x-benutzer": "web (noch ohne Anmeldung)" };
+}
+
+/** Serverseitiger API-Aufruf im Namen des angemeldeten Benutzers. */
 export async function api<T = unknown>(pfad: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const multipart = init.body instanceof FormData;
   const res = await fetch(`${BASIS}/api${pfad}`, {
     method: init.method ?? "GET",
     headers: {
       ...(multipart ? {} : { "content-type": "application/json" }),
-      "x-benutzer": "web (noch ohne Anmeldung)",
+      ...(await kennung()),
     },
     body: init.body === undefined ? undefined : multipart ? (init.body as FormData) : JSON.stringify(init.body),
     cache: "no-store",
@@ -32,6 +39,6 @@ export async function api<T = unknown>(pfad: string, init: { method?: string; bo
 }
 
 /** Rohe Antwort (z. B. für Datei-Downloads). */
-export function apiRoh(pfad: string) {
-  return fetch(`${BASIS}/api${pfad}`, { headers: { "x-benutzer": "web (noch ohne Anmeldung)" }, cache: "no-store" });
+export async function apiRoh(pfad: string) {
+  return fetch(`${BASIS}/api${pfad}`, { headers: await kennung(), cache: "no-store" });
 }

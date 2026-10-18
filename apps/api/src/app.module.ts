@@ -1,5 +1,6 @@
 import { Controller, Get, Module } from "@nestjs/common";
-import { APP_FILTER } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { RechteGuard } from "./common/rechte.guard.js";
 import { DbFehlerFilter } from "./common/db-fehler.filter.js";
 import { KontextService } from "./common/kontext.service.js";
 import { dbProvider } from "./db.provider.js";
@@ -86,6 +87,7 @@ class HealthController {
     Versandlauf,
     { provide: MAIL_VERSAND, useFactory: () => versandAusUmgebung() },
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
+    { provide: APP_GUARD, useClass: RechteGuard },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],
 })

@@ -76,8 +76,10 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/auswertungen/mabv-pruefbericht?gesellschaftId=&von=&bis=` | Prüfhilfe nach § 16 MaBV mit Feststellungen je Kaufvertrag (auch `format=xlsx`) |
 | `GET/POST /api/eingangsrechnungen`, `GET /api/eingangsrechnungen/:id?zahlungsdatum=`, `POST …/:id/pruefen`, `…/freigeben`, `…/zahlung` | Rechnungseingangsbuch und Workflow Prüfen → Freigeben → Zahlen (Skontofrist, Bauabzugsteuer) |
 
-Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Bis zur Microsoft-Anmeldung
-wird der Benutzer übergangsweise aus dem Header `x-benutzer` gelesen.
+Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Mit eingeschalteter
+Microsoft-Anmeldung (`AUTH_AKTIV=true`) übergibt die Weboberfläche Benutzer und Rollen (`x-benutzer`, `x-rollen`), und
+die API prüft jedes Kommando gegen die Rechte der Rolle (Rechtematrix in der Entra-Anleitung, inkl. Vier-Augen-Prinzip
+bei der Rechnungsfreigabe). Ohne Anmeldung läuft die Plattform wie bisher hinter dem Passwortschutz.
 
 ## Produktivbetrieb
 
@@ -119,7 +121,7 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 
 ## Nächste Schritte (Roadmap Phase 0/1)
 
-1. Login über Microsoft Entra ID mit App-Rollen (wartet auf die [App-Registrierung](docs/microsoft-entra-app-registrierung.md))
+1. ~~Login über Microsoft Entra ID mit App-Rollen~~ ✓ eingebaut, wird mit den Daten der [App-Registrierung](docs/microsoft-entra-app-registrierung.md) eingeschaltet
 2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓
 3. ~~Dokumentablage an Projekten, Einheiten, Partnern und Kaufverträgen~~ ✓
 4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – offen: Mahnwesen, Zusatzleistungen/Gutschriften, Versand per Outlook
