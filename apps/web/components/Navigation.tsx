@@ -16,6 +16,7 @@ import {
   FolderKanban,
   HandCoins,
   Inbox,
+  ListChecks,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -55,6 +56,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     eintraege: [
       { href: "/mabv", text: "MaBV-Rechner", icon: Calculator },
       { href: "/steuerberater", text: "Steuerberater-Sicht", icon: Briefcase },
+      { href: "/inbetriebnahme", text: "Inbetriebnahme", icon: ListChecks },
       { href: "/einstellungen", text: "Einstellungen", icon: Settings },
     ],
   },
@@ -108,7 +110,7 @@ export function Navigation({
       {bereiche.map((b) => (
         <div key={b.titel} className="navgruppe">
           <div className="navtitel">{b.titel}</div>
-          {b.eintraege.filter((e) => e.href !== "/einstellungen" || verwaltung).map(({ href, text, icon: Icon, bald }) =>
+          {b.eintraege.filter((e) => (e.href !== "/einstellungen" && e.href !== "/inbetriebnahme") || verwaltung).map(({ href, text, icon: Icon, bald }) =>
             bald ? (
               <span key={text} className="navlink deaktiviert" title="Folgt in Phase 1">
                 <Icon size={18} /> {text} <em>bald</em>

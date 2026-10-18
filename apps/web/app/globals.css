@@ -3377,3 +3377,121 @@ table.saldentabelle tr.postenzeile ul {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ Inbetriebnahme */
+.ib-fortschritt {
+  display: grid;
+  gap: 12px;
+}
+.ib-zahl {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.ib-zahl strong {
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+.ib-balken {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--flaeche-2);
+  overflow: hidden;
+}
+.ib-balken span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--akzent), var(--gut));
+}
+.ib-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 13.5px;
+}
+.ib-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ib-status.ok {
+  color: var(--gut);
+}
+.ib-status.warnung {
+  color: var(--warnung);
+}
+.ib-status.fehlt {
+  color: var(--gefahr);
+}
+.ib-status.info {
+  color: var(--text-3);
+}
+.ib-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.ib-gruppe {
+  margin: 0;
+  align-content: start;
+}
+.ib-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.ib-kopf h2 {
+  margin: 0;
+}
+.ib-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ib-liste li + li {
+  border-top: 1px solid var(--linie);
+}
+.ib-liste a,
+.ib-liste li > div {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 6px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-klein);
+}
+.ib-liste a:hover {
+  background: var(--flaeche-2);
+}
+.ib-liste .ib-status {
+  padding-top: 1px;
+}
+.ib-text {
+  display: grid;
+  gap: 2px;
+  font-size: 13.5px;
+}
+.ib-text span {
+  color: var(--text-2);
+}
+.ib-liste li.info .ib-text strong {
+  font-weight: 500;
+}
+.ib-pfeil {
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.ib-liste a:hover .ib-pfeil {
+  color: var(--akzent);
+}
+@media screen and (max-width: 700px) {
+  .ib-raster {
+    grid-template-columns: 1fr;
+  }
+}

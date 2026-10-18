@@ -223,6 +223,20 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(g.rechnungenOhneScan).toBe(0); // die Rechnung hat einen Scan
   });
 
+  it("Inbetriebnahme-Assistent prüft den Datenstand", async () => {
+    const r = await http.get("/api/inbetriebnahme");
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    const d = r.body;
+    expect(d.stichtag).toBe(heute);
+    expect(d.gruppen.length).toBeGreaterThanOrEqual(5);
+    const punkte = d.gruppen.flatMap((x: { punkte: { schluessel: string; status: string }[] }) => x.punkte);
+    const status = (k: string) => punkte.find((x: { schluessel: string }) => x.schluessel.startsWith(k))?.status;
+    expect(status("datev-test")).toBe("ok"); // Export ist gelaufen
+    expect(status("briefbogen")).not.toBe("ok"); // kein Briefbogen hinterlegt
+    expect(d.fortschritt.gesamt).toBeGreaterThan(0);
+    expect(d.fortschritt.ok).toBeLessThan(d.fortschritt.gesamt);
+  });
+
   it("protokolliert Abgleich und Export", async () => {
     const p = (await http.get(`/api/protokoll/${ids.g}`)).body as { neu: Record<string, unknown> }[];
     expect(p.some((e) => e.neu && "export" in e.neu)).toBe(true);
