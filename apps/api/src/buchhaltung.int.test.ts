@@ -135,6 +135,14 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(nachher.abgleich).toMatchObject({ neu: 0, storniert: 0, geaendert: 2 });
   });
 
+  it("bucht mit der Übergabe die Anzahlungen auf Erlöse um", async () => {
+    await verbinden(url!).execute(sql`update kaufvertrag set uebergabe_ist = now() where id = ${ids.v}`);
+    const j = await journal("&quelle=uebergabe");
+    expect(j.abgleich.neu).toBe(1);
+    expect(j.zeilen.map(kurz)).toEqual([["uebergabe", "1710", "8100", "90000.00", "S"]]);
+    expect(j.zeilen[0]).toMatchObject({ belegdatum: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }), verweis: `/kaufvertraege/${ids.v}` });
+  });
+
   it("protokolliert Abgleich und Export", async () => {
     const p = (await http.get(`/api/protokoll/${ids.g}`)).body as { neu: Record<string, unknown> }[];
     expect(p.some((e) => e.neu && "export" in e.neu)).toBe(true);

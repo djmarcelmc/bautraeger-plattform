@@ -63,7 +63,7 @@ von der Plattform selbst berechnet und geprüft werden:
 - [ ] Kostenstand je Projekt = Werte aus AMADEUS X bzw. Kostenkontrolle
 - [ ] MaBV-Prüfbericht ohne unerklärte Feststellungen
 - [ ] Kontenzuordnung je Gesellschaft unter **Buchhaltung** mit dem Steuerberater abstimmen (Bank, Erhaltene
-      Anzahlungen bzw. Erlöse, Bauleistungen, Skonti, Bauabzugsteuer, Personenkontenbereiche). Personenkonten: Partnernummern
+      Anzahlungen, Erlöse ab Übergabe, Bauleistungen, Skonti, Bauabzugsteuer, Personenkontenbereiche). Personenkonten: Partnernummern
       mit Personenkontolänge (z. B. 70001) werden übernommen, sonst Basis + Partnernummer
 - [ ] DATEV-Export einmal mit dem Steuerberater testen (Testimport, Festschreibung erst danach im Echtbetrieb)
 - [ ] SEPA-Datei einmal im Onlinebanking der Hausbank einlesen (ohne Ausführung)
