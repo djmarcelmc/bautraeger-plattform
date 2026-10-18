@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema, type DbOderTx } from "@bt/db";
 import { extfBuchungsstapel, journalAbgleich, journalSoll, kontierungFuer, money, type JournalIst, type JournalPosten, type JournalQuellen, type QuelleTyp } from "@bt/domain";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
@@ -194,6 +194,33 @@ export class BuchhaltungService {
     };
   }
 
+  private extfDatei(ges: typeof g.$inferSelect, zeilen: (typeof b.$inferSelect)[], von: string, bis: string, erzeugtAm: Date) {
+    return extfBuchungsstapel(
+      {
+        beraternummer: ges.datevBeraternr!,
+        mandantennummer: ges.datevMandantennr!,
+        wjBeginn: new Date(`${von.slice(0, 4)}-01-01T00:00:00`),
+        sachkontenlaenge: ges.sachkontenlaenge ?? 4,
+        datumVon: new Date(`${von}T00:00:00`),
+        datumBis: new Date(`${bis}T00:00:00`),
+        bezeichnung: `Bauträger ${von.slice(5)}–${bis.slice(5)}`,
+        skr: ges.skr ?? "03",
+        erzeugtAm,
+      },
+      zeilen.map((z) => ({
+        umsatz: money(z.betrag),
+        sollHaben: z.sollHaben,
+        konto: z.konto,
+        gegenkonto: z.gegenkonto,
+        buSchluessel: z.steuerschluessel ?? undefined,
+        belegdatum: new Date(`${z.belegdatum}T00:00:00`),
+        belegfeld1: z.belegnr ?? undefined,
+        buchungstext: z.buchungstext ?? undefined,
+        kost1: z.kostenstelle ?? undefined,
+      })),
+    );
+  }
+
   /** DATEV-Buchungsstapel (EXTF) erzeugen; die enthaltenen Buchungen werden als exportiert festgeschrieben. */
   async exportieren(e: { gesellschaftId: string; von: string; bis: string; nurNeue: boolean }, benutzer: string) {
     const ges = await this.gesellschaft(e.gesellschaftId);
@@ -209,34 +236,104 @@ export class BuchhaltungService {
       if (!zeilen.length) throw new ConflictException(e.nurNeue ? "Im Zeitraum gibt es keine noch nicht exportierten Buchungen." : "Im Zeitraum gibt es keine Buchungen.");
       const jetzt = new Date();
       const stapel = `EXTF-${jetzt.toISOString().slice(0, 19).replace(/[-:T]/g, "")}`;
-      const datei = extfBuchungsstapel(
-        {
-          beraternummer: ges.datevBeraternr!,
-          mandantennummer: ges.datevMandantennr!,
-          wjBeginn: new Date(`${e.von.slice(0, 4)}-01-01T00:00:00`),
-          sachkontenlaenge: ges.sachkontenlaenge ?? 4,
-          datumVon: new Date(`${e.von}T00:00:00`),
-          datumBis: new Date(`${e.bis}T00:00:00`),
-          bezeichnung: `Bauträger ${e.von.slice(5)}–${e.bis.slice(5)}`,
-          skr: ges.skr ?? "03",
-          erzeugtAm: jetzt,
-        },
-        zeilen.map((z) => ({
-          umsatz: money(z.betrag),
-          sollHaben: z.sollHaben,
-          konto: z.konto,
-          gegenkonto: z.gegenkonto,
-          buSchluessel: z.steuerschluessel ?? undefined,
-          belegdatum: new Date(`${z.belegdatum}T00:00:00`),
-          belegfeld1: z.belegnr ?? undefined,
-          buchungstext: z.buchungstext ?? undefined,
-          kost1: z.kostenstelle ?? undefined,
-        })),
-      );
+      const datei = this.extfDatei(ges, zeilen, e.von, e.bis, jetzt);
       const neu = zeilen.filter((z) => !z.exportiertAm).map((z) => z.id);
       if (neu.length) await tx.update(b).set({ exportiertAm: jetzt, exportStapel: stapel }).where(inArray(b.id, neu));
       await protokollieren(tx, { tabelle: "buchung", id: e.gesellschaftId, aktion: "update", neu: { export: stapel, von: e.von, bis: e.bis, buchungen: zeilen.length, festgeschrieben: neu.length }, benutzer });
-      return { datei, dateiname: `${stapel}_${ges.nr}_${e.von}_${e.bis}.csv`, anzahl: zeilen.length };
+      return { datei, stapel, dateiname: `${stapel}_${ges.nr}_${e.von}_${e.bis}.csv`, anzahl: zeilen.length, buchungIds: zeilen.map((z) => z.id) };
     });
+  }
+
+  /** Bisherige Exporte (Stapel) einer Gesellschaft. */
+  async stapelListe(gesellschaftId: string) {
+    await this.gesellschaft(gesellschaftId);
+    return this.db
+      .select({
+        stapel: sql<string>`${b.exportStapel}`,
+        exportiertAm: sql<string>`max(${b.exportiertAm})`,
+        anzahl: sql<number>`count(*)::int`,
+        von: sql<string>`min(${b.belegdatum})::text`,
+        bis: sql<string>`max(${b.belegdatum})::text`,
+      })
+      .from(b)
+      .where(and(eq(b.gesellschaftId, gesellschaftId), sql`${b.exportStapel} is not null`))
+      .groupBy(b.exportStapel)
+      .orderBy(desc(sql`max(${b.exportiertAm})`))
+      .limit(24);
+  }
+
+  /** Stapel erneut erzeugen (gleiche Buchungen, keine neue Festschreibung). */
+  async stapelErneut(gesellschaftId: string, stapel: string) {
+    const ges = await this.gesellschaft(gesellschaftId);
+    if (!ges.datevBeraternr || !ges.datevMandantennr) throw new ConflictException("Bitte zuerst DATEV-Berater- und Mandantennummer bei der Gesellschaft eintragen.");
+    const zeilen = await this.db.select().from(b).where(and(eq(b.gesellschaftId, gesellschaftId), eq(b.exportStapel, stapel))).orderBy(asc(b.belegdatum), asc(b.angelegtAm));
+    if (!zeilen.length) throw new NotFoundException("Exportstapel nicht gefunden");
+    const von = zeilen[0]!.belegdatum;
+    const bis = zeilen[zeilen.length - 1]!.belegdatum;
+    const datei = this.extfDatei(ges, zeilen, von, bis, zeilen[0]!.exportiertAm ?? new Date());
+    return { datei, stapel, dateiname: `${stapel}_${ges.nr}_${von}_${bis}.csv`, anzahl: zeilen.length, buchungIds: zeilen.map((z) => z.id) };
+  }
+
+  /**
+   * Belege zu Buchungen: gespeicherte Dateien (versandte Zahlungsanforderung, Rechnungsscans an der Eingangsrechnung)
+   * und Seiten, aus denen das PDF erzeugt werden kann (Zahlungsanforderung, Bauabzug-Abrechnungsbeleg).
+   * Je Belegnummer ein Eintrag; Zahlungseingänge und Übergaben haben keinen eigenen Beleg (Kontoauszug bzw. Protokoll).
+   */
+  async belege(gesellschaftId: string, buchungIds: string[]) {
+    await this.gesellschaft(gesellschaftId);
+    if (!buchungIds.length) return [];
+    const zeilen = await this.db.select().from(b).where(and(eq(b.gesellschaftId, gesellschaftId), inArray(b.id, buchungIds), isNull(b.stornoVon))).orderBy(asc(b.belegdatum));
+    const art = (q: string) => q.split(".")[0]!;
+    const zaIds = [...new Set(zeilen.filter((z) => art(z.quelleTyp) === "zahlungsanforderung").map((z) => z.quelleId))];
+    const ausgangIds = [...new Set(zeilen.filter((z) => art(z.quelleTyp) === "zahlungsausgang").map((z) => z.quelleId))];
+    const abfIds = [...new Set(zeilen.filter((z) => z.quelleTyp === "bauabzug_abfuehrung").map((z) => z.quelleId))];
+    const [ausgaenge, anmeldungen, versandt] = await Promise.all([
+      ausgangIds.length ? this.db.select({ id: za.id, rechnungId: za.eingangsrechnungId }).from(za).where(inArray(za.id, ausgangIds)) : [],
+      abfIds.length ? this.db.select().from(ba).where(inArray(ba.id, abfIds)) : [],
+      zaIds.length
+        ? this.db
+            .select({ bezugId: schema.nachricht.bezugId, anhaenge: schema.nachricht.anhaenge, angelegtAm: schema.nachricht.angelegtAm })
+            .from(schema.nachricht)
+            .where(and(eq(schema.nachricht.anlass, "schreiben_zahlungsanforderung"), inArray(schema.nachricht.bezugId, zaIds)))
+            .orderBy(desc(schema.nachricht.angelegtAm))
+        : [],
+    ]);
+    const rechnungVon = new Map(ausgaenge.map((x) => [x.id, x.rechnungId]));
+    const rechnungIds = [...new Set([...zeilen.filter((z) => z.quelleTyp === "eingangsrechnung").map((z) => z.quelleId), ...ausgaenge.map((x) => x.rechnungId)])];
+    const versandDok = new Map<string, string>();
+    for (const n of versandt) if (n.bezugId && !versandDok.has(n.bezugId) && n.anhaenge[0]) versandDok.set(n.bezugId, n.anhaenge[0].dokumentId);
+    const dokIds = [...versandDok.values()];
+    const dokumente = await this.db
+      .select({ id: schema.dokument.id, objektTyp: schema.dokument.objektTyp, objektId: schema.dokument.objektId, dateiname: schema.dokument.dateiname, mimeType: schema.dokument.mimeType })
+      .from(schema.dokument)
+      .where(
+        and(
+          isNull(schema.dokument.geloeschtAm),
+          eq(schema.dokument.mandantId, await this.kontext.mandantId()),
+          sql`(${rechnungIds.length ? sql`(${schema.dokument.objektTyp} = 'eingangsrechnung' and ${inArray(schema.dokument.objektId, rechnungIds)})` : sql`false`} or ${dokIds.length ? inArray(schema.dokument.id, dokIds) : sql`false`})`,
+        ),
+      )
+      .orderBy(asc(schema.dokument.angelegtAm));
+    type Beleg = { belegnr: string; art: string; id: string; datum: string; betrag: string; text: string; dokumente: { id: string; dateiname: string; mimeType: string | null }[]; pfad: string | null };
+    const belege = new Map<string, Beleg>();
+    for (const z of zeilen) {
+      const a = art(z.quelleTyp);
+      let beleg: Omit<Beleg, "belegnr" | "datum" | "betrag" | "text"> | null = null;
+      if (a === "zahlungsanforderung") {
+        const d = dokumente.find((x) => x.id === versandDok.get(z.quelleId));
+        beleg = { art: "Zahlungsanforderung", id: z.quelleId, dokumente: d ? [d] : [], pfad: d ? null : `/zahlungsanforderungen/${z.quelleId}` };
+      } else if (a === "eingangsrechnung" || a === "zahlungsausgang") {
+        const rid = a === "eingangsrechnung" ? z.quelleId : rechnungVon.get(z.quelleId);
+        if (rid) beleg = { art: "Eingangsrechnung", id: rid, dokumente: dokumente.filter((x) => x.objektTyp === "eingangsrechnung" && x.objektId === rid), pfad: null };
+      } else if (z.quelleTyp === "bauabzug_abfuehrung") {
+        const an = anmeldungen.find((x) => x.id === z.quelleId);
+        if (an) beleg = { art: "Bauabzugsteuer-Abrechnungsbeleg", id: an.id, dokumente: [], pfad: `/bauabzug/beleg?gesellschaftId=${an.gesellschaftId}&handwerkerId=${an.handwerkerId}&monat=${an.monat}` };
+      }
+      if (!beleg) continue;
+      const nr = z.belegnr ?? beleg.id.slice(0, 8);
+      const key = `${beleg.art}|${beleg.id}`;
+      if (!belege.has(key)) belege.set(key, { ...beleg, belegnr: nr, datum: z.belegdatum, betrag: z.betrag, text: z.buchungstext ?? "" });
+    }
+    return [...belege.values()];
   }
 }

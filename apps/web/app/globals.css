@@ -3042,3 +3042,31 @@ table.journal tr.storno td {
     grid-template-columns: 1fr;
   }
 }
+
+.stapelliste {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+}
+.stapelliste summary {
+  cursor: pointer;
+  color: var(--text-2);
+}
+.stapelliste ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.stapelliste li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--linie);
+}
+.stapelliste .knopfleiste {
+  margin: 0;
+}

@@ -90,7 +90,10 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
   const status = STATUS.some(([w]) => w === sp.status) ? sp.status! : "alle";
   const quelle = QUELLFILTER.some(([w]) => w === sp.quelle) ? sp.quelle! : "";
   const q = new URLSearchParams({ gesellschaftId: gid, von, bis, status, ...(quelle ? { quelle } : {}) });
-  const j = await api<Journal>(`/buchhaltung/journal?${q}`);
+  const [j, stapel] = await Promise.all([
+    api<Journal>(`/buchhaltung/journal?${q}`),
+    api<{ stapel: string; exportiertAm: string; anzahl: number; von: string; bis: string }[]>(`/buchhaltung/stapel?gesellschaftId=${gid}`),
+  ]);
   const k = j.kontierung;
   const sachkonto = new Map<string, string>([
     [k.bank, "Bank"],
@@ -199,6 +202,28 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
             Buchungsstapel im EXTF-Format (Berater {j.gesellschaft.datevBereit ? "eingetragen" : "fehlt"}, SKR {j.gesellschaft.skr ?? "03"}, Sachkontenlänge {laenge}). Exportierte Buchungen
             werden festgeschrieben; spätere Änderungen am Vorgang erscheinen als Storno und Neubuchung.
           </p>
+          {stapel.length ? (
+            <details className="stapelliste">
+              <summary>Bisherige Exporte ({stapel.length})</summary>
+              <ul>
+                {stapel.map((s) => (
+                  <li key={s.stapel}>
+                    <span>
+                      <b>{deDatum(s.exportiertAm)}</b> · {s.anzahl} Buchungen · {deDatum(s.von)} – {deDatum(s.bis)}
+                    </span>
+                    <span className="knopfleiste">
+                      <a className="knopf zweitrangig klein" href={`/buchhaltung/stapel/${s.stapel}?g=${gid}`}>
+                        Stapel
+                      </a>
+                      <a className="knopf zweitrangig klein" href={`/buchhaltung/stapel/${s.stapel}?g=${gid}&belege=1`}>
+                        mit Belegen
+                      </a>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
           <ExportFormular gesellschaftId={gid} von={von.slice(0, 4) === bis.slice(0, 4) ? von : `${bis.slice(0, 4)}-01-01`} bis={bis} bereit={j.gesellschaft.datevBereit} neu={j.summen.neu} />
         </section>
         <section className="karte">
