@@ -1,6 +1,6 @@
 import { apiRoh } from "@/lib/api";
 
-const ERLAUBT = /^(liquiditaet|liquiditaetsplan|controlling|kostenreport\/[0-9a-f-]{36}|projektbericht\/[0-9a-f-]{36})$/;
+const ERLAUBT = /^(liquiditaet|liquiditaetsplan|mabv-pruefbericht|controlling|kostenreport\/[0-9a-f-]{36}|projektbericht\/[0-9a-f-]{36})$/;
 
 /** Excel-Download einer Auswertung (Proxy zur API). */
 export async function GET(req: Request, { params }: { params: Promise<{ pfad: string[] }> }) {

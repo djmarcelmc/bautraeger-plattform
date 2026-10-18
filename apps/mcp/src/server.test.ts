@@ -152,4 +152,25 @@ describe("MCP-Server", () => {
     expect(d.buergschaften[0]).toMatchObject({ projekt: "101 LINDENWEG", betrag: "2.500,00 €", status: "Rückgabe fällig" });
     expect(d.summen.handlungsbedarf).toBe(1);
   });
+
+  it("fasst den MaBV-Prüfbericht mit Feststellungen zusammen", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = new URL(url);
+      expect(u.searchParams.get("von")).toBe("2026-01-01");
+      return new Response(
+        JSON.stringify({
+          gesellschaft: { name: "Muster Wohnbau GmbH" },
+          zeitraum: { von: "2026-01-01", bis: "2026-12-31" },
+          summen: { vertraege: 2, vertragssumme: "792400", angefordertImZeitraum: "237720", eingegangenImZeitraum: "120000", anforderungen: 2, verstoesse: 1, hinweise: 0 },
+          vertraege: [{ nr: "KV-101-002", kaeufer: ["Max Beispiel"], sicherung: { art: "§ 3" }, verstoesse: 1, feststellungen: [{ art: "bautenstand", schwere: "verstoss", text: "zu früh", rechnungsnr: "ZA-2026-00002" }] }],
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "mabv_pruefbericht", arguments: { jahr: 2026 } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.summen.vertragssumme).toBe("792.400,00 €");
+    expect(d.feststellungen[0]).toMatchObject({ kaufvertrag: "KV-101-002", rechnungsnr: "ZA-2026-00002", schwere: "verstoss" });
+  });
 });

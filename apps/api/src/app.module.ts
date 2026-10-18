@@ -5,6 +5,7 @@ import { KontextService } from "./common/kontext.service.js";
 import { dbProvider } from "./db.provider.js";
 import { AuswertungenController } from "./auswertungen/auswertungen.controller.js";
 import { AuswertungenService } from "./auswertungen/auswertungen.service.js";
+import { MabvPruefberichtService } from "./auswertungen/mabv-pruefbericht.service.js";
 import { BauzeitController } from "./bauzeit/bauzeit.controller.js";
 import { BauzeitService } from "./bauzeit/bauzeit.service.js";
 import { BuergschaftenController } from "./sepa/buergschaften.controller.js";
@@ -67,6 +68,7 @@ class HealthController {
     KostenService,
     MaengelService,
     AuswertungenService,
+    MabvPruefberichtService,
     BauzeitService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },

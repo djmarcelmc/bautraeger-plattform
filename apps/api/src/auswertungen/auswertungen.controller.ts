@@ -1,7 +1,9 @@
 import { Controller, Get, Inject, Param, ParseUUIDPipe, Query, StreamableFile } from "@nestjs/common";
 import { KostenService } from "../kosten/kosten.service.js";
 import { VerkaufService } from "../verkauf/verkauf.service.js";
+import { FESTSTELLUNG_ART_TEXT } from "@bt/domain";
 import { AuswertungenService, type Filter } from "./auswertungen.service.js";
+import { MabvPruefberichtService } from "./mabv-pruefbericht.service.js";
 import { XLSX, excelDatei, type Abschnitt } from "./excel.js";
 
 
@@ -17,7 +19,84 @@ export class AuswertungenController {
     @Inject(AuswertungenService) private readonly auswertungen: AuswertungenService,
     @Inject(KostenService) private readonly kosten: KostenService,
     @Inject(VerkaufService) private readonly verkauf: VerkaufService,
+    @Inject(MabvPruefberichtService) private readonly mabv: MabvPruefberichtService,
   ) {}
+
+  /** Prüfbericht nach § 16 MaBV (Standard: Vorjahr, erste Gesellschaft). */
+  @Get("mabv-pruefbericht")
+  async mabvPruefbericht(@Query("gesellschaftId") gesellschaftId?: string, @Query("von") von?: string, @Query("bis") bis?: string, @Query("format") format?: string) {
+    const d = await this.mabv.bericht({ gesellschaftId: gesellschaftId && /^[0-9a-f-]{36}$/.test(gesellschaftId) ? gesellschaftId : undefined, von, bis });
+    if (format !== "xlsx") return d;
+    const e = "euro" as const;
+    const de = (iso: string | null) => (iso ? iso.split("-").reverse().join(".") : "");
+    const titel = `MaBV-Prüfbericht ${d.gesellschaft.name}, ${de(d.zeitraum.von)}–${de(d.zeitraum.bis)}`;
+    return datei(
+      await excelDatei("MaBV", titel, [
+        {
+          titel: "Kaufverträge",
+          spalten: [
+            { titel: "Kaufvertrag", breite: 14 },
+            { titel: "Projekt", breite: 18 },
+            { titel: "Käufer", breite: 26 },
+            { titel: "Einheiten", breite: 12 },
+            { titel: "Datum", breite: 11 },
+            { titel: "Sicherung", breite: 10 },
+            { titel: "Vormerkung", breite: 11 },
+            { titel: "Vertragssumme", art: e, breite: 15 },
+            { titel: "angefordert (Zeitraum)", art: e, breite: 16 },
+            { titel: "eingegangen (Zeitraum)", art: e, breite: 16 },
+            { titel: "Verstöße", art: "zahl", breite: 9 },
+          ],
+          zeilen: d.vertraege.map((v) => [
+            v.nr,
+            `${v.projekt.nr} ${v.projekt.suchcode}`,
+            v.kaeufer.join(", "),
+            v.einheiten.join(", "),
+            de(v.datum),
+            v.sicherung.art,
+            de(v.sicherung.vormerkungEingetragenAm),
+            v.vertragssumme,
+            v.summen.angefordertImZeitraum,
+            v.summen.eingegangenImZeitraum,
+            v.verstoesse,
+          ]),
+        },
+        {
+          titel: "Zahlungsanforderungen im Zeitraum",
+          spalten: [
+            { titel: "Kaufvertrag", breite: 14 },
+            { titel: "Rechnung", breite: 15 },
+            { titel: "angefordert", breite: 11 },
+            { titel: "Raten / Bauabschnitte (fertig gemeldet)", breite: 60 },
+            { titel: "Betrag", art: e, breite: 15 },
+            { titel: "ordnungsgemäß", breite: 13 },
+          ],
+          zeilen: d.vertraege.flatMap((v) =>
+            v.anforderungen.map((a) => [
+              v.nr,
+              a.rechnungsnr,
+              de(a.angefordertAm),
+              a.raten.map((r) => `Rate ${r.nr}: ${r.abschnitte.map((x) => `${x.text} (${de(x.fertigAm) || "nicht gemeldet"})`).join("; ")}`).join(" | "),
+              a.betrag,
+              a.ordnungsgemaess ? "ja" : "nein",
+            ]),
+          ),
+        },
+        {
+          titel: "Feststellungen",
+          spalten: [
+            { titel: "Kaufvertrag", breite: 14 },
+            { titel: "Bereich", breite: 30 },
+            { titel: "Art", breite: 10 },
+            { titel: "Rechnung", breite: 15 },
+            { titel: "Feststellung", breite: 90 },
+          ],
+          zeilen: d.vertraege.flatMap((v) => v.feststellungen.map((f) => [v.nr, FESTSTELLUNG_ART_TEXT[f.art], f.schwere === "verstoss" ? "Verstoß" : "Hinweis", f.rechnungsnr ?? "", f.text])),
+        },
+      ]),
+      "MaBV-Pruefbericht",
+    );
+  }
 
   @Get("liquiditaet")
   async liquiditaet(@Query("gesellschaftId") g?: string, @Query("projekte") laufend?: string, @Query("format") format?: string) {
