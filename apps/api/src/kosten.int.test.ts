@@ -196,6 +196,14 @@ describe.skipIf(!url)("Kosten (Integration)", () => {
     expect(nachher.gewerke.find((x: { id: string }) => x.id === quelle.id).stand.geschaetzt).toBe((Number(quelle.stand.geschaetzt) - 5000).toFixed(2));
     expect(nachher.summe.geschaetzt).toBe(k.summe.geschaetzt); // Gesamtbudget unverändert
     expect(z2.budget).toMatchObject({ stufe: "ok", auslastungProzent: 84 }); // 46.000 von 55.000
+    expect(z2).toMatchObject({ umgebucht: "5000.00", budgetUrspruenglich: "50000.00" });
+    expect(nachher.gewerke.find((x: { id: string }) => x.id === quelle.id)).toMatchObject({ umgebucht: "-5000.00", budgetUrspruenglich: quelle.stand.geschaetzt });
+    expect(nachher.umbuchungen).toBe(1);
+    const bericht = (await http.get(`/api/auswertungen/kostenreport/${ids.p}`)).body;
+    expect(bericht.umbuchungsliste).toHaveLength(1);
+    const xlsx = await http.get(`/api/auswertungen/kostenreport/${ids.p}?format=xlsx`);
+    expect(xlsx.status).toBe(200);
+    expect((await http.get(`/api/auswertungen/projektbericht/${ids.p}`)).body.kosten.umbuchungen).toBe(1);
     const liste = (await http.get(`/api/projekte/${ids.p}/budgetumbuchungen`)).body;
     expect(liste[0]).toMatchObject({ betrag: "5000.00", begruendung: "Einsparung Rohbau für Außenanlagen", von: { nr: 300 }, nach: { nr: 999 } });
     const prot = (await http.get(`/api/protokoll/${ziel.id}`)).body as { neu: Record<string, unknown> }[];

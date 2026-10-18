@@ -3,16 +3,21 @@ import { api } from "@/lib/api";
 import { deZahl } from "@/lib/format";
 import type { Kostenkontrolle } from "@/lib/typen";
 import { Abweichung } from "../../../kosten/Abweichung";
+import { UmbuchungenListe, type Budgetumbuchung } from "../../../kosten/Umbuchung";
 
 export const dynamic = "force-dynamic";
 
 export default async function KostenreportSeite({ params, searchParams }: { params: Promise<{ projektId: string }>; searchParams: Promise<{ alle?: string }> }) {
   const { projektId } = await params;
   const { alle } = await searchParams;
-  const d = await api<Kostenkontrolle & { projekt: { id: string; nr: number; suchcode: string; strasse: string | null; plz: string | null; ort: string | null } }>(`/auswertungen/kostenreport/${projektId}`);
+  const d = await api<Kostenkontrolle & { umbuchungsliste: Budgetumbuchung[]; projekt: { id: string; nr: number; suchcode: string; strasse: string | null; plz: string | null; ort: string | null } }>(`/auswertungen/kostenreport/${projektId}`);
   const sichtbar = alle ? d.gewerke : d.gewerke.filter((g) => Number(g.stand.geschaetzt) || g.vertraege.length);
   const gruppen = [...new Set(sichtbar.map((g) => g.gruppe ?? "Ohne Gruppe"))];
   const n = (v: string) => (Number(v) ? deZahl(v) : "");
+  const historie = d.umbuchungsliste.length > 0;
+  const spalten = 9; // mit Historie ersetzen „ursprünglich/Umbuchung“ die Detailspalten „vergeben/Nachträge“ (Excel enthält alle)
+  const summeVon = (feld: "budgetUrspruenglich" | "umgebucht") => d.gewerke.reduce((s, g) => s + Number(g[feld]), 0).toFixed(2);
+  const vorzeichen = (v: string) => (Number(v) > 0 ? `+${deZahl(v)}` : Number(v) < 0 ? deZahl(v) : "");
   return (
     <Bericht
       titel={`Kostenreport ${d.projekt.nr} ${d.projekt.suchcode}`}
@@ -37,9 +42,19 @@ export default async function KostenreportSeite({ params, searchParams }: { para
             <tr>
               <th className="num">Nr.</th>
               <th>Gewerk / Vertragspartner</th>
-              <th className="num">geschätzt</th>
-              <th className="num">vergeben</th>
-              <th className="num">Nachträge</th>
+              {historie ? (
+                <>
+                  <th className="num" title="Budget vor Umbuchungen">ursprünglich</th>
+                  <th className="num">umgebucht</th>
+                </>
+              ) : null}
+              <th className="num">{historie ? "Budget" : "geschätzt"}</th>
+              {historie ? null : (
+                <>
+                  <th className="num">vergeben</th>
+                  <th className="num">Nachträge</th>
+                </>
+              )}
               <th className="num">Summe vergeben</th>
               <th className="num">berechnet</th>
               <th className="num">bezahlt</th>
@@ -49,7 +64,7 @@ export default async function KostenreportSeite({ params, searchParams }: { para
           {gruppen.map((gr) => (
             <tbody key={gr}>
               <tr className="gruppenzeile">
-                <td colSpan={9}>{gr}</td>
+                <td colSpan={spalten}>{gr}</td>
               </tr>
               {sichtbar
                 .filter((g) => (g.gruppe ?? "Ohne Gruppe") === gr)
@@ -60,9 +75,19 @@ export default async function KostenreportSeite({ params, searchParams }: { para
                       {g.bezeichnung}
                       {g.vertraege.length ? <div className="hint">{[...new Set(g.vertraege.map((v) => v.handwerker?.firma ?? v.handwerker?.nachname ?? v.handwerker?.suchcode))].join(", ")}</div> : null}
                     </td>
+                    {historie ? (
+                      <>
+                        <td className="num">{n(g.budgetUrspruenglich)}</td>
+                        <td className="num">{vorzeichen(g.umgebucht)}</td>
+                      </>
+                    ) : null}
                     <td className="num">{n(g.stand.geschaetzt)}</td>
-                    <td className="num">{n(g.stand.vergeben)}</td>
-                    <td className="num">{n(g.stand.nachtraege)}</td>
+                    {historie ? null : (
+                      <>
+                        <td className="num">{n(g.stand.vergeben)}</td>
+                        <td className="num">{n(g.stand.nachtraege)}</td>
+                      </>
+                    )}
                     <td className="num">{n(g.stand.summeVergeben)}</td>
                     <td className="num">{n(g.stand.berechnet)}</td>
                     <td className="num">{n(g.stand.bezahlt)}</td>
@@ -79,9 +104,19 @@ export default async function KostenreportSeite({ params, searchParams }: { para
               <td>
                 <b>Summe Projekt</b>
               </td>
+              {historie ? (
+                <>
+                  <td className="num">{deZahl(summeVon("budgetUrspruenglich"))}</td>
+                  <td className="num">{deZahl(summeVon("umgebucht"))}</td>
+                </>
+              ) : null}
               <td className="num">{deZahl(d.summe.geschaetzt)}</td>
-              <td className="num">{deZahl(d.summe.vergeben)}</td>
-              <td className="num">{deZahl(d.summe.nachtraege)}</td>
+              {historie ? null : (
+                <>
+                  <td className="num">{deZahl(d.summe.vergeben)}</td>
+                  <td className="num">{deZahl(d.summe.nachtraege)}</td>
+                </>
+              )}
               <td className="num">{deZahl(d.summe.summeVergeben)}</td>
               <td className="num">{deZahl(d.summe.berechnet)}</td>
               <td className="num">{deZahl(d.summe.bezahlt)}</td>
@@ -92,7 +127,14 @@ export default async function KostenreportSeite({ params, searchParams }: { para
           </tfoot>
         </table>
       </div>
-      <p className="hint">Abweichung = geschätzt − Trend (Vergabe inkl. beauftragter Nachträge, sonst Schätzung). Bezahlt = abgegolten inkl. Skonto und Bauabzugsteuer.</p>
+      {historie ? (
+        <>
+          <h2>Budgetumbuchungen</h2>
+          <UmbuchungenListe liste={d.umbuchungsliste} projektId={d.projekt.id} />
+          <p className="hint">Umbuchungen verschieben Budget zwischen Gewerken; das Gesamtbudget des Projekts bleibt unverändert (Summe der Umbuchungen 0,00). Vergabe und Nachträge einzeln stehen im Excel-Export.</p>
+        </>
+      ) : null}
+      <p className="hint">Abweichung = {historie ? "Budget (nach Umbuchungen)" : "geschätzt"} − Trend (Vergabe inkl. beauftragter Nachträge, sonst Schätzung). Bezahlt = abgegolten inkl. Skonto und Bauabzugsteuer.</p>
     </Bericht>
   );
 }

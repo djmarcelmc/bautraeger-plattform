@@ -25,7 +25,7 @@ interface Projektbericht {
     unverkauft: { id: string; nr: string; typ: string; art: string | null; wohnflaeche: string | null; vkBrutto: string | null }[];
     summen: { vertragssumme: string; angefordert: string; bezahlt: string; unverkauftPlan: string };
   };
-  kosten: { summe: Kostenstand; vergeben: GewerkZeile[] };
+  kosten: { summe: Kostenstand; vergeben: GewerkZeile[]; umbuchungen: number };
   maengel: { offen: number; ueberfaellig: number };
   stand: string;
 }
@@ -175,7 +175,10 @@ export default async function ProjektberichtSeite({ params }: { params: Promise<
                   {g.nr} {g.bezeichnung}
                   <div className="hint">{[...new Set(g.vertraege.map((x) => x.handwerker?.firma ?? x.handwerker?.nachname ?? x.handwerker?.suchcode))].join(", ")}</div>
                 </td>
-                <td className="num">{deZahl(g.stand.geschaetzt)}</td>
+                <td className="num">
+                  {deZahl(g.stand.geschaetzt)}
+                  {Number(g.umgebucht) ? <div className="hint">inkl. Umbuchung {Number(g.umgebucht) > 0 ? "+" : ""}{deZahl(g.umgebucht)}</div> : null}
+                </td>
                 <td className="num">{deZahl(g.stand.summeVergeben)}</td>
                 <td className="num">{deZahl(g.stand.berechnet)}</td>
                 <td className="num">{deZahl(g.stand.bezahlt)}</td>
@@ -201,6 +204,11 @@ export default async function ProjektberichtSeite({ params }: { params: Promise<
           </tfoot>
         </table>
       </div>
+      {b.kosten.umbuchungen ? (
+        <p className="hint">
+          {b.kosten.umbuchungen} Budgetumbuchung{b.kosten.umbuchungen === 1 ? "" : "en"} zwischen Gewerken – Gesamtbudget unverändert; Einzelheiten im Kostenreport.
+        </p>
+      ) : null}
     </Bericht>
   );
 }

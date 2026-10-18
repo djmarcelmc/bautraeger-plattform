@@ -193,7 +193,7 @@ export class AuswertungenService {
           unverkauftPlan: f(summe(unverkauft.map((e) => money(e.vkBrutto ?? "0")))),
         },
       },
-      kosten: { summe: k.summe, vergeben: k.gewerke.filter((g) => g.vertraege.length) },
+      kosten: { summe: k.summe, vergeben: k.gewerke.filter((g) => g.vertraege.length), umbuchungen: k.umbuchungen },
       maengel: { offen: offeneMaengel.length, ueberfaellig },
       stand: heute,
     };

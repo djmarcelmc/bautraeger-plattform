@@ -270,6 +270,9 @@ export interface GewerkZeile {
   geschaetztBrutto: string;
   stand: Kostenstand;
   budget: BudgetStand;
+  /** Saldo der Budgetumbuchungen (zugebucht positiv) */
+  umgebucht: string;
+  budgetUrspruenglich: string;
   vertraege: {
     id: string;
     nrIntern: string | null;
@@ -283,6 +286,8 @@ export interface Kostenkontrolle {
   gewerke: GewerkZeile[];
   summe: Kostenstand;
   budgetSchwelleProzent: number;
+  /** Anzahl Budgetumbuchungen im Projekt */
+  umbuchungen: number;
 }
 
 export interface Rechnung {

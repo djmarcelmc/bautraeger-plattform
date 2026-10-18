@@ -16,7 +16,8 @@ import {
   datumPlusTage,
   type VertragKosten,
 } from "@bt/domain";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
@@ -117,6 +118,28 @@ export class KostenService {
     return m;
   }
 
+  /** Budgetumbuchungen eines Projekts, neueste zuerst. */
+  async budgetumbuchungen(projektId: string) {
+    const bu = schema.budgetumbuchung;
+    const von = alias(gw, "von");
+    const nach = alias(gw, "nach");
+    return this.db
+      .select({
+        id: bu.id,
+        betrag: bu.betrag,
+        begruendung: bu.begruendung,
+        benutzer: bu.benutzer,
+        angelegtAm: bu.angelegtAm,
+        von: { id: von.id, nr: von.nr, bezeichnung: von.bezeichnung },
+        nach: { id: nach.id, nr: nach.nr, bezeichnung: nach.bezeichnung },
+      })
+      .from(bu)
+      .innerJoin(von, eq(bu.vonGewerkId, von.id))
+      .innerJoin(nach, eq(bu.nachGewerkId, nach.id))
+      .where(eq(bu.projektId, projektId))
+      .orderBy(desc(bu.angelegtAm));
+  }
+
   /** Kostenkontrolle eines Projekts: je Gewerk Schätzung, Vergabe, Nachträge, berechnet, bezahlt, Trend. */
   async kostenkontrolle(projektId: string) {
     const gewerke = await this.db.select().from(gw).where(eq(gw.projektId, projektId)).orderBy(asc(gw.nr));
@@ -127,17 +150,27 @@ export class KostenService {
           .leftJoin(schema.geschaeftspartner, eq(hv.handwerkerId, schema.geschaeftspartner.id))
           .where(inArray(hv.gewerkId, gewerke.map((x) => x.id)))
       : [];
-    const [kennzahlen, { budgetSchwelleProzent }] = await Promise.all([this.vertragsKennzahlen(vertraege.map((v) => v.vertrag.id)), this.einstellung()]);
+    const bu = schema.budgetumbuchung;
+    const [kennzahlen, { budgetSchwelleProzent }, umbuchungen] = await Promise.all([
+      this.vertragsKennzahlen(vertraege.map((v) => v.vertrag.id)),
+      this.einstellung(),
+      this.db.select({ von: bu.vonGewerkId, nach: bu.nachGewerkId, betrag: bu.betrag }).from(bu).where(eq(bu.projektId, projektId)),
+    ]);
+    // Saldo der Umbuchungen je Gewerk (zugebucht positiv); ursprüngliches Budget = Schätzung − Saldo
+    const umgebucht = (id: string) => summe(umbuchungen.map((u) => (u.nach === id ? money(u.betrag) : u.von === id ? money(u.betrag).negated() : money(0))));
     const zeilen = gewerke.map((x) => {
       const eigene = vertraege.filter((v) => v.vertrag.gewerkId === x.id);
       const stand = kostenstand(
         x.geschaetztBrutto,
         eigene.map((v) => ({ ...kennzahlen.get(v.vertrag.id)!, vertragBrutto: v.vertrag.vertragBrutto })),
       );
+      const saldo = umgebucht(x.id);
       return {
         ...x,
         stand,
         budget: budgetPruefung(stand, budgetSchwelleProzent),
+        umgebucht: saldo.toFixed(2),
+        budgetUrspruenglich: money(x.geschaetztBrutto).minus(saldo).toFixed(2),
         vertraege: eigene.map((v) => ({
           id: v.vertrag.id,
           nrIntern: v.vertrag.nrIntern,
@@ -147,7 +180,7 @@ export class KostenService {
         })),
       };
     });
-    return { gewerke: zeilen, summe: kostenstandSumme(zeilen.map((z) => z.stand)), budgetSchwelleProzent };
+    return { gewerke: zeilen, summe: kostenstandSumme(zeilen.map((z) => z.stand)), budgetSchwelleProzent, umbuchungen: umbuchungen.length };
   }
 
   /** Vertrag mit Gewerk, Handwerker, Nachträgen, Rechnungen, Zahlungen und Summen. */
