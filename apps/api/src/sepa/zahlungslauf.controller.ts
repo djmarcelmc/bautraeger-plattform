@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Query, StreamableFile } from "@nestjs/common";
 import { schema } from "@bt/db";
-import { ZahlungslaufEingabe, bauabzugFrist, ibanGueltig, ibanPruefen, money, pain001, summe, type IbanAenderung, type IbanPruefung } from "@bt/domain";
+import { ZahlungslaufEingabe, bauabzugFrist, ibanGueltig, ibanPruefen, money, pain001, summe, type IbanPruefung } from "@bt/domain";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { anmeldungAktiv } from "../common/rechte.guard.js";
@@ -9,6 +9,7 @@ import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { KostenService } from "../kosten/kosten.service.js";
 import { VerkaufService } from "../verkauf/verkauf.service.js";
+import { IbanService } from "./iban.service.js";
 
 const { zahlungslauf: zl, zahlungsausgang: za, eingangsrechnung: er, handwerkervertrag: hv, gewerk: gw, projekt: p, gesellschaft: g, geschaeftspartner: gp } = schema;
 const heute = () => new Date().toISOString().slice(0, 10);
@@ -21,6 +22,7 @@ export class ZahlungslaufController {
     @Inject(KontextService) private readonly kontext: KontextService,
     @Inject(KostenService) private readonly kosten: KostenService,
     @Inject(VerkaufService) private readonly verkauf: VerkaufService,
+    @Inject(IbanService) private readonly iban: IbanService,
   ) {}
 
   /** Freigegebene Rechnungen mit Gesellschaft und Empfängerkonto. */
@@ -53,14 +55,9 @@ export class ZahlungslaufController {
   private async ibanPruefungen(liste: Awaited<ReturnType<ZahlungslaufController["freigegebene"]>>, benutzer: string): Promise<Map<string, IbanPruefung>> {
     const hwIds = [...new Set(liste.map((x) => x.handwerker.id).filter(Boolean))];
     const rIds = liste.map((x) => x.id);
-    const ap = schema.aenderungsprotokoll;
-    const [aenderungen, gezahlt, eingang] = await Promise.all([
-      hwIds.length
-        ? this.db
-            .select({ id: ap.datensatzId, am: sql<string>`${ap.zeitpunkt}::text`, von: ap.benutzer, aktion: ap.aktion, alt: sql<string | null>`${ap.alt}->>'iban'`, neu: sql<string | null>`${ap.neu}->>'iban'` })
-            .from(ap)
-            .where(and(eq(ap.tabelle, "geschaeftspartner"), inArray(ap.datensatzId, hwIds), sql`${ap.neu} ? 'iban'`))
-        : [],
+    const [aenderungen, bestaetigungen, gezahlt, eingang] = await Promise.all([
+      this.iban.aenderungen(hwIds),
+      this.iban.bestaetigungen(hwIds),
       hwIds.length
         ? this.db
             .selectDistinct({ handwerkerId: hv.handwerkerId, iban: za.empfaengerIban })
@@ -79,7 +76,8 @@ export class ZahlungslaufController {
         x.id,
         ibanPruefen({
           iban: x.handwerker.iban,
-          aenderungen: aenderungen.filter((a) => a.id === x.handwerker.id).map((a): IbanAenderung => ({ am: new Date(a.am).toISOString(), von: a.von, alt: a.alt, neu: a.neu, angelegt: a.aktion === "insert" })),
+          aenderungen: aenderungen.get(x.handwerker.id) ?? [],
+          bestaetigungen: bestaetigungen.get(x.handwerker.id) ?? [],
           bisherGezahlt: gezahlt.filter((g) => g.handwerkerId === x.handwerker.id).map((g) => g.iban!),
           rechnungsIban: eingang.find((e) => e.id === x.id)?.iban ?? null,
           stichtag: heute(),

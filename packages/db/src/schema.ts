@@ -747,3 +747,21 @@ export const belegeingang = pgTable(
   },
   (t) => [uniqueIndex("belegeingang_herkunft").on(t.mandantId, t.herkunft).where(sql`${t.herkunft} is not null`), index("belegeingang_status").on(t.mandantId, t.status)],
 );
+
+/** Dokumentierter Rückruf beim Geschäftspartner zur Bestätigung seiner Bankverbindung (Schutz vor Bankdatenbetrug). */
+export const ibanBestaetigung = pgTable(
+  "iban_bestaetigung",
+  {
+    id: id(),
+    partnerId: uuid("partner_id").notNull().references(() => geschaeftspartner.id),
+    iban: text("iban").notNull(),
+    rueckrufAm: date("rueckruf_am").notNull(),
+    gespraechspartner: text("gespraechspartner").notNull(),
+    /** Verwendete, bereits bekannte Telefonnummer (nicht die aus der Mail/Rechnung) */
+    telefon: text("telefon"),
+    bemerkung: text("bemerkung"),
+    bestaetigtVon: text("bestaetigt_von").notNull(),
+    ...zeitstempel,
+  },
+  (t) => [index("iban_bestaetigung_partner").on(t.partnerId)],
+);

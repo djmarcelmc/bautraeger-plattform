@@ -19,11 +19,26 @@ export async function partnerAnlegen(fd: FormData): Promise<AktionsErgebnis> {
 }
 
 export async function partnerAendern(id: string, fd: FormData): Promise<AktionsErgebnis> {
+  let ibanGeaendert = false;
   try {
-    await api(`/partner/${id}`, { method: "PUT", body: daten(fd) });
+    const vorher = await api<{ iban: string | null }>(`/partner/${id}`);
+    const nachher = await api<{ iban: string | null }>(`/partner/${id}`, { method: "PUT", body: daten(fd) });
+    ibanGeaendert = (vorher.iban ?? "") !== (nachher.iban ?? "") && !!nachher.iban;
   } catch (e) {
     return alsErgebnis(e);
   }
   revalidatePath("/partner");
-  return { meldung: "Gespeichert." };
+  revalidatePath(`/partner/${id}`);
+  return { meldung: ibanGeaendert ? "Gespeichert. Die IBAN wurde geändert – bitte den Rückruf beim Handwerker unter der bekannten Telefonnummer dokumentieren (unten bei „Bankverbindung“)." : "Gespeichert." };
+}
+
+/** Rückruf zur Bestätigung der aktuellen IBAN dokumentieren. */
+export async function rueckrufDokumentieren(id: string, fd: FormData): Promise<AktionsErgebnis> {
+  try {
+    await api(`/partner/${id}/iban/rueckruf`, { method: "POST", body: { rueckrufAm: fd.get("rueckrufAm"), gespraechspartner: fd.get("gespraechspartner"), telefon: fd.get("telefon") ?? "", bemerkung: fd.get("bemerkung") ?? "" } });
+  } catch (e) {
+    return alsErgebnis(e);
+  }
+  revalidatePath(`/partner/${id}`);
+  return { meldung: "Rückruf dokumentiert – die Bankverbindung gilt im Zahlungslauf als bestätigt." };
 }

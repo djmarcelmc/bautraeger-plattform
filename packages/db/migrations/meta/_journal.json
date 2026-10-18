@@ -155,6 +155,13 @@
       "when": 1792344040571,
       "tag": "0021_empfaenger_iban",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792345394971,
+      "tag": "0022_iban_bestaetigung",
+      "breakpoints": true
     }
   ]
 }

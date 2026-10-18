@@ -18,6 +18,7 @@ import { DB, type Db } from "../db.provider.js";
 import { BankabgleichService } from "../bankabgleich/bankabgleich.service.js";
 import { BauabzugService } from "../bauabzug/bauabzug.service.js";
 import { BuchhaltungService } from "../buchhaltung/buchhaltung.service.js";
+import { IbanService } from "../sepa/iban.service.js";
 import { BauzeitService } from "../bauzeit/bauzeit.service.js";
 import { KostenService } from "../kosten/kosten.service.js";
 import { MaengelService } from "../maengel/maengel.service.js";
@@ -43,6 +44,7 @@ export class CockpitService {
     @Inject(BauabzugService) private readonly bauabzug: BauabzugService,
     @Inject(BankabgleichService) private readonly bank: BankabgleichService,
     @Inject(BuchhaltungService) private readonly buchhaltung: BuchhaltungService,
+    @Inject(IbanService) private readonly iban: IbanService,
   ) {}
 
   async cockpit() {
@@ -268,6 +270,17 @@ export class CockpitService {
         link: "/bauabzug",
       });
     }
+    // ---------------------------------------------------------------- IBAN-Änderungen ohne Rückruf
+    for (const x of await this.iban.offeneRueckrufe())
+      aufgaben.push({
+        bereich: "kosten",
+        dringlichkeit: "hoch",
+        titel: `IBAN von ${x.name} geändert – Rückruf dokumentieren`,
+        text: `am ${de(x.aenderung.am.slice(0, 10))} von ${x.aenderung.von} – vor der nächsten Zahlung beim Handwerker unter der bekannten Telefonnummer bestätigen lassen`,
+        datum: x.aenderung.am.slice(0, 10),
+        link: `/partner/${x.id}#bankverbindung`,
+      });
+
     // ---------------------------------------------------------------- Rechnungseingang
     const [eingang] = await this.db
       .select({ anzahl: sql<number>`count(*)::int`, aeltester: sql<string | null>`min(${schema.belegeingang.empfangenAm})::date::text` })
