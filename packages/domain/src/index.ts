@@ -21,3 +21,4 @@ export * from "./bauabzug.js";
 export * from "./sonderwunsch.js";
 export * from "./briefbogen.js";
 export * from "./buchhaltung.js";
+export * from "./bankabgleich.js";

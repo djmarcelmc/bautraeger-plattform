@@ -63,6 +63,7 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/zahlungslaeufe(\/|$)/, "zahlungen"],
   [/^\/bauabzug(\/|$)/, "zahlungen"],
   [/^\/buchhaltung(\/|$)/, "buchhaltung"],
+  [/^\/bankabgleich(\/|$)/, "verkaufZahlungen"],
   [/^\/eingangsrechnungen(\/[^/]+\/pruefen)?$/, "kostenPruefen"],
   [/^\/(handwerkervertraege|nachtraege|gewerke)(\/|$)/, "kostenBearbeiten"],
   [/^\/projekte\/[^/]+\/(gewerke|gewerkeplan)$/, "kostenBearbeiten"],

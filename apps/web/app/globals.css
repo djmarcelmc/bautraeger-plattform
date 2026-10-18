@@ -2927,3 +2927,118 @@ table.journal tr.storniert td.num {
 table.journal tr.storno td {
   background: color-mix(in srgb, var(--gefahr) 6%, transparent);
 }
+
+/* ------------------------------------------------------------------ Bankabgleich */
+.bank-oben {
+  align-items: start;
+  margin-bottom: 16px;
+}
+.bank-oben .karte {
+  margin: 0;
+}
+.bankliste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.bankumsatz {
+  margin: 0;
+  padding: 14px 16px;
+}
+.bankumsatz.ignoriert,
+.bankumsatz.zugeordnet {
+  opacity: 0.85;
+}
+.bankkopf {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.bankrichtung {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.bankrichtung.ein {
+  background: var(--gut-weich, #e8f6ee);
+  color: var(--gut, #15803d);
+}
+.bankrichtung.aus {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.bankinfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.bankinfo p {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.bankbetrag {
+  font-size: 16px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.bankbetrag.ein {
+  color: var(--gut, #15803d);
+}
+.bankaktion {
+  margin: 12px 0 0 44px;
+  display: grid;
+  gap: 8px;
+}
+.bankaktion.erledigt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.bankvorschlag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-klein);
+  background: var(--flaeche-2, #f6f7f9);
+  font-size: 13.5px;
+}
+.bankvorschlag .formular.inline {
+  margin-left: auto;
+}
+.bankerfassung summary {
+  list-style: none;
+  cursor: pointer;
+}
+.bankerfassung summary::-webkit-details-marker {
+  display: none;
+}
+.bankerfassung[open] {
+  flex-basis: 100%;
+}
+.bankerfassung .formular {
+  margin-top: 8px;
+  max-width: 640px;
+}
+.bankposten {
+  grid-template-columns: 1fr 140px;
+}
+.bankverweis {
+  margin-right: 10px;
+}
+@media screen and (max-width: 700px) {
+  .bankaktion {
+    margin-left: 0;
+  }
+  .bankposten {
+    grid-template-columns: 1fr;
+  }
+}

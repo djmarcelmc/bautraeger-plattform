@@ -32,6 +32,8 @@ import { SonderwuenscheController } from "./sonderwunsch/sonderwuensche.controll
 import { SchreibenController } from "./schreiben/schreiben.controller.js";
 import { BriefbogenController } from "./gesellschaften/briefbogen.controller.js";
 import { BauabzugService } from "./bauabzug/bauabzug.service.js";
+import { BankabgleichController } from "./bankabgleich/bankabgleich.controller.js";
+import { BankabgleichService } from "./bankabgleich/bankabgleich.service.js";
 import { BuchhaltungController } from "./buchhaltung/buchhaltung.controller.js";
 import { BuchhaltungService } from "./buchhaltung/buchhaltung.service.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
@@ -63,6 +65,7 @@ class HealthController {
     EinheitenController,
     ImportController,
     BauabzugController,
+    BankabgleichController,
     BuchhaltungController,
     SonderwuenscheController,
     SchreibenController,
@@ -98,6 +101,7 @@ class HealthController {
     BuergschaftenService,
     CockpitService,
     BauabzugService,
+    BankabgleichService,
     BuchhaltungService,
     NachrichtenService,
     Versandlauf,
