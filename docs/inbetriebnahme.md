@@ -16,6 +16,8 @@ gewählt, dass jeder Schritt auf dem vorherigen aufbaut. Erst nach Schritt 6 sol
 
 - [ ] **Gesellschaften** anlegen: Name, Anschrift, Steuernummer, DATEV-Berater-/Mandantennummer, IBAN/BIC (für
       SEPA-Zahlungsläufe)
+- [ ] **Briefbogen** je Gesellschaft hinterlegen (*Gesellschaften → Gesellschaft → Briefbogen für Schreiben*): PDF hochladen
+      (aus der Word-Vorlage „Speichern unter → PDF“), Ränder einstellen und mit dem **Musterbrief** prüfen
 - [ ] **Basiszinssätze** prüfen (*Einstellungen → Allgemein*), fehlende Halbjahre nachtragen
 - [ ] **Standardmängel-Katalog** übernehmen und an die eigenen Formulierungen anpassen
 

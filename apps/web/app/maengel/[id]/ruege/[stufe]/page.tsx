@@ -1,5 +1,7 @@
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PdfKnopf } from "@/components/PdfKnopf";
+import { briefbogenFuer } from "@/lib/briefbogen";
 import { api } from "@/lib/api";
 import { deDatum } from "@/lib/format";
 import { partnerName, type MangelDetail } from "@/lib/typen";
@@ -16,6 +18,7 @@ export default async function Ruegeschreiben({ params }: { params: Promise<{ id:
   if (!r) return <p className="fehler">Diese Rüge gibt es nicht.</p>;
   const h = m.handwerker;
   const frueher = m.ruegen.filter((x) => x.stufe < r.stufe);
+  const bb = await briefbogenFuer(m.gesellschaft.id);
   return (
     <>
       <div className="nur-bildschirm seitenkopf">
@@ -25,11 +28,16 @@ export default async function Ruegeschreiben({ params }: { params: Promise<{ id:
           </p>
           <h1>{r.stufe}. Rüge</h1>
         </div>
-        <DruckKnopf>
-          <Printer size={16} /> Drucken / PDF
-        </DruckKnopf>
+        <div className="knopfleiste">
+          <PdfKnopf pfad={`/maengel/${id}/ruege/${r.stufe}`} briefbogen={bb.aktiv} />
+          <DruckKnopf>
+            <Printer size={16} /> Drucken
+          </DruckKnopf>
+        </div>
       </div>
-      <article className="schreiben">
+      <article className={`schreiben ${bb.klasse}`}>
+        {bb.kopf}
+        {bb.felder(r.geruegtAm)}
         <header>
           <div className="absender">
             {m.gesellschaft.name}
@@ -47,8 +55,8 @@ export default async function Ruegeschreiben({ params }: { params: Promise<{ id:
             )}
           </div>
           <dl className="infoblock">
-            <dt>Datum</dt>
-            <dd>{deDatum(r.geruegtAm)}</dd>
+            <dt className="info-datum">Datum</dt>
+            <dd className="info-datum">{deDatum(r.geruegtAm)}</dd>
             <dt>Mangel-Nr.</dt>
             <dd>
               {m.projekt.nr}-{m.nr}

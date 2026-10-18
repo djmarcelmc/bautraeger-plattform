@@ -492,7 +492,7 @@ export interface MahnungDruck extends Mahnung {
   zinsperioden: { von: string; bis: string; tage: number; kapital: string; zinssatz: string; zinsen: string }[];
   vertrag: { id: string; nr: string; urkundennr: string | null; datum: string | null; einheiten: { nr: string; typ: string }[]; verbraucher: boolean; verzugszinsProzent: string | null };
   projekt: { suchcode: string; strasse: string | null; plz: string | null; ort: string | null };
-  gesellschaft: { name: string; anschrift: string | null };
+  gesellschaft: { id: string; name: string; anschrift: string | null };
   empfaenger: Partner;
   kaeufer: Partner[];
   vorherige: Mahnung[];

@@ -46,6 +46,8 @@ export const gesellschaft = pgTable("gesellschaft", {
   bic: text("bic"),
   /** Steuernummer des Leistungsempfängers (Bauabzugsteuer-Anmeldung). */
   steuernummer: text("steuernummer"),
+  /** Briefbogen (PDF in der Dokumentablage) und Satzspiegel für Schreiben */
+  briefbogen: jsonb("briefbogen").$type<Record<string, unknown>>(),
   ...zeitstempel,
 }, (t) => [uniqueIndex("gesellschaft_nr_je_mandant").on(t.mandantId, t.nr)]);
 
