@@ -50,6 +50,13 @@
       "when": 1792320401331,
       "tag": "0006_mahnwesen",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792322004018,
+      "tag": "0007_bauzeitenplan",
+      "breakpoints": true
     }
   ]
 }

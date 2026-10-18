@@ -106,4 +106,32 @@ describe("MCP-Server", () => {
     expect(d.gesellschaften[0].projekte[0]).toMatchObject({ projekt: "101 LINDENWEG", saldo: { trend: "150.000,00 €" } });
     expect(d.gesamt.erloese.offen).toBe("43.000,00 €");
   });
+
+  it("liefert den Liquiditätsplan nach Kalenderwochen", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = new URL(url);
+      if (u.pathname.endsWith("/projekte")) return new Response(JSON.stringify([{ id: "p1", nr: 101 }]), { status: 200 });
+      expect(u.searchParams.get("projektId")).toBe("p1");
+      expect(u.searchParams.get("anfangsbestand")).toBe("100000.00");
+      return new Response(
+        JSON.stringify({
+          stichtag: "2026-10-19",
+          projekte: [{ nr: 101, suchcode: "LINDENWEG", hatPlan: true }],
+          artText: { ein: { angefordert: "Angeforderte Raten" }, aus: { bauleistung: "Leistungen nach Bauzeitenplan" } },
+          wochen: [{ jahr: 2026, woche: 43, ein: { angefordert: "43000" }, aus: { bauleistung: "8125" }, einSumme: "43000", ausSumme: "8125", bestand: "134875" }],
+          summe: { ein: "43000", aus: "8125", endbestand: "134875" },
+          tiefstand: { bestand: "100000", woche: null },
+          ueberfaellig: { ein: "43000", aus: "0" },
+          spaeter: { ein: "0", aus: "0" },
+          ohneTermin: { ein: "0", aus: "0" },
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "liquiditaetsplan", arguments: { projektNr: 101, anfangsbestand: 100000 } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.wochen[0]).toMatchObject({ kw: "KW 43/2026", einnahmen: { "Angeforderte Raten": "43.000,00 €" }, bestand: "134.875,00 €" });
+    expect(d.summe.endbestand).toBe("134.875,00 €");
+  });
 });

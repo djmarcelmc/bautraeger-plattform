@@ -1559,6 +1559,275 @@ table.berichtstabelle .trenner {
   }
 }
 
+/* ------------------------------------------------------------------ Bauzeitenplan (Gantt) */
+.gantt-rahmen {
+  overflow-x: auto;
+}
+.gantt {
+  --label: 270px;
+  position: relative;
+  min-width: 860px;
+}
+.gantt-kopf,
+.gantt-zeile > summary {
+  display: grid;
+  grid-template-columns: var(--label) minmax(0, 1fr);
+  align-items: center;
+}
+.gantt-kopf {
+  height: 34px;
+  border-bottom: 1px solid var(--linie);
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.gantt-label {
+  padding: 0 12px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.gantt-spur {
+  position: relative;
+  height: 100%;
+  min-height: 34px;
+}
+.gantt-monat {
+  position: absolute;
+  top: 10px;
+  padding-left: 4px;
+  border-left: 1px solid var(--linie);
+  height: 24px;
+  white-space: nowrap;
+}
+.gantt-monat.jahr {
+  color: var(--text);
+  border-left-color: var(--linie-stark);
+}
+.gantt-zeile {
+  border-bottom: 1px solid var(--linie);
+}
+.gantt-zeile > summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 38px;
+}
+.gantt-zeile > summary::-webkit-details-marker {
+  display: none;
+}
+.gantt-zeile > summary:hover,
+.gantt-zeile[open] > summary {
+  background: var(--flaeche-2);
+}
+.gantt-nr {
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 26px;
+}
+.gantt-text {
+  font-size: 13px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gantt-text small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.gantt-raster {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--linie);
+  opacity: 0.6;
+}
+.gantt-balken {
+  position: absolute;
+  top: 50%;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--akzent) 30%, var(--flaeche));
+  border: 1px solid var(--akzent);
+  min-width: 4px;
+}
+.gantt-balken.laeuft {
+  background: var(--akzent);
+}
+.gantt-balken.verzug {
+  background: var(--warnung);
+  border-color: var(--warnung);
+}
+.gantt-balken.erledigt {
+  background: var(--gut);
+  border-color: var(--gut);
+}
+.gantt-meilenstein {
+  position: absolute;
+  top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--info);
+  font-size: 10.5px;
+  white-space: nowrap;
+  transform: translateX(-5px);
+  pointer-events: none;
+}
+.gantt-meilenstein em {
+  font-style: normal;
+  font-weight: 600;
+}
+.gantt-heute {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--label) + (100% - var(--label)) * var(--anteil, 0));
+  width: 0;
+  border-left: 2px solid var(--gefahr);
+  pointer-events: none;
+  z-index: 1;
+}
+.gantt-bearbeiten {
+  position: relative;
+  z-index: 2;
+  padding: 8px 16px 16px;
+  background: var(--flaeche-2);
+}
+.gantt-bearbeiten select[multiple],
+.karte select[multiple] {
+  height: auto;
+  padding: 4px;
+}
+.formular.rechts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+.gantt-legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.gantt-legende .gantt-balken {
+  position: static;
+  display: inline-block;
+  width: 22px;
+  height: 10px;
+  margin: 0;
+  vertical-align: middle;
+}
+.hinweisbox {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin: 0 0 16px;
+  border-radius: var(--radius-klein);
+  background: var(--warnung-weich);
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--warnung) 35%, var(--linie));
+  font-size: 13px;
+}
+.hinweisbox svg {
+  color: var(--warnung);
+  flex: none;
+  margin-top: 2px;
+}
+.mitsymbol {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------------ Liquiditätsplan */
+.diagrammkarte {
+  padding: 16px 16px 10px;
+}
+.liqdiagramm {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.liqdiagramm .raster {
+  stroke: var(--linie);
+  stroke-width: 1;
+}
+.liqdiagramm .achse {
+  stroke: var(--linie-stark);
+  stroke-width: 1.5;
+}
+.liqdiagramm .beschriftung {
+  fill: var(--text-3);
+  font-size: 11px;
+  font-family: var(--schrift);
+}
+.liqdiagramm .ein,
+.diagrammlegende .ein {
+  fill: var(--gut);
+  background: var(--gut);
+}
+.liqdiagramm .aus,
+.diagrammlegende .aus {
+  fill: var(--gefahr);
+  background: var(--gefahr);
+  opacity: 0.85;
+}
+.liqdiagramm .bestand {
+  fill: none;
+  stroke: var(--akzent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.liqdiagramm .unterdeckung {
+  fill: var(--gefahr);
+}
+.diagrammlegende {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin: 6px 0 0;
+}
+.diagrammlegende i {
+  display: inline-block;
+  width: 12px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: -10px;
+}
+.diagrammlegende i.bestand {
+  height: 3px;
+  background: var(--akzent);
+}
+table.berichtstabelle td.fett {
+  font-weight: 650;
+}
+table.liqtabelle td {
+  white-space: nowrap;
+}
+.filterleiste input.zahl {
+  width: 170px;
+  flex: none;
+}
+.erklaerung {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+@media (max-width: 760px) {
+  .gantt {
+    --label: 170px;
+    min-width: 680px;
+  }
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

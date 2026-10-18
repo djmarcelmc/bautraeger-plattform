@@ -12,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 /** Geldbeträge: numeric(14,2), im Code als String → Decimal. */
 const geld = (name: string) => numeric(name, { precision: 14, scale: 2, mode: "string" });
@@ -268,6 +269,24 @@ export const gewerk = pgTable(
     ...zeitstempel,
   },
   (t) => [uniqueIndex("gewerk_nr_je_projekt").on(t.projektId, t.nr)],
+);
+
+/** Vorgang im Bauzeitenplan; optional mit Gewerken (Kostenabfluss) und MaBV-Bauabschnitt (Meilenstein für Raten). */
+export const vorgang = pgTable(
+  "vorgang",
+  {
+    id: id(),
+    projektId: uuid("projekt_id").notNull().references(() => projekt.id),
+    nr: integer("nr").notNull(),
+    bezeichnung: text("bezeichnung").notNull(),
+    gewerkIds: uuid("gewerk_ids").array().notNull().default(sql`'{}'::uuid[]`),
+    mabvAbschnitt: text("mabv_abschnitt"),
+    beginn: date("beginn").notNull(),
+    ende: date("ende").notNull(),
+    endeIst: date("ende_ist"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("vorgang_abschnitt_je_projekt").on(t.projektId, t.mabvAbschnitt).where(sql`${t.mabvAbschnitt} is not null`)],
 );
 
 export const handwerkervertrag = pgTable("handwerkervertrag", {

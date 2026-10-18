@@ -5,6 +5,8 @@ import { KontextService } from "./common/kontext.service.js";
 import { dbProvider } from "./db.provider.js";
 import { AuswertungenController } from "./auswertungen/auswertungen.controller.js";
 import { AuswertungenService } from "./auswertungen/auswertungen.service.js";
+import { BauzeitController } from "./bauzeit/bauzeit.controller.js";
+import { BauzeitService } from "./bauzeit/bauzeit.service.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
 import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
@@ -47,6 +49,7 @@ class HealthController {
     MaengelController,
     MahnwesenController,
     AuswertungenController,
+    BauzeitController,
     DatevController,
   ],
   providers: [
@@ -56,6 +59,7 @@ class HealthController {
     KostenService,
     MaengelService,
     AuswertungenService,
+    BauzeitService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],
