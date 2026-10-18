@@ -93,3 +93,21 @@ describe("importPruefen – Einheiten", () => {
     expect(importPruefen("einheiten", [["Nr."], ["W1"]], leer).bereit).toBe(false);
   });
 });
+
+describe("DATEV-Personenkonten im Partnerimport", () => {
+  const kopf = ["Nr.", "Firma", "Rollen", "Debitorenkonto", "Kreditor"];
+  it("übernimmt die Konten und prüft Format und Eindeutigkeit", () => {
+    const bestand = { schluessel: new Map<string, Record<string, unknown>>([["500", { nr: 500, kreditorKonto: "70500" }]]), hoechsteNr: 500 };
+    const r = importPruefen(
+      "partner",
+      [kopf, ["1", "Käufer A", "Kunde", "10001", ""], ["2", "Käufer B", "Kunde", "10001", ""], ["3", "Bau C", "Handwerker", "", "70500"], ["4", "Bau D", "Handwerker", "", "7x"]],
+      bestand,
+    );
+    const [a, b, c, d] = r.zeilen;
+    expect(a).toMatchObject({ status: "neu", werte: { debitorKonto: "10001", kreditorKonto: null } });
+    expect(b!.fehler).toContain("Debitorenkonto 10001 steht schon in Zeile 2");
+    expect(c!.fehler).toContain("Kreditorenkonto 70500 gehört bereits zu Partner Nr. 500");
+    expect(d!.status).toBe("fehler");
+    expect(d!.fehler.join()).toMatch(/5 bis 9 Ziffern/);
+  });
+});

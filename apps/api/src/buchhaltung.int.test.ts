@@ -143,6 +143,29 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     expect(j.zeilen[0]).toMatchObject({ belegdatum: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }), verweis: `/kaufvertraege/${ids.v}` });
   });
 
+  it("verwendet das eigene Personenkonto des Geschäftspartners", async () => {
+    const liste = (await http.get("/api/partner")).body as { id: string; nr: number }[];
+    const kaeufer = liste.find((x) => x.nr === 17)!;
+    const handwerker = liste.find((x) => x.nr === 70001)!;
+    const p = (await http.get(`/api/partner/${kaeufer.id}`)).body;
+    const basis = { nr: 17, suchcode: p.suchcode, nachname: p.nachname, rollen: p.rollen };
+    expect((await als(http.put(`/api/partner/${kaeufer.id}`)).send({ ...basis, debitorKonto: "12x" })).status).toBe(400);
+    expect((await als(http.put(`/api/partner/${kaeufer.id}`)).send({ ...basis, debitorKonto: "12345" })).body.debitorKonto).toBe("12345");
+    // gleiches Konto bei einem anderen Partner wird abgewiesen
+    const h = (await http.get(`/api/partner/${handwerker.id}`)).body;
+    const dop = await als(http.put(`/api/partner/${handwerker.id}`)).send({ nr: 70001, suchcode: h.suchcode, firma: h.firma, rollen: h.rollen, debitorKonto: "12345" });
+    expect(dop.status).toBe(409);
+    expect(dop.body.message).toMatch(/Debitorenkonto ist bereits/);
+    const j = await journal("&quelle=zahlungsanforderung");
+    // exportierte Anforderung: Storno auf 10017, Neubuchung auf 12345
+    expect(j.zeilen.map(kurz)).toEqual(
+      expect.arrayContaining([
+        ["zahlungsanforderung", "10017", "1710", "90000.00", "H"],
+        ["zahlungsanforderung", "12345", "1710", "90000.00", "S"],
+      ]),
+    );
+  });
+
   it("protokolliert Abgleich und Export", async () => {
     const p = (await http.get(`/api/protokoll/${ids.g}`)).body as { neu: Record<string, unknown> }[];
     expect(p.some((e) => e.neu && "export" in e.neu)).toBe(true);

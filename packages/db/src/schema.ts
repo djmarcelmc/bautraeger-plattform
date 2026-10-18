@@ -89,8 +89,15 @@ export const geschaeftspartner = pgTable("geschaeftspartner", {
   /** Steuernummer und zuständiges Finanzamt des Leistenden (Bauabzugsteuer wird dort angemeldet). */
   steuernummer: text("steuernummer"),
   finanzamt: text("finanzamt"),
+  /** Eigenes DATEV-Personenkonto (sonst aus der Partnernummer gebildet) */
+  debitorKonto: text("debitor_konto"),
+  kreditorKonto: text("kreditor_konto"),
   ...zeitstempel,
-}, (t) => [uniqueIndex("partner_nr_je_mandant").on(t.mandantId, t.nr)]);
+}, (t) => [
+  uniqueIndex("partner_nr_je_mandant").on(t.mandantId, t.nr),
+  uniqueIndex("partner_debitor_je_mandant").on(t.mandantId, t.debitorKonto).where(sql`${t.debitorKonto} is not null`),
+  uniqueIndex("partner_kreditor_je_mandant").on(t.mandantId, t.kreditorKonto).where(sql`${t.kreditorKonto} is not null`),
+]);
 
 // ---------------------------------------------------------------- Projekte & Einheiten
 

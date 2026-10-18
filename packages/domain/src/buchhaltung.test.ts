@@ -49,6 +49,14 @@ describe("journalSoll", () => {
     expect(j[2]).toMatchObject({ belegnr: "R300", buchungstext: "Rechnung Rohbau KG", kostenstelle: "101" });
   });
 
+  it("nimmt das eigene Personenkonto des Geschäftspartners", () => {
+    const j = journalSoll({ ...q, anforderungen: [{ ...q.anforderungen[0]!, debitorKonto: "12345" }], rechnungen: [{ ...q.rechnungen[0]!, kreditorKonto: "71234" }], ausgaenge: [], abfuehrungen: [], eingaenge: [] }, k);
+    expect(j.map((b) => [b.konto, b.gegenkonto])).toEqual([
+      ["12345", "1710"],
+      ["3100", "71234"],
+    ]);
+  });
+
   it("lässt Nullbeträge weg und dreht negative Beträge", () => {
     const j = journalSoll({ ...leer, ausgaenge: [{ ...q.ausgaenge[0]!, skonto: "0", bauabzugsteuer: "0" }], anforderungen: [{ ...q.anforderungen[0]!, betrag: "-500" }] }, k);
     expect(j.map((b) => [b.quelleTyp, b.konto, b.gegenkonto, b.betrag])).toEqual([

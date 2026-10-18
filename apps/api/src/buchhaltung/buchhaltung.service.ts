@@ -89,9 +89,9 @@ export class BuchhaltungService {
     ]);
     const partnerIds = [...new Set([...anf, ...ein, ...ueb].map((x) => x.debitorId).concat([...rech, ...aus].map((x) => x.kreditorId), abf.map((x) => x.handwerkerId)))].filter((x): x is string => !!x);
     const partner = new Map(
-      (partnerIds.length ? await tx.select({ id: gp.id, nr: gp.nr, suchcode: gp.suchcode, firma: gp.firma, nachname: gp.nachname }).from(gp).where(inArray(gp.id, partnerIds)) : []).map((x) => [
+      (partnerIds.length ? await tx.select({ id: gp.id, nr: gp.nr, suchcode: gp.suchcode, firma: gp.firma, nachname: gp.nachname, debitorKonto: gp.debitorKonto, kreditorKonto: gp.kreditorKonto }).from(gp).where(inArray(gp.id, partnerIds)) : []).map((x) => [
         x.id,
-        { nr: x.nr, name: x.firma || x.nachname || x.suchcode },
+        { nr: x.nr, name: x.firma || x.nachname || x.suchcode, debitorKonto: x.debitorKonto, kreditorKonto: x.kreditorKonto },
       ]),
     );
     // Vorgänge ohne Geschäftspartner (Vertrag ohne Käufer, Handwerkervertrag ohne Handwerker) können nicht gebucht werden
@@ -106,11 +106,11 @@ export class BuchhaltungService {
         return [{ ...x, partner: pa }];
       });
     const q: JournalQuellen = {
-      anforderungen: mit(anf, "zahlungsanforderung", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, name: x.partner.name })),
+      anforderungen: mit(anf, "zahlungsanforderung", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, debitorKonto: x.partner.debitorKonto, name: x.partner.name })),
       uebergaben: mit(ueb, "uebergabe", (x) => x.debitorId).map((x) => ({ kaufvertragId: x.id, datum: x.datum, vertragNr: x.nr, name: x.partner.name, kostenstelle: x.kostenstelle })),
-      eingaenge: mit(ein, "zahlungseingang", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, name: x.partner.name })),
-      rechnungen: mit(rech, "eingangsrechnung", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, name: x.partner.name })),
-      ausgaenge: mit(aus, "zahlungsausgang", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, name: x.partner.name })),
+      eingaenge: mit(ein, "zahlungseingang", (x) => x.debitorId).map((x) => ({ ...x, debitorNr: x.partner.nr, debitorKonto: x.partner.debitorKonto, name: x.partner.name })),
+      rechnungen: mit(rech, "eingangsrechnung", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, kreditorKonto: x.partner.kreditorKonto, name: x.partner.name })),
+      ausgaenge: mit(aus, "zahlungsausgang", (x) => x.kreditorId).map((x) => ({ ...x, kreditorNr: x.partner.nr, kreditorKonto: x.partner.kreditorKonto, name: x.partner.name })),
       abfuehrungen: abf.map((x) => ({ id: x.id, abgefuehrtAm: x.abgefuehrtAm!, abzugsbetrag: x.abzugsbetrag, monat: x.monat, name: partner.get(x.handwerkerId)?.name ?? "" })),
     };
     const verweise = new Map<string, string>([

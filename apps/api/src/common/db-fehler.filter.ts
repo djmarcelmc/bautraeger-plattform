@@ -11,6 +11,8 @@ const MELDUNGEN: Record<string, string> = {
   projekt_nr_je_gesellschaft: "Diese Projektnummer ist in der Gesellschaft bereits vergeben.",
   einheit_nr_je_projekt: "Diese Einheitennummer ist im Projekt bereits vergeben.",
   partner_nr_je_mandant: "Diese Geschäftspartnernummer ist bereits vergeben.",
+  partner_debitor_je_mandant: "Dieses Debitorenkonto ist bereits einem anderen Geschäftspartner zugeordnet.",
+  partner_kreditor_je_mandant: "Dieses Kreditorenkonto ist bereits einem anderen Geschäftspartner zugeordnet.",
   gesellschaft_nr_je_mandant: "Diese Gesellschaftsnummer ist bereits vergeben.",
   einheit_nur_ein_kaufvertrag: "Mindestens eine Einheit ist bereits verkauft.",
   mahnung_stufe_je_anforderung: "Diese Mahnstufe wurde bereits erstellt.",

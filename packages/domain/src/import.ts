@@ -68,6 +68,8 @@ export const IMPORT_SPALTEN: Record<ImportArt, ImportSpalte[]> = {
     },
     { schluessel: "steuernummer", titel: "Steuernummer", aliase: ["StNr", "St.-Nr."], beispiel: "93815/08152", hinweis: "für die Bauabzugsteuer-Anmeldung" },
     { schluessel: "finanzamt", titel: "Finanzamt", aliase: ["zuständiges Finanzamt"], beispiel: "Stuttgart II" },
+    { schluessel: "debitorKonto", titel: "Debitorenkonto", aliase: ["Debitor", "Debitorennummer", "Debitorenkonto DATEV", "Kundenkonto"], beispiel: "10017", hinweis: "DATEV-Personenkonto; leer = 10000 + Nr." },
+    { schluessel: "kreditorKonto", titel: "Kreditorenkonto", aliase: ["Kreditor", "Kreditorennummer", "Kreditorenkonto DATEV", "Lieferantenkonto"], beispiel: "70001", hinweis: "DATEV-Personenkonto; leer = 70000 + Nr." },
   ],
   einheiten: [
     { schluessel: "nr", titel: "Nr.", aliase: ["Nummer", "Einheit", "Einheitennr", "WE-Nr", "Whg-Nr"], pflicht: true, beispiel: "W01" },
@@ -279,6 +281,32 @@ export function importPruefen(art: ImportArt, tabelle: string[][], vorhanden: Vo
     if (fehler.length) status = "fehler";
     zeilen.push({ zeile, status, schluessel, bezeichnung, fehler, werte: fehler.length ? undefined : (ergebnis.data as Record<string, unknown>), zugehoerigZu });
   });
+
+  // Partner: DATEV-Personenkonten eindeutig (in der Datei und gegenüber anderen Partnern im Bestand)
+  if (art === "partner") {
+    for (const feld of ["debitorKonto", "kreditorKonto"] as const) {
+      const name = feld === "debitorKonto" ? "Debitorenkonto" : "Kreditorenkonto";
+      const bestand = new Map<string, string>();
+      for (const [nr, p] of vorhanden.schluessel) {
+        const k = (p as Record<string, unknown>)[feld];
+        if (typeof k === "string" && k) bestand.set(k, nr);
+      }
+      const inDatei = new Map<string, ImportZeile>();
+      for (const z of zeilen) {
+        const k = z.werte?.[feld];
+        if (typeof k !== "string" || !k) continue;
+        const frueher = inDatei.get(k);
+        if (frueher) z.fehler.push(`${name} ${k} steht schon in Zeile ${frueher.zeile}`);
+        else inDatei.set(k, z);
+        const anderer = bestand.get(k);
+        if (anderer && anderer !== z.schluessel) z.fehler.push(`${name} ${k} gehört bereits zu Partner Nr. ${anderer}`);
+        if (z.fehler.length) {
+          z.status = "fehler";
+          z.werte = undefined;
+        }
+      }
+    }
+  }
 
   // Einheiten: Bezug „Gehört zu Nr.“ muss in der Datei oder im Bestand existieren
   if (art === "einheiten") {
