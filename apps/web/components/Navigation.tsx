@@ -12,6 +12,7 @@ import {
   ClipboardList,
   FolderKanban,
   HandCoins,
+  Inbox,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -36,6 +37,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     eintraege: [
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
+      { href: "/rechnungseingang", text: "Rechnungseingang", icon: Inbox },
       { href: "/zahlungslaeufe", text: "Zahlungsläufe", icon: Banknote },
       { href: "/bankabgleich", text: "Bankabgleich", icon: ArrowLeftRight },
       { href: "/bauabzug", text: "Bauabzugsteuer", icon: Landmark },

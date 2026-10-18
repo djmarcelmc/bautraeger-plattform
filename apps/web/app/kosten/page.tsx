@@ -26,6 +26,9 @@ export default async function Kosten({ searchParams }: { searchParams: Promise<{
           <h1>Kosten</h1>
           <p className="untertitel">Rechnungseingangsbuch: prüfen → freigeben → zahlen. Gewerke und Verträge pflegst du im Projekt unter „Kosten“.</p>
         </div>
+        <a className="knopf zweitrangig" href="/rechnungseingang">
+          Rechnungseingang
+        </a>
       </div>
       <div className="kpis">
         {REITER.map(([k, t, stati]) => {

@@ -713,3 +713,35 @@ export const bankumsatz = pgTable(
   },
   (t) => [uniqueIndex("bankumsatz_schluessel").on(t.gesellschaftId, t.schluessel), index("bankumsatz_status").on(t.gesellschaftId, t.status)],
 );
+
+// ---------------------------------------------------------------- Rechnungseingang
+
+export const belegeingangStatus = pgEnum("belegeingang_status", ["neu", "erfasst", "verworfen"]);
+
+/** Eingegangene Rechnung (Postfach oder Upload) vor der Erfassung als Eingangsrechnung. */
+export const belegeingang = pgTable(
+  "belegeingang",
+  {
+    id: id(),
+    mandantId: uuid("mandant_id").notNull().references(() => mandant.id),
+    quelle: text("quelle", { enum: ["mail", "upload"] }).notNull(),
+    /** Herkunftsschlüssel gegen doppelten Abruf (Message-ID + Anhang) */
+    herkunft: text("herkunft"),
+    absender: text("absender"),
+    betreff: text("betreff"),
+    empfangenAm: timestamp("empfangen_am", { withTimezone: true }).notNull().defaultNow(),
+    dokumentId: uuid("dokument_id").notNull().references(() => dokument.id),
+    dateiname: text("dateiname").notNull(),
+    /** Erkannte Rechnungsdaten (XRechnung/ZUGFeRD oder PDF-Text) */
+    daten: jsonb("daten").$type<Record<string, unknown>>().notNull().default({}),
+    /** Ausgelesener Text (gekürzt) für Vorschläge */
+    text: text("text"),
+    status: belegeingangStatus("status").notNull().default("neu"),
+    eingangsrechnungId: uuid("eingangsrechnung_id").references(() => eingangsrechnung.id),
+    bemerkung: text("bemerkung"),
+    erledigtVon: text("erledigt_von"),
+    erledigtAm: timestamp("erledigt_am", { withTimezone: true }),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("belegeingang_herkunft").on(t.mandantId, t.herkunft).where(sql`${t.herkunft} is not null`), index("belegeingang_status").on(t.mandantId, t.status)],
+);

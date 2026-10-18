@@ -1,6 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema, type DbOderTx } from "@bt/db";
 import {
+  type EingangsrechnungEingabe,
   freistellungGueltig,
   kostenstand,
   kostenstandSumme,
@@ -195,6 +196,17 @@ export class KostenService {
       },
       faelligAm: v.zahlungsfristTage !== null && v.zahlungsfristTage !== undefined ? datumPlusTage(x.eingangAm, v.zahlungsfristTage) : null,
     };
+  }
+
+  /** Neue Rechnung – nur, wenn alle vorherigen Rechnungen des Vertrags bezahlt sind (kumulierte Abrechnung). */
+  async rechnungAnlegen(tx: DbOderTx, werte: EingangsrechnungEingabe, benutzer: string) {
+    const v = await this.vertrag(werte.handwerkervertragId);
+    const offen = v.rechnungen.find((r) => r.status !== "bezahlt");
+    if (offen) throw new ConflictException(`Rechnung ${offen.rechnungsnr} dieses Vertrags ist noch nicht bezahlt. Abschlagsrechnungen werden nacheinander abgerechnet.`);
+    if (v.rechnungen.some((r) => r.schlussrechnung)) throw new ConflictException("Für diesen Vertrag liegt bereits eine Schlussrechnung vor.");
+    const [neu] = await tx.insert(er).values({ ...werte, betragBrutto: werte.betragBrutto!, rechnungsdatum: werte.rechnungsdatum!, eingangAm: werte.eingangAm! }).returning();
+    await protokollieren(tx, { tabelle: "eingangsrechnung", id: neu!.id, aktion: "insert", neu: werte, benutzer });
+    return neu!;
   }
 
   /** Zahlbetrag einer freigegebenen Rechnung am Zahlungstag (Skonto nur in der Frist, Bauabzugsteuer ohne gültige Freistellung). */

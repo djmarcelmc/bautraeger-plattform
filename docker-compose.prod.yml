@@ -38,6 +38,7 @@ services:
       MAIL_GRAPH_TENANT: ${MAIL_GRAPH_TENANT:-}
       MAIL_GRAPH_CLIENT_ID: ${MAIL_GRAPH_CLIENT_ID:-}
       MAIL_GRAPH_SECRET: ${MAIL_GRAPH_SECRET:-}
+      RECHNUNGEN_POSTFACH: ${RECHNUNGEN_POSTFACH:-}
       MAIL_SMTP_URL: ${MAIL_SMTP_URL:-}
     volumes:
       - dokumente:/data/dokumente

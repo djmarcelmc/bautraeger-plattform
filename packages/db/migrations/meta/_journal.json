@@ -141,6 +141,13 @@
       "when": 1792340924226,
       "tag": "0019_personenkonten",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792342682439,
+      "tag": "0020_rechnungseingang",
+      "breakpoints": true
     }
   ]
 }

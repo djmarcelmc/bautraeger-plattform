@@ -71,9 +71,26 @@ Damit die Plattform Benachrichtigungen aus einem gemeinsamen Postfach (z. B. `ba
 3. In der Plattform: `MAIL_ABSENDER=bautraeger@ihre-domain.de`, `MAIL_GRAPH_TENANT=<Verzeichnis-ID>`,
    `MAIL_GRAPH_CLIENT_ID=<Anwendungs-ID>`, `MAIL_GRAPH_SECRET=<Wert des Clientschlüssels>`.
 
-> **Später (Ausbaustufe Outlook):** zusätzlich delegiert `Mail.ReadWrite`, `Calendars.ReadWrite`.
-> Für ein zentrales Rechnungspostfach (z. B. rechnung@…) eine Anwendungsberechtigung `Mail.Read`, die per
-> Exchange-Online-Richtlinie **auf genau dieses Postfach beschränkt** wird. Das stimmen wir dann gesondert ab.
+### 4b. Rechnungspostfach (Rechnungseingang)
+
+Die Plattform holt Rechnungen aus einem gemeinsamen Postfach (z. B. `rechnungen@…`) alle 10 Minuten ab: ungelesene Mails
+mit Anhang im Posteingang, PDF/ZUGFeRD/XRechnung landen unter **Rechnungseingang**. Danach wird die Mail als gelesen
+markiert und erhält die Kategorie „Bauträger-Plattform“ (sie bleibt im Postfach).
+
+1. **Berechtigung hinzufügen → Microsoft Graph → Anwendungsberechtigungen → `Mail.ReadWrite`**, Administratorzustimmung
+   erteilen (ReadWrite wird nur zum Markieren als gelesen benötigt).
+2. **Auf das Rechnungspostfach beschränken** – das Postfach in dieselbe Sicherheitsgruppe aufnehmen wie das
+   Versandpostfach (oder eine eigene Gruppe/Richtlinie anlegen):
+
+   ```powershell
+   Add-DistributionGroupMember -Identity "Bautraeger-Plattform-Versand" -Member rechnungen@ihre-domain.de
+   Test-ApplicationAccessPolicy -AppId <Anwendungs-ID> -Identity rechnungen@ihre-domain.de   # → Granted
+   Test-ApplicationAccessPolicy -AppId <Anwendungs-ID> -Identity chef@ihre-domain.de         # → Denied
+   ```
+3. In der Plattform zusätzlich `RECHNUNGEN_POSTFACH=rechnungen@ihre-domain.de` setzen (Zugangsdaten wie beim Versand).
+   Mit `RECHNUNGEN_ABRUF=aus` lässt sich der automatische Abruf abschalten (manuell über „Postfach jetzt abrufen“).
+
+> **Später (Ausbaustufe Outlook):** zusätzlich delegiert `Mail.ReadWrite`, `Calendars.ReadWrite` für persönliche Postfächer.
 
 ## 5. Zugriff auf zugewiesene Benutzer beschränken
 
@@ -152,3 +169,4 @@ AUTH_AKTIV=true
 - [ ] „Zuweisung erforderlich“ aktiviert, Benutzer den Rollen zugewiesen
 - [ ] Werte sicher übermittelt
 - [ ] Optional: `Mail.Send` (Anwendung) mit Application Access Policy für Benachrichtigungen
+- [ ] Optional: `Mail.ReadWrite` (Anwendung) für das Rechnungspostfach, ebenfalls per Application Access Policy beschränkt
