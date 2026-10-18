@@ -1310,6 +1310,125 @@ form.zeilenformular button {
   padding: 4px 12px;
 }
 
+/* ------------------------------------------------------------------ Mängel */
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--flaeche);
+  border: 1px solid var(--linie-stark);
+  border-radius: var(--radius-klein);
+  padding: 9px 11px;
+  width: 100%;
+  resize: vertical;
+}
+textarea:focus {
+  outline: none;
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 22%, transparent);
+}
+.fotoaufnahme {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 2px dashed color-mix(in srgb, var(--akzent) 45%, var(--linie));
+  border-radius: var(--radius);
+  background: var(--akzent-weich);
+  color: var(--akzent-text);
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+.fotoaufnahme b {
+  display: block;
+  font-size: 15px;
+}
+.fotoaufnahme small {
+  color: var(--text-2);
+}
+.fotoaufnahme input[type="file"] {
+  flex: 1 1 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 0;
+}
+.galerie {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.galerie img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-klein);
+  border: 1px solid var(--linie);
+  display: block;
+}
+.dokbild {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--linie);
+}
+.beschreibung {
+  white-space: pre-line;
+  margin: 14px 0 0;
+}
+.dokliste.kompakt li {
+  padding: 8px 0;
+}
+.zeitleiste {
+  list-style: none;
+  padding: 0 0 0 18px;
+  margin: 0 0 16px;
+  border-left: 2px solid var(--linie-stark);
+  display: grid;
+  gap: 12px;
+}
+.zeitleiste li {
+  position: relative;
+  padding-right: 40px;
+}
+.zeitleiste li::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--akzent);
+  border: 2px solid var(--flaeche);
+}
+.zeitleiste li.abgelaufen::before {
+  background: var(--gefahr);
+}
+.zeitleiste .symbol {
+  position: absolute;
+  right: 0;
+  top: -4px;
+}
+.fotozahl {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  color: var(--akzent-text);
+}
+.mangelkasten {
+  border: 1px solid #ccc;
+  border-left: 4px solid #111;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+.mangelkasten p {
+  margin: 6px 0 0;
+  white-space: pre-line;
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

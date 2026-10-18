@@ -6,7 +6,8 @@ import { MeldungZuruecknehmen } from "@/components/MeldungZuruecknehmen";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
-import type { Gesellschaft, KaufvertragListe, Kostenkontrolle, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import type { Gesellschaft, KaufvertragListe, Kostenkontrolle, MangelListe, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import { MangelStatus } from "@/components/MangelStatus";
 import { Abweichung } from "../../kosten/Abweichung";
 import { gewerkAnlegen, gewerkeplanAnlegen } from "../../kosten/aktionen";
 import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "../../verkauf/aktionen";
@@ -45,6 +46,7 @@ const REITER = [
   ["verkauf", "Verkauf"],
   ["bautenstand", "Bautenstand"],
   ["kosten", "Kosten"],
+  ["maengel", "Mängel"],
   ["dokumente", "Dokumente"],
   ["stammdaten", "Stammdaten"],
   ["kopieren", "Projekt kopieren"],
@@ -184,6 +186,7 @@ export default async function ProjektSeite({
 
       {reiter === "verkauf" && <VerkaufReiter projektId={id} />}
       {reiter === "bautenstand" && <BautenstandReiter projektId={id} />}
+      {reiter === "maengel" && <MaengelReiter projektId={id} />}
       {reiter === "kosten" && <KostenReiter projektId={id} nurVergeben={nurVergeben === "1"} />}
       {reiter === "dokumente" && <Dokumente objektTyp="projekt" objektId={id} pfad={`/projekte/${id}`} />}
       {reiter === "stammdaten" && <Stammdaten p={p} />}
@@ -480,6 +483,51 @@ async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nur
           </div>
         </Formular>
       </details>
+    </>
+  );
+}
+
+async function MaengelReiter({ projektId }: { projektId: string }) {
+  const liste = await api<MangelListe[]>(`/maengel?projektId=${projektId}&status=alle`);
+  return (
+    <>
+      <div className="aktionen" style={{ marginBottom: 12 }}>
+        <a className="knopf" href={`/maengel/neu?projekt=${projektId}`}>
+          <Plus size={16} /> Mangel erfassen
+        </a>
+      </div>
+      <div className="karte ohne-innenabstand">
+        <table>
+          <thead>
+            <tr>
+              <th className="num">Nr.</th>
+              <th>Mangel</th>
+              <th>Einheit</th>
+              <th>Handwerker</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {liste.map((m) => (
+              <tr key={m.id} className="klickbar">
+                <td className="num">{m.nr}</td>
+                <td>
+                  <a href={`/maengel/${m.id}`} className="zeilenlink">
+                    {m.titel}
+                  </a>
+                  {m.ort ? <div className="hint">{m.ort}</div> : null}
+                </td>
+                <td>{m.einheit ?? "–"}</td>
+                <td>{m.handwerker ?? "–"}</td>
+                <td>
+                  <MangelStatus status={m.status} fristBis={m.fristBis} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!liste.length && <p className="leer">Keine Mängel erfasst.</p>}
+      </div>
     </>
   );
 }

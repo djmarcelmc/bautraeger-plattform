@@ -74,4 +74,19 @@ describe("MCP-Server", () => {
     expect(d.vergebeneGewerke[0]).toMatchObject({ gewerk: "300 Rohbau", vertragspartner: "Rohbau Muster KG" });
     expect(d.offeneRechnungen[0]).toMatchObject({ rechnung: "AR-2", schritt: "freizugeben", betragKumuliert: "58.000,00 €" });
   });
+
+  it("listet offene Mängel mit Status und Frist", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = new URL(url);
+      expect(u.searchParams.get("status")).toBe("ueberfaellig");
+      return new Response(
+        JSON.stringify([{ nr: 1, projektNr: 382, projekt: "HANSEATEN-21", titel: "Entwässerung Dach", ort: "Dach", einheit: null, handwerker: "Flaschnerei Beispiel", status: "ueberfaellig", ruegen: 3, fristBis: "2025-07-15", einbehalt: true }]),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "maengel_offen", arguments: { nurUeberfaellig: true } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d[0]).toMatchObject({ mangel: "382-1", einheit: "Gemeinschaft", status: "Frist überschritten", ruegen: 3 });
+  });
 });

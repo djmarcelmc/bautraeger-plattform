@@ -50,6 +50,11 @@ export default async function VertragSeite({ params, searchParams }: { params: P
           </div>
         </div>
         <div className="badges">
+          {v.maengel.offen ? (
+            <a href={`/maengel?handwerker=${v.handwerkerId}`} className="badge gefahr">
+              {v.maengel.offen} offene Mängel{Number(v.maengel.einbehalt) ? ` · Einbehalt ${deZahl(v.maengel.einbehalt, 0)} €` : ""}
+            </a>
+          ) : null}
           {freistellung && freistellung >= heute ? (
             <span className="badge gut">Freistellung bis {deDatum(freistellung)}</span>
           ) : (

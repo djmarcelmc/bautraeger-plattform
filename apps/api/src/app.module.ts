@@ -14,6 +14,8 @@ import { GesellschaftenController } from "./gesellschaften/gesellschaften.contro
 import { KostenController } from "./kosten/kosten.controller.js";
 import { KostenService } from "./kosten/kosten.service.js";
 import { MabvController } from "./mabv/mabv.controller.js";
+import { MaengelController } from "./maengel/maengel.controller.js";
+import { MaengelService } from "./maengel/maengel.service.js";
 import { PartnerController } from "./partner/partner.controller.js";
 import { ProjekteController } from "./projekte/projekte.controller.js";
 import { ProtokollController } from "./protokoll/protokoll.controller.js";
@@ -39,6 +41,7 @@ class HealthController {
     KaufvertraegeController,
     ZahlungenController,
     KostenController,
+    MaengelController,
     DatevController,
   ],
   providers: [
@@ -46,6 +49,7 @@ class HealthController {
     KontextService,
     VerkaufService,
     KostenService,
+    MaengelService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],
