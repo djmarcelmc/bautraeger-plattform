@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BenachrichtigungEinstellung, mailAufgaben, mailMangelEingang, mailMangelGemeldet, mailMangelStatus } from "./mailtexte.js";
+import { BenachrichtigungEinstellung, mailAufgaben, mailAusText, mailMangelEingang, mailMangelGemeldet, mailMangelStatus, SchreibenVersandEingabe, schreibenVorlage } from "./mailtexte.js";
 
 const m = { bautraeger: "Muster Wohnbau GmbH", projekt: "101 LINDENWEG", nr: "101-7", titel: "Balkontür <klemmt>", ort: "Wohnzimmer", einheit: "02", kaeufer: "Max Beispiel", beschreibung: "Zeile 1\nZeile 2", fotos: 2 };
 
@@ -30,5 +30,29 @@ describe("Mailtexte", () => {
   it("liest Empfängerlisten aus Formularen", () => {
     expect(BenachrichtigungEinstellung.parse({ maengelAn: "bau@x.de, gf@x.de", aufgabenAn: "", kaeuferInformieren: "" })).toEqual({ maengelAn: ["bau@x.de", "gf@x.de"], aufgabenAn: [], kaeuferInformieren: false });
     expect(BenachrichtigungEinstellung.safeParse({ maengelAn: "keine-mail" }).success).toBe(false);
+  });
+});
+
+describe("Schreiben per E-Mail", () => {
+  const basis = { bautraeger: "Muster Wohnbau GmbH", anrede: "Sehr geehrter Herr Beispiel", objekt: "LINDENWEG, Wohneinheit 02", nummer: "ZA-2026-00003", betrag: "1930", frist: "2026-10-28" };
+  it("schlägt Betreff, Text und Dateinamen vor", () => {
+    const za = schreibenVorlage("zahlungsanforderung", basis);
+    expect(za.betreff).toBe("Zahlungsanforderung ZA-2026-00003 – Bauvorhaben LINDENWEG, Wohneinheit 02");
+    expect(za.text).toContain("über 1.930,00 €. Bitte überweisen Sie den Betrag bis zum 28.10.2026");
+    expect(za.dateiname).toBe("ZA-2026-00003.pdf");
+    expect(schreibenVorlage("zahlungsanforderung", { ...basis, nurSonderleistungen: true }).betreff).toMatch(/^Rechnung über Sonderleistungen/);
+    const m = schreibenVorlage("mahnung", { ...basis, titel: "Letzte Mahnung", frist: "2026-11-04" });
+    expect(m).toMatchObject({ betreff: "Letzte Mahnung zu ZA-2026-00003 – Bauvorhaben LINDENWEG, Wohneinheit 02", dateiname: "Letzte-Mahnung-ZA-2026-00003.pdf" });
+    const sw = schreibenVorlage("sonderwunsch", { ...basis, nummer: "KV-101-002-3", titel: "Parkett Eiche", betrag: "5200", frist: null });
+    expect(sw.text).toContain("„Parkett Eiche“ zum Preis von 5.200,00 €");
+    expect(sw.dateiname).toBe("Angebot-Sonderwunsch-KV-101-002-3.pdf");
+    expect(schreibenVorlage("sonderwunsch", { ...basis, titel: "Kellertür", gutschrift: true }).betreff).toMatch(/^Gutschrift: Kellertür/);
+  });
+  it("macht aus dem Text eine HTML-Mail und prüft Empfänger", () => {
+    const m = mailAusText("Betreff", "Hallo <Welt>,\nZeile zwei\n\nGruß", "Fuß");
+    expect(m.html).toContain("Hallo &lt;Welt&gt;,<br>Zeile zwei");
+    expect(m.html.match(/<p /g)).toHaveLength(3);
+    expect(SchreibenVersandEingabe.parse({ an: "a@x.de; b@y.de", betreff: "x", text: "y" }).an).toEqual(["a@x.de", "b@y.de"]);
+    expect(SchreibenVersandEingabe.safeParse({ an: "kaputt", betreff: "x", text: "y" }).success).toBe(false);
   });
 });

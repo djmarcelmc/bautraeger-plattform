@@ -1825,7 +1825,7 @@ table.liqtabelle td {
   padding-left: 18px;
   line-height: 1.6;
 }
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
   .gantt {
     --label: 170px;
     min-width: 680px;
@@ -2009,7 +2009,7 @@ h2.kartentitel {
   border-top: 1px solid #111;
   margin-bottom: 4px;
 }
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
   .schreiben.protokoll table.kopf th {
     width: auto;
   }
@@ -2041,7 +2041,7 @@ h2.kartentitel {
 .filterleiste {
   flex-wrap: wrap;
 }
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
   .pruefkopf {
     flex-direction: column;
   }
@@ -2216,12 +2216,12 @@ h2.kartentitel {
   gap: 8px;
   padding: 6px 0;
 }
-@media (max-width: 960px) {
+@media screen and (max-width: 960px) {
   .cockpit {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 560px) {
+@media screen and (max-width: 560px) {
   .aufgabe a {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
@@ -2444,7 +2444,7 @@ main.portal {
 }
 
 /* ------------------------------------------------------------------ Mobil */
-@media (max-width: 860px) {
+@media screen and (max-width: 860px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2696,5 +2696,24 @@ main.portal {
 .formular.inline button {
   padding: 5px 12px;
   min-height: 32px;
+  font-size: 13.5px;
+}
+
+/* ------------------------------------------------------------------ Schreiben per E-Mail */
+.mailversand {
+  max-width: 820px;
+  margin-top: 18px;
+}
+.mailversand h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vermerke {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 6px;
   font-size: 13.5px;
 }

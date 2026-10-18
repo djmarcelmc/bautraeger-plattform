@@ -1,6 +1,7 @@
-import { EINHEIT_TYP_TEXT, MABV_ABSCHNITTE, SONDERWUNSCH_ART_TEXT, SONDERWUNSCH_STATUS_TEXT } from "@bt/domain";
+import { briefAnrede, EINHEIT_TYP_TEXT, MABV_ABSCHNITTE, SONDERWUNSCH_ART_TEXT, SONDERWUNSCH_STATUS_TEXT } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PerMailSenden } from "@/components/PerMailSenden";
 import { Auswahl, Feld } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
@@ -88,7 +89,7 @@ export default async function SonderwunschSeite({ params }: { params: Promise<{ 
           Bauvorhaben {s.projekt.suchcode}
           {objekt ? `, ${objekt}` : ""} – {s.vertrag.einheiten.map((x) => `${EINHEIT_TYP_TEXT[x.typ as keyof typeof EINHEIT_TYP_TEXT] ?? x.typ} ${x.nr}`).join(", ")}
         </p>
-        <p>Sehr geehrte Damen und Herren,</p>
+        <p>{briefAnrede(e)},</p>
         <p>
           {gutschrift
             ? "auf Ihren Wunsch entfällt die folgende im Kaufvertrag vereinbarte Leistung. Wir schreiben Ihnen dafür gut:"
@@ -136,6 +137,8 @@ export default async function SonderwunschSeite({ params }: { params: Promise<{ 
           ))}
         </div>
       </article>
+
+      <PerMailSenden art="sonderwunsch" id={s.id} pfad={`/sonderwuensche/${s.id}`} />
 
       {s.status === "angebot" ? (
         <section className="karte nur-bildschirm">

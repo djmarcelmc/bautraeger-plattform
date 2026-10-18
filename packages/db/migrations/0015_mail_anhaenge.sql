@@ -1,0 +1,1 @@
+ALTER TABLE "nachricht" ADD COLUMN "anhaenge" jsonb DEFAULT '[]'::jsonb NOT NULL;

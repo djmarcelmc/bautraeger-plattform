@@ -43,7 +43,12 @@ CMD ["node", "dist/main.js"]
 
 # ---------------------------------------------------------------- Web
 FROM ${NODE_IMAGE} AS web
-ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1 CHROMIUM_PFAD=/usr/bin/chromium
+# Chromium für die PDF-Erzeugung der Schreiben (Zahlungsanforderung, Mahnung, Angebot) samt Schriften
+RUN --mount=type=secret,id=ca,required=false \
+    if [ -f /run/secrets/ca ]; then export SSL_CERT_FILE=/run/secrets/ca; fi; \
+    if command -v apk >/dev/null; then apk add --no-cache chromium font-dejavu font-liberation; \
+    else apt-get update && apt-get install -y --no-install-recommends chromium fonts-dejavu-core fonts-liberation && rm -rf /var/lib/apt/lists/*; fi
 WORKDIR /app
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static

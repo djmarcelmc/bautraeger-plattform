@@ -1,10 +1,17 @@
 import nodemailer from "nodemailer";
 
+export interface MailAnhang {
+  dateiname: string;
+  typ: string;
+  inhalt: Buffer;
+}
+
 export interface AusgehendeMail {
   an: string[];
   betreff: string;
   text: string;
   html?: string | null;
+  anhaenge?: MailAnhang[];
 }
 
 /** Versandweg für E-Mails; wird über Umgebungsvariablen gewählt. */
@@ -37,7 +44,14 @@ export class SmtpVersand implements MailVersand {
   }
 
   async senden(m: AusgehendeMail) {
-    await this.transport.sendMail({ from: this.absender, to: m.an, subject: m.betreff, text: m.text, html: m.html ?? undefined });
+    await this.transport.sendMail({
+      from: this.absender,
+      to: m.an,
+      subject: m.betreff,
+      text: m.text,
+      html: m.html ?? undefined,
+      attachments: m.anhaenge?.map((a) => ({ filename: a.dateiname, content: a.inhalt, contentType: a.typ })),
+    });
     return true;
   }
 }
@@ -83,6 +97,16 @@ export class GraphVersand implements MailVersand {
           subject: m.betreff,
           body: m.html ? { contentType: "HTML", content: m.html } : { contentType: "Text", content: m.text },
           toRecipients: m.an.map((address) => ({ emailAddress: { address } })),
+          ...(m.anhaenge?.length
+            ? {
+                attachments: m.anhaenge.map((a) => ({
+                  "@odata.type": "#microsoft.graph.fileAttachment",
+                  name: a.dateiname,
+                  contentType: a.typ,
+                  contentBytes: a.inhalt.toString("base64"),
+                })),
+              }
+            : {}),
         },
         saveToSentItems: true,
       }),

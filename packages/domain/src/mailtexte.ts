@@ -141,3 +141,81 @@ export const TestmailEingabe = z.object({ an: z.email("Ungültige E-Mail-Adresse
 
 /** Wartezeit bis zum nächsten Versuch: 1, 5, 30 Minuten, 2 und 12 Stunden. */
 export const WIEDERHOLUNG_MINUTEN = [1, 5, 30, 120, 720] as const;
+
+// ---------------------------------------------------------------- Schreiben per E-Mail (PDF im Anhang)
+
+export const SCHREIBEN_ARTEN = ["zahlungsanforderung", "mahnung", "sonderwunsch"] as const;
+export type SchreibenArt = (typeof SCHREIBEN_ARTEN)[number];
+
+export interface SchreibenDaten {
+  bautraeger: string;
+  /** z. B. „Sehr geehrter Herr Beispiel“ */
+  anrede: string;
+  /** „LINDENWEG, Wohneinheit 02“ */
+  objekt: string;
+  /** Rechnungsnummer bzw. Angebots-Nr. */
+  nummer: string;
+  betrag: string;
+  /** Fälligkeit, Mahnfrist bzw. Angebotsgültigkeit */
+  frist?: string | null;
+  /** Mahnstufe („Zahlungserinnerung“) bzw. Leistung des Sonderwunschs */
+  titel?: string;
+  gutschrift?: boolean;
+  nurSonderleistungen?: boolean;
+}
+
+/** Vorschlag für Betreff und Text der Begleitmail; beides kann vor dem Versand angepasst werden. */
+export function schreibenVorlage(art: SchreibenArt, d: SchreibenDaten): { betreff: string; text: string; dateiname: string } {
+  const gruss = `\n\nDas Schreiben finden Sie als PDF im Anhang.\n\nMit freundlichen Grüßen\n${d.bautraeger}`;
+  const sicher = (s: string) => s.replace(/[^\wäöüÄÖÜß.-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  if (art === "zahlungsanforderung") {
+    const was = d.nurSonderleistungen ? "Rechnung über Sonderleistungen" : "Zahlungsanforderung";
+    return {
+      betreff: `${was} ${d.nummer} – Bauvorhaben ${d.objekt}`,
+      text: `${d.anrede},\n\nanbei erhalten Sie unsere ${was} ${d.nummer} über ${eur(d.betrag)}.${d.frist ? ` Bitte überweisen Sie den Betrag bis zum ${de(d.frist)} unter Angabe der Rechnungsnummer.` : ""}${gruss}`,
+      dateiname: `${sicher(d.nummer)}.pdf`,
+    };
+  }
+  if (art === "mahnung") {
+    const titel = d.titel ?? "Mahnung";
+    return {
+      betreff: `${titel} zu ${d.nummer} – Bauvorhaben ${d.objekt}`,
+      text: `${d.anrede},\n\nzu unserer Rechnung ${d.nummer} ist noch ein Betrag von ${eur(d.betrag)} offen. Bitte gleichen Sie ihn${d.frist ? ` bis zum ${de(d.frist)}` : ""} aus. Sollten Sie inzwischen gezahlt haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.${gruss}`,
+      dateiname: `${sicher(titel)}-${sicher(d.nummer)}.pdf`,
+    };
+  }
+  const leistung = d.titel ?? "Sonderwunsch";
+  return d.gutschrift
+    ? {
+        betreff: `Gutschrift: ${leistung} – Bauvorhaben ${d.objekt}`,
+        text: `${d.anrede},\n\nwie besprochen entfällt die Leistung „${leistung}“. Wir schreiben Ihnen dafür ${eur(d.betrag)} gut; der Betrag wird mit der nächsten Zahlungsanforderung verrechnet. Bitte senden Sie uns die Einverständniserklärung unterschrieben zurück.${gruss}`,
+        dateiname: `Gutschrift-${sicher(d.nummer)}.pdf`,
+      }
+    : {
+        betreff: `Angebot: ${leistung} – Bauvorhaben ${d.objekt}`,
+        text: `${d.anrede},\n\nanbei erhalten Sie unser Angebot für „${leistung}“ zum Preis von ${eur(d.betrag)}. Zur Beauftragung senden Sie uns bitte die unterschriebene Auftragserteilung zurück${d.frist ? ` – das Angebot gilt bis zum ${de(d.frist)}` : ""}.${gruss}`,
+        dateiname: `Angebot-Sonderwunsch-${sicher(d.nummer)}.pdf`,
+      };
+}
+
+/** Begleitmail aus (ggf. bearbeitetem) Text: Absätze werden zu HTML. */
+export function mailAusText(betreff: string, text: string, fuss: string): Mail {
+  const absaetze = text
+    .trim()
+    .split(/\n{2,}/)
+    .map((a) => p(esc(a).replace(/\n/g, "<br>")));
+  return { betreff, text: text.trim(), html: huelle(betreff, absaetze, fuss) };
+}
+
+export const SchreibenVersandEingabe = z.object({
+  an: z
+    .string()
+    .transform((s) => s.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean))
+    .pipe(z.array(z.email("Ungültige E-Mail-Adresse")).min(1, "Mindestens einen Empfänger angeben").max(10, "Höchstens 10 Empfänger")),
+  betreff: z.string().trim().min(1, "Betreff angeben").max(200),
+  text: z.string().trim().min(1, "Text angeben").max(10000),
+});
+
+/** Briefanrede aus Anrede und Nachname. */
+export const briefAnrede = (p?: { anrede?: string | null; nachname?: string | null } | null) =>
+  p?.anrede === "Frau" && p.nachname ? `Sehr geehrte Frau ${p.nachname}` : p?.anrede === "Herr" && p.nachname ? `Sehr geehrter Herr ${p.nachname}` : "Sehr geehrte Damen und Herren";

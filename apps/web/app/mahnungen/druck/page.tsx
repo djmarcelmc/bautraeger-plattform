@@ -1,6 +1,7 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PerMailSenden } from "@/components/PerMailSenden";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 import { partnerName, type MahnungDruck } from "@/lib/typen";
@@ -27,6 +28,7 @@ export default async function MahnungenDruck({ searchParams }: { searchParams: P
       {liste.map((m) => (
         <Schreiben key={m.id} m={m} />
       ))}
+      {liste.length === 1 ? <PerMailSenden art="mahnung" id={liste[0]!.id} pfad={`/mahnungen/druck?ids=${liste[0]!.id}`} /> : null}
     </>
   );
 }

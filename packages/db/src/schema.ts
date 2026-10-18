@@ -565,6 +565,8 @@ export const nachricht = pgTable("nachricht", {
   /** Anlass, z. B. "mangel_gemeldet", "mangel_status", "aufgaben", "test". */
   anlass: text("anlass").notNull(),
   bezugId: uuid("bezug_id"),
+  /** Anhänge aus der Dokumentablage */
+  anhaenge: jsonb("anhaenge").$type<{ dokumentId: string; dateiname: string }[]>().notNull().default([]),
   status: text("status", { enum: ["wartend", "gesendet", "fehler", "protokolliert"] }).notNull().default("wartend"),
   versuche: integer("versuche").notNull().default(0),
   naechsterVersuchAm: timestamp("naechster_versuch_am", { withTimezone: true }).notNull().defaultNow(),
