@@ -1,6 +1,8 @@
 import { briefAnrede, EINHEIT_TYP_TEXT, MABV_ABSCHNITTE, SONDERWUNSCH_ART_TEXT, SONDERWUNSCH_STATUS_TEXT } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PdfKnopf } from "@/components/PdfKnopf";
+import { briefbogenFuer } from "@/lib/briefbogen";
 import { PerMailSenden } from "@/components/PerMailSenden";
 import { Auswahl, Feld } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
@@ -16,7 +18,7 @@ interface Detail extends Sonderwunsch {
   rate: { nr: number; status: string; rechnungsnr: string | null } | null;
   vertrag: { id: string; nr: string; urkundennr: string | null; datum: string | null; einheiten: { nr: string; typ: string; art: string | null }[] };
   projekt: { nr: number; suchcode: string; strasse: string | null; plz: string | null; ort: string | null };
-  gesellschaft: { name: string; anschrift: string | null };
+  gesellschaft: { id: string; name: string; anschrift: string | null };
   kaeufer: Partner[];
   empfaenger: Partner | null;
 }
@@ -29,6 +31,7 @@ export default async function SonderwunschSeite({ params }: { params: Promise<{ 
   const e = s.empfaenger;
   const abschnitt = s.abschnitt ? MABV_ABSCHNITTE.find((a) => a.key === s.abschnitt)?.bezeichnung : null;
   const objekt = [s.projekt.strasse, [s.projekt.plz, s.projekt.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const bb = await briefbogenFuer(s.gesellschaft.id);
   const titel = gutschrift ? "Gutschrift für entfallende Leistung" : "Angebot über eine Sonderleistung";
   return (
     <>
@@ -51,12 +54,17 @@ export default async function SonderwunschSeite({ params }: { params: Promise<{ 
             ) : null}
           </div>
         </div>
-        <DruckKnopf>
-          <Printer size={16} /> Drucken / PDF
-        </DruckKnopf>
+        <div className="knopfleiste">
+          <PdfKnopf pfad={`/sonderwuensche/${s.id}`} briefbogen={bb.aktiv} />
+          <DruckKnopf>
+            <Printer size={16} /> Drucken
+          </DruckKnopf>
+        </div>
       </div>
 
-      <article className="schreiben">
+      <article className={`schreiben ${bb.klasse}`}>
+        {bb.kopf}
+        {bb.felder(s.angebotAm)}
         <header>
           <div className="absender">
             {s.gesellschaft.name}
@@ -70,8 +78,8 @@ export default async function SonderwunschSeite({ params }: { params: Promise<{ 
             {e?.plz || e?.ort ? <div>{[e?.plz, e?.ort].filter(Boolean).join(" ")}</div> : null}
           </div>
           <dl className="infoblock">
-            <dt>Datum</dt>
-            <dd>{deDatum(s.angebotAm)}</dd>
+            <dt className="info-datum">Datum</dt>
+            <dd className="info-datum">{deDatum(s.angebotAm)}</dd>
             <dt>Kaufvertrag</dt>
             <dd>{s.vertrag.nr}</dd>
             {s.vertrag.urkundennr ? (

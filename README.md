@@ -50,6 +50,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/benachrichtigungen`, `PUT …/einstellungen`, `POST …/test`, `POST …/aufgaben`, `POST …/nachrichten/:id/erneut` | E-Mail-Benachrichtigungen: Empfänger, Postausgang mit Wiederholungen, Versand über Microsoft 365 (Graph), SMTP oder nur Protokoll |
 | `GET /api/cockpit` | Aufgaben aus allen Bereichen nach Dringlichkeit und Kennzahlen für die Startseite |
 | `GET/POST /api/gesellschaften`, `GET/PUT /api/gesellschaften/:id` | Gesellschaften |
+| `GET/POST/PUT/DELETE /api/gesellschaften/:id/briefbogen`, `GET …/briefbogen/datei` | Briefbogen je Gesellschaft (PDF, Satzspiegel, Felder für Datum/Zeichen) – Schreiben und PDFs werden darauf gesetzt |
 | `GET /api/partner?suche=&rolle=`, `GET /api/partner/naechste-nr`, `POST`, `GET/PUT /api/partner/:id` | Geschäftspartner |
 | `GET /api/projekte?suche=&abgeschlossen=nein\|ja\|alle`, `GET /api/projekte/naechste-nr?gesellschaftId=` | Projektliste, Nummernvorschlag |
 | `POST /api/projekte`, `GET/PUT /api/projekte/:id`, `POST /api/projekte/:id/kopieren` | Projekt anlegen, lesen (inkl. Einheiten), ändern, kopieren |

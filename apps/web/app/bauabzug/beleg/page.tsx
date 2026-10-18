@@ -1,6 +1,8 @@
 import type { BauabzugStatus } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PdfKnopf } from "@/components/PdfKnopf";
+import { briefbogenFuer } from "@/lib/briefbogen";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 import { partnerName, type Gesellschaft, type Partner } from "@/lib/typen";
@@ -27,6 +29,8 @@ export default async function BauabzugBeleg({ searchParams }: { searchParams: Pr
   const h = b.handwerker;
   const anschriftHw = [h.strasse, [h.plz, h.ort].filter(Boolean).join(" ")].filter(Boolean);
   const e = (v: string) => `${deZahl(v, 2)} €`;
+  const bb = await briefbogenFuer(b.gesellschaft.id);
+  const heute = new Date().toISOString().slice(0, 10);
   return (
     <>
       <div className="nur-bildschirm seitenkopf">
@@ -37,9 +41,12 @@ export default async function BauabzugBeleg({ searchParams }: { searchParams: Pr
           <h1>Abrechnungsbeleg {b.monatText}</h1>
           <p className="untertitel">{partnerName(h)} · für den Handwerker und die eigenen Unterlagen</p>
         </div>
-        <DruckKnopf>
-          <Printer size={16} /> Drucken / PDF
-        </DruckKnopf>
+        <div className="knopfleiste">
+          <PdfKnopf pfad={`/bauabzug/beleg?gesellschaftId=${b.gesellschaft.id}&handwerkerId=${h.id}&monat=${b.monat}`} briefbogen={bb.aktiv} />
+          <DruckKnopf>
+            <Printer size={16} /> Drucken
+          </DruckKnopf>
+        </div>
       </div>
 
       <section className="karte nur-bildschirm anmeldedaten">
@@ -73,7 +80,9 @@ export default async function BauabzugBeleg({ searchParams }: { searchParams: Pr
         </dl>
       </section>
 
-      <article className="schreiben">
+      <article className={`schreiben ${bb.klasse}`}>
+        {bb.kopf}
+        {bb.felder(heute)}
         <header>
           <div className="absender">
             {b.gesellschaft.name}
@@ -86,8 +95,8 @@ export default async function BauabzugBeleg({ searchParams }: { searchParams: Pr
             ))}
           </div>
           <dl className="infoblock">
-            <dt>Datum</dt>
-            <dd>{deDatum(new Date().toISOString().slice(0, 10))}</dd>
+            <dt className="info-datum">Datum</dt>
+            <dd className="info-datum">{deDatum(heute)}</dd>
             <dt>Zeitraum</dt>
             <dd>{b.monatText}</dd>
             {h.steuernummer ? (

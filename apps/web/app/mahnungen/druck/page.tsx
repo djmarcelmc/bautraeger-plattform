@@ -1,6 +1,8 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Mail, Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PdfKnopf } from "@/components/PdfKnopf";
+import { briefbogenFuer, type Briefbogen } from "@/lib/briefbogen";
 import { PerMailSenden } from "@/components/PerMailSenden";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
@@ -12,6 +14,9 @@ export const dynamic = "force-dynamic";
 export default async function MahnungenDruck({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
   const { ids = "" } = await searchParams;
   const liste = await api<MahnungDruck[]>(`/mahnungen?ids=${encodeURIComponent(ids)}`);
+  // Briefbogen, wenn alle Schreiben von derselben Gesellschaft stammen
+  const gesellschaften = [...new Set(liste.map((m) => m.gesellschaft.id))];
+  const bb = await briefbogenFuer(gesellschaften.length === 1 ? gesellschaften[0] : null);
   return (
     <>
       <div className="nur-bildschirm seitenkopf">
@@ -27,20 +32,21 @@ export default async function MahnungenDruck({ searchParams }: { searchParams: P
               <Mail size={16} /> Per E-Mail senden
             </a>
           ) : null}
+          <PdfKnopf pfad={`/mahnungen/druck?ids=${liste.map((m) => m.id).join(",")}`} briefbogen={bb.aktiv} />
           <DruckKnopf>
-            <Printer size={16} /> Drucken / PDF
+            <Printer size={16} /> Drucken
           </DruckKnopf>
         </div>
       </div>
-      {liste.map((m) => (
-        <Schreiben key={m.id} m={m} />
+      {liste.map((m, i) => (
+        <Schreiben key={m.id} m={m} bb={bb} erstes={i === 0} />
       ))}
       {liste.length === 1 ? <PerMailSenden art="mahnung" id={liste[0]!.id} pfad={`/mahnungen/druck?ids=${liste[0]!.id}`} /> : null}
     </>
   );
 }
 
-function Schreiben({ m }: { m: MahnungDruck }) {
+function Schreiben({ m, bb, erstes }: { m: MahnungDruck; bb: Briefbogen; erstes: boolean }) {
   const e = m.empfaenger;
   const anrede = e.anrede === "Frau" ? `Sehr geehrte Frau ${e.nachname}` : e.anrede === "Herr" ? `Sehr geehrter Herr ${e.nachname}` : "Sehr geehrte Damen und Herren";
   const gesamt = Number(m.offenerBetrag) + Number(m.verzugszinsen) + Number(m.mahngebuehr);
@@ -48,7 +54,9 @@ function Schreiben({ m }: { m: MahnungDruck }) {
     ? `${deZahl(m.vertrag.verzugszinsProzent)} % p. a. (vertraglich vereinbart)`
     : `${m.vertrag.verbraucher ? "5" : "9"} Prozentpunkte über dem jeweiligen Basiszinssatz (§ 288 BGB)`;
   return (
-    <article className="schreiben seitenumbruch">
+    <article className={`schreiben seitenumbruch ${bb.klasse}`}>
+      {erstes ? bb.kopf : null}
+      {bb.felder(m.datum)}
       <header>
         <div className="absender">
           {m.gesellschaft.name}
@@ -62,8 +70,8 @@ function Schreiben({ m }: { m: MahnungDruck }) {
           {e.plz || e.ort ? <div>{[e.plz, e.ort].filter(Boolean).join(" ")}</div> : null}
         </div>
         <dl className="infoblock">
-          <dt>Datum</dt>
-          <dd>{deDatum(m.datum)}</dd>
+          <dt className="info-datum">Datum</dt>
+          <dd className="info-datum">{deDatum(m.datum)}</dd>
           <dt>Rechnungs-Nr.</dt>
           <dd>{m.anforderung.rechnungsnr}</dd>
           <dt>Kaufvertrag</dt>

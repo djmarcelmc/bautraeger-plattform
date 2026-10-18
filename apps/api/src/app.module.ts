@@ -30,6 +30,7 @@ import { ImportController } from "./import/import.controller.js";
 import { BauabzugController } from "./bauabzug/bauabzug.controller.js";
 import { SonderwuenscheController } from "./sonderwunsch/sonderwuensche.controller.js";
 import { SchreibenController } from "./schreiben/schreiben.controller.js";
+import { BriefbogenController } from "./gesellschaften/briefbogen.controller.js";
 import { BauabzugService } from "./bauabzug/bauabzug.service.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
 import { KostenController } from "./kosten/kosten.controller.js";
@@ -62,6 +63,7 @@ class HealthController {
     BauabzugController,
     SonderwuenscheController,
     SchreibenController,
+    BriefbogenController,
     ProtokollController,
     DokumenteController,
     KaufvertraegeController,

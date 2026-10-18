@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import type { Gesellschaft, ProtokollEintrag } from "@/lib/typen";
 import { gesellschaftAendern } from "../aktionen";
 import { GesellschaftFelder } from "../GesellschaftFelder";
+import { BriefbogenAbschnitt } from "./Briefbogen";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function GesellschaftBearbeiten({ params }: { params: Promi
       <Formular aktion={gesellschaftAendern.bind(null, id)}>
         <GesellschaftFelder g={g} />
       </Formular>
+      <BriefbogenAbschnitt id={id} />
       <details className="karte">
         <summary>Änderungsprotokoll ({protokoll.length})</summary>
         <Protokoll eintraege={protokoll} />

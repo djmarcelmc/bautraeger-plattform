@@ -1,0 +1,1 @@
+ALTER TABLE "gesellschaft" ADD COLUMN "briefbogen" jsonb;

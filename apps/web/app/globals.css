@@ -2717,3 +2717,34 @@ main.portal {
   gap: 6px;
   font-size: 13.5px;
 }
+
+/* ------------------------------------------------------------------ Briefbogen */
+.briefbogen-einstellung {
+  margin-top: 18px;
+}
+.briefbogen-vorschau {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 210 / 297;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  background: #fff;
+  box-shadow: var(--schatten);
+}
+.briefbogen-einstellung fieldset + fieldset {
+  margin-top: 12px;
+}
+.briefbogen-platzhalter {
+  position: absolute;
+  top: 8mm;
+  left: 8mm;
+  right: 8mm;
+  border: 1px dashed var(--linie-stark);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+  font-size: 12px;
+  text-align: center;
+  padding: 0 12px;
+}

@@ -10,7 +10,7 @@ const config: NextConfig = {
   // Dokument-Uploads bis 25 MB laufen über Server Actions
   experimental: { serverActions: { bodySizeLimit: "26mb" } },
   // PDF-Erzeugung der Schreiben über Chromium (lib/pdf.ts)
-  serverExternalPackages: ["playwright-core"],
+  serverExternalPackages: ["playwright-core", "pdf-lib"],
 };
 
 export default config;

@@ -1,6 +1,8 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PdfKnopf } from "@/components/PdfKnopf";
+import { briefbogenFuer } from "@/lib/briefbogen";
 import { PerMailSenden } from "@/components/PerMailSenden";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
@@ -24,6 +26,7 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
   const a = await api<Druckdaten>(`/zahlungsanforderungen/${id}`);
   const sonderwuensche = a.raten.some((r) => r.typ !== "mabv");
   const nurSonderwuensche = a.raten.every((r) => r.typ !== "mabv");
+  const bb = await briefbogenFuer(a.gesellschaft.id);
   const e = a.empfaenger;
   const anrede = e.anrede === "Frau" ? `Sehr geehrte Frau ${e.nachname}` : e.anrede === "Herr" ? `Sehr geehrter Herr ${e.nachname}` : "Sehr geehrte Damen und Herren";
   return (
@@ -35,11 +38,16 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
           </p>
           <h1>Zahlungsanforderung {a.rechnungsnr}</h1>
         </div>
-        <DruckKnopf>
-          <Printer size={16} /> Drucken / PDF
-        </DruckKnopf>
+        <div className="knopfleiste">
+          <PdfKnopf pfad={`/zahlungsanforderungen/${id}`} briefbogen={bb.aktiv} />
+          <DruckKnopf>
+            <Printer size={16} /> Drucken
+          </DruckKnopf>
+        </div>
       </div>
-      <article className="schreiben">
+      <article className={`schreiben ${bb.klasse}`}>
+        {bb.kopf}
+        {bb.felder(a.angefordertAm)}
         <header>
           <div className="absender">
             {a.gesellschaft.name}
@@ -55,8 +63,8 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
           <dl className="infoblock">
             <dt>Rechnungs-Nr.</dt>
             <dd>{a.rechnungsnr}</dd>
-            <dt>Datum</dt>
-            <dd>{deDatum(a.angefordertAm)}</dd>
+            <dt className="info-datum">Datum</dt>
+            <dd className="info-datum">{deDatum(a.angefordertAm)}</dd>
             <dt>Kaufvertrag</dt>
             <dd>{a.vertrag.nr}</dd>
             {a.vertrag.urkundennr ? (
