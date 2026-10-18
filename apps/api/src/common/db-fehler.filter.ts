@@ -1,0 +1,31 @@
+import { type ArgumentsHost, Catch, ConflictException, type ExceptionFilter, HttpException } from "@nestjs/common";
+import { BaseExceptionFilter } from "@nestjs/core";
+
+interface PgFehler {
+  code?: string;
+  constraint_name?: string;
+  cause?: PgFehler;
+}
+
+const MELDUNGEN: Record<string, string> = {
+  projekt_nr_je_gesellschaft: "Diese Projektnummer ist in der Gesellschaft bereits vergeben.",
+  einheit_nr_je_projekt: "Diese Einheitennummer ist im Projekt bereits vergeben.",
+  partner_nr_je_mandant: "Diese Geschäftspartnernummer ist bereits vergeben.",
+  gesellschaft_nr_je_mandant: "Diese Gesellschaftsnummer ist bereits vergeben.",
+};
+
+/** Übersetzt PostgreSQL-Fehler (eindeutig / noch referenziert) in verständliche 409-Antworten. */
+@Catch()
+export class DbFehlerFilter extends BaseExceptionFilter implements ExceptionFilter {
+  override catch(exception: unknown, host: ArgumentsHost) {
+    if (!(exception instanceof HttpException)) {
+      const e = exception as PgFehler;
+      const pg = e?.code ? e : e?.cause;
+      if (pg?.code === "23505")
+        return super.catch(new ConflictException(MELDUNGEN[pg.constraint_name ?? ""] ?? "Eintrag existiert bereits."), host);
+      if (pg?.code === "23503")
+        return super.catch(new ConflictException("Der Datensatz wird noch verwendet und kann nicht gelöscht werden."), host);
+    }
+    return super.catch(exception, host);
+  }
+}

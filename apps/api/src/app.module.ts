@@ -1,0 +1,35 @@
+import { Controller, Get, Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { DbFehlerFilter } from "./common/db-fehler.filter.js";
+import { KontextService } from "./common/kontext.service.js";
+import { dbProvider } from "./db.provider.js";
+import { DatevController } from "./datev/datev.controller.js";
+import { EinheitenController } from "./einheiten/einheiten.controller.js";
+import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
+import { MabvController } from "./mabv/mabv.controller.js";
+import { PartnerController } from "./partner/partner.controller.js";
+import { ProjekteController } from "./projekte/projekte.controller.js";
+import { ProtokollController } from "./protokoll/protokoll.controller.js";
+
+@Controller()
+class HealthController {
+  @Get("health")
+  health() {
+    return { status: "ok" };
+  }
+}
+
+@Module({
+  controllers: [
+    HealthController,
+    MabvController,
+    GesellschaftenController,
+    PartnerController,
+    ProjekteController,
+    EinheitenController,
+    ProtokollController,
+    DatevController,
+  ],
+  providers: [dbProvider, KontextService, { provide: APP_FILTER, useClass: DbFehlerFilter }],
+})
+export class AppModule {}
