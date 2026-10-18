@@ -1,0 +1,33 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# Variante mit Microsoft-Anmeldung (CADDYFILE=Caddyfile.entra in .env.prod)
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Käuferportal: ohne Passwort erreichbar (Zugang über persönlichen Token-Link),
+	# aber keine Server Actions über diesen Pfad – die Middleware der Weboberfläche prüft das zusätzlich.
+	@portalaktion {
+		path /portal /portal/*
+		header Next-Action *
+	}
+	respond @portalaktion 403
+
+	# Kein Passwortschutz mehr: Die Weboberfläche verlangt die Microsoft-Anmeldung (Auth.js),
+	# die API prüft die Rollen. Das Käuferportal bleibt über den Token-Link erreichbar.
+
+	request_body {
+		max_size 30MB
+	}
+
+	reverse_proxy web:3000
+}

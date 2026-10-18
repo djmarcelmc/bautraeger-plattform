@@ -175,9 +175,9 @@ $C restart web        # einzelnen Dienst neu starten
 
 ## 10. Sicherheit
 
-- Der Passwortschutz ist eine **Übergangslösung**. Sobald die [Microsoft-Entra-App-Registrierung](microsoft-entra-app-registrierung.md)
-  vorliegt, wird die Anmeldung mit Microsoft-Konten und Rollen eingebaut. Für den Produktivbetrieb dort als
-  zusätzliche Umleitungs-URI eintragen: `https://projectx.cubivivit.de/api/auth/callback/microsoft-entra-id`
+- Der Passwortschutz ist eine **Übergangslösung**. Die Anmeldung mit Microsoft-Konten und Rollen ist eingebaut und wird
+  per Konfiguration eingeschaltet – Schritte und Rechtematrix in der [Entra-Anleitung](microsoft-entra-app-registrierung.md#7-umstellung-in-der-plattform-durch-den-betreiber).
+  Umleitungs-URI in Entra: `https://projectx.cubivivit.de/api/auth/callback/microsoft-entra-id`
 - Bis dahin keine echten personenbezogenen Daten von Kunden einpflegen, ohne dass ein AV-Vertrag mit dem Hoster besteht
   (DSGVO) – Testdaten sind unkritisch.
 - `.env.prod` nie ins Repository einchecken (ist in `.gitignore`).

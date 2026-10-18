@@ -16,6 +16,7 @@ import {
 import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { KontextService } from "../common/kontext.service.js";
+import { anmeldungAktiv } from "../common/rechte.guard.js";
 import { differenz, protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { VerkaufService } from "../verkauf/verkauf.service.js";
@@ -253,6 +254,7 @@ export class KostenController {
   async freigeben(@Param("id", ParseUUIDPipe) id: string, @Benutzer() benutzer: string) {
     const r = await this.kosten.rechnung(id);
     if (r.status !== "rechnerisch_geprueft" && r.status !== "sachlich_geprueft") throw new ConflictException("Nur geprüfte Rechnungen können freigegeben werden.");
+    if (anmeldungAktiv() && r.geprueftVon === benutzer) throw new ConflictException("Vier-Augen-Prinzip: Die Freigabe muss eine andere Person vornehmen als die Prüfung.");
     await this.db.transaction(async (tx) => {
       await tx.update(er).set({ status: "freigegeben", freigegebenAm: new Date(), freigegebenVon: benutzer, geaendertAm: new Date() }).where(eq(er.id, id));
       await protokollieren(tx, { tabelle: "eingangsrechnung", id, aktion: "update", alt: { status: r.status }, neu: { status: "freigegeben" }, benutzer });

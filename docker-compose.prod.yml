@@ -31,6 +31,8 @@ services:
       DATABASE_URL: postgres://bt:${POSTGRES_PASSWORD}@db:5432/bautraeger
       MIGRATE_ON_START: "true"
       PUBLIC_URL: https://${DOMAIN}
+      # true = Rollen aus der Microsoft-Anmeldung werden geprüft (zusammen mit den AUTH_*-Werten der Weboberfläche)
+      AUTH_AKTIV: ${AUTH_AKTIV:-false}
       # E-Mail-Versand (leer = nur protokollieren), siehe docs/deployment.md
       MAIL_ABSENDER: ${MAIL_ABSENDER:-}
       MAIL_GRAPH_TENANT: ${MAIL_GRAPH_TENANT:-}
@@ -50,6 +52,12 @@ services:
       API_URL: http://api:3001
       # Öffentliche Adresse für Links im Käuferportal
       PUBLIC_URL: https://${DOMAIN}
+      # Microsoft-Anmeldung (leer = aus), siehe docs/microsoft-entra-app-registrierung.md
+      AUTH_URL: https://${DOMAIN}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      AUTH_MICROSOFT_ENTRA_ID_ID: ${AUTH_MICROSOFT_ENTRA_ID_ID:-}
+      AUTH_MICROSOFT_ENTRA_ID_SECRET: ${AUTH_MICROSOFT_ENTRA_ID_SECRET:-}
+      AUTH_MICROSOFT_ENTRA_ID_ISSUER: ${AUTH_MICROSOFT_ENTRA_ID_ISSUER:-}
     depends_on:
       api: { condition: service_healthy }
 
@@ -63,10 +71,12 @@ services:
     environment:
       DOMAIN: ${DOMAIN:?DOMAIN fehlt}
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL fehlt}
-      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?BASIC_AUTH_USER fehlt}
-      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?BASIC_AUTH_HASH fehlt}
+      # nur für die Variante mit Passwortschutz (deploy/Caddyfile)
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-bautraeger}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:-}
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Caddyfile = Passwortschutz (Übergang), Caddyfile.entra = Microsoft-Anmeldung
+      - ./deploy/${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
