@@ -117,6 +117,33 @@ describe.skipIf(!url)("Zahlungslauf und Bürgschaften (Integration)", () => {
     expect((await http.get("/api/zahlungslaeufe")).body[0]).toMatchObject({ id: laufId, anzahl: 2 });
   });
 
+  it("verlangt nach einer IBAN-Änderung eine Bestätigung vor dem Zahlungslauf", async () => {
+    const partner = ((await http.get("/api/partner")).body as { id: string; nr: number }[]).find((x) => x.nr === 70001)!;
+    const pp = (await http.get(`/api/partner/${partner.id}`)).body;
+    const projekt = ((await http.get("/api/projekte")).body as { id: string; nr: number }[]).find((x) => x.nr === 101)!;
+    const { r } = await rechnung(projekt.id, 340, partner.id, "AR-NEU");
+    // vorher: IBAN bekannt aus Zahlungslauf 1 → keine Bestätigung nötig
+    let v = (await http.get(`/api/zahlungslaeufe/vorschlag?ausfuehrungAm=${tagePlus(1)}`)).body;
+    const finde = () => v.gesellschaften[0].rechnungen.find((x: { id: string }) => x.id === r);
+    expect(finde().ibanPruefung).toMatchObject({ bestaetigungNoetig: false, gesperrt: null });
+
+    await als(http.put(`/api/partner/${partner.id}`)).send({ nr: 70001, suchcode: pp.suchcode, firma: pp.firma, rollen: pp.rollen, freistellungGueltigBis: pp.freistellungGueltigBis, iban: "DE75512108001245126199" });
+    v = (await http.get(`/api/zahlungslaeufe/vorschlag?ausfuehrungAm=${tagePlus(1)}`)).body;
+    expect(finde().ibanPruefung.bestaetigungNoetig).toBe(true);
+    expect(finde().ibanPruefung.hinweise.map((h: { text: string }) => h.text)).toEqual([expect.stringMatching(/^IBAN am .* geändert \(vorher DE02 … 2051\)$/), "Erste Zahlung an diese IBAN – bisher an DE02 … 2051 gezahlt"]);
+
+    const ohne = await als(http.post("/api/zahlungslaeufe")).send({ rechnungIds: [r], ausfuehrungAm: tagePlus(1) });
+    expect(ohne.status).toBe(409);
+    expect(ohne.body.message).toMatch(/Bankverbindung bitte bestätigen.*AR-NEU/);
+    const mit = await als(http.post("/api/zahlungslaeufe")).send({ rechnungIds: [r], ausfuehrungAm: tagePlus(1), ibanBestaetigt: [r] });
+    expect(mit.status).toBe(201);
+    const prot = (await http.get(`/api/protokoll/${mit.body.id}`)).body as { neu: { ibanBestaetigt?: { rechnung: string }[] } }[];
+    expect(prot[0]!.neu.ibanBestaetigt?.[0]).toMatchObject({ rechnung: "AR-NEU" });
+    // die neue IBAN gilt danach als bekannt
+    const d = (await http.get(`/api/zahlungslaeufe/${mit.body.id}`)).body;
+    expect(d.zahlungen).toHaveLength(1);
+  });
+
   it("verwaltet Bürgschaften mit Status und Rückgabefälligkeit", async () => {
     expect((await als(http.post("/api/buergschaften")).send({ richtung: "erhalten", art: "gewaehrleistung", betrag: "2500" })).status).toBe(400);
     const gw = await als(http.post("/api/buergschaften")).send({ richtung: "erhalten", art: "gewaehrleistung", handwerkervertragId: v1, buergeId: bank, nr: "GB-123", betrag: "2.500,00", gueltigBis: "" });

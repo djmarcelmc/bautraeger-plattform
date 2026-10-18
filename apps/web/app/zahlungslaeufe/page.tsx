@@ -1,4 +1,4 @@
-import { Banknote, TriangleAlert } from "lucide-react";
+import { Banknote, TriangleAlert, ShieldAlert } from "lucide-react";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
@@ -73,43 +73,64 @@ export default async function Zahlungslaeufe({ searchParams }: { searchParams: P
                   </tr>
                 </thead>
                 <tbody>
-                  {gr.rechnungen.map((r) => (
-                    <tr key={r.id} className={r.zahlbar ? undefined : "gesperrt"}>
-                      <td>
-                        <input type="checkbox" name="rechnungIds" value={r.id} defaultChecked={r.zahlbar} disabled={!r.zahlbar || !gr.gesellschaft.kontoOk} data-betrag={r.auszahlung} aria-label={`Rechnung ${r.rechnungsnr} auswählen`} />
-                      </td>
-                      <td>
-                        <a href={`/eingangsrechnungen/${r.id}`}>{r.rechnungsnr}</a>
-                        <div className="hint">{deDatum(r.rechnungsdatum)}</div>
-                      </td>
-                      <td>
-                        {r.handwerker.name}
-                        <div className="hint">{r.handwerker.iban ? r.handwerker.iban.replace(/(.{4})/g, "$1 ") : "ohne IBAN"}</div>
-                      </td>
-                      <td>
-                        {r.projekt.nr} {r.projekt.suchcode}
-                        <div className="hint">{r.gewerk}</div>
-                      </td>
-                      <td>
-                        {deDatum(r.faelligAm)}
-                        {r.skontoMoeglich && r.skontoFristBis ? <div className="hint plus">Skonto bis {deDatum(r.skontoFristBis)}</div> : null}
-                      </td>
-                      <td className="num">{Number(r.skonto) ? deZahl(r.skonto) : ""}</td>
-                      <td className="num">{Number(r.bauabzugsteuer) ? deZahl(r.bauabzugsteuer) : ""}</td>
-                      <td className="num fett">
-                        {deZahl(r.auszahlung)}
-                        {r.hinweise.length ? (
-                          <div className="hinweise">
-                            {r.hinweise.map((h) => (
-                              <span key={h} className="hint warnung">
-                                <TriangleAlert size={12} /> {h}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
+                  {gr.rechnungen.map((r) => {
+                    const ip = r.ibanPruefung;
+                    const zahlbar = r.zahlbar && !ip?.gesperrt;
+                    return (
+                      <tr key={r.id} className={zahlbar ? (ip?.bestaetigungNoetig ? "ibanpruefen" : undefined) : "gesperrt"}>
+                        <td>
+                          <input type="checkbox" name="rechnungIds" value={r.id} defaultChecked={zahlbar && !ip?.bestaetigungNoetig} disabled={!zahlbar || !gr.gesellschaft.kontoOk} data-betrag={r.auszahlung} aria-label={`Rechnung ${r.rechnungsnr} auswählen`} />
+                        </td>
+                        <td>
+                          <a href={`/eingangsrechnungen/${r.id}`}>{r.rechnungsnr}</a>
+                          <div className="hint">{deDatum(r.rechnungsdatum)}</div>
+                        </td>
+                        <td>
+                          {r.handwerker.name}
+                          <div className="hint">{r.handwerker.iban ? r.handwerker.iban.replace(/(.{4})/g, "$1 ") : "ohne IBAN"}</div>
+                          {ip?.hinweise.length ? (
+                            <div className={`ibanpruefung${ip.bestaetigungNoetig ? " kritisch" : ""}`}>
+                              {ip.hinweise.map((h) => (
+                                <span key={h.text} className={h.stufe === "kritisch" ? "warntext" : "hint"}>
+                                  {h.stufe === "kritisch" ? <ShieldAlert size={13} /> : null} {h.text}
+                                </span>
+                              ))}
+                              {ip.gesperrt ? (
+                                <b className="warntext">{ip.gesperrt}</b>
+                              ) : ip.bestaetigungNoetig ? (
+                                <label className="haken">
+                                  <input type="checkbox" name="ibanBestaetigt" value={r.id} />
+                                  <span>Bankverbindung geprüft (Rückruf unter bekannter Nummer)</span>
+                                </label>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td>
+                          {r.projekt.nr} {r.projekt.suchcode}
+                          <div className="hint">{r.gewerk}</div>
+                        </td>
+                        <td>
+                          {deDatum(r.faelligAm)}
+                          {r.skontoMoeglich && r.skontoFristBis ? <div className="hint plus">Skonto bis {deDatum(r.skontoFristBis)}</div> : null}
+                        </td>
+                        <td className="num">{Number(r.skonto) ? deZahl(r.skonto) : ""}</td>
+                        <td className="num">{Number(r.bauabzugsteuer) ? deZahl(r.bauabzugsteuer) : ""}</td>
+                        <td className="num fett">
+                          {deZahl(r.auszahlung)}
+                          {r.hinweise.length ? (
+                            <div className="hinweise">
+                              {r.hinweise.map((h) => (
+                                <span key={h} className="hint warnung">
+                                  <TriangleAlert size={12} /> {h}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </td>
+                        </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <div className="gruppenfuss">

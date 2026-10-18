@@ -148,6 +148,13 @@
       "when": 1792342682439,
       "tag": "0020_rechnungseingang",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792344040571,
+      "tag": "0021_empfaenger_iban",
+      "breakpoints": true
     }
   ]
 }

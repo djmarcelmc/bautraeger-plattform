@@ -1,8 +1,9 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Query, StreamableFile } from "@nestjs/common";
 import { schema } from "@bt/db";
-import { ZahlungslaufEingabe, bauabzugFrist, ibanGueltig, money, pain001, summe } from "@bt/domain";
+import { ZahlungslaufEingabe, bauabzugFrist, ibanGueltig, ibanPruefen, money, pain001, summe, type IbanAenderung, type IbanPruefung } from "@bt/domain";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
+import { anmeldungAktiv } from "../common/rechte.guard.js";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
@@ -45,11 +46,56 @@ export class ZahlungslaufController {
       .then((zeilen) => zeilen.map((z) => ({ ...z, handwerker: z.handwerker ?? { id: "", name: "(ohne Handwerker)", iban: null, bic: null } })));
   }
 
+  /**
+   * IBAN-Prüfung je Rechnung: Änderungen der Bankverbindung (Änderungsprotokoll), bisher bezahlte IBANs des
+   * Handwerkers und die IBAN auf der eingegangenen Rechnung (Rechnungseingang).
+   */
+  private async ibanPruefungen(liste: Awaited<ReturnType<ZahlungslaufController["freigegebene"]>>, benutzer: string): Promise<Map<string, IbanPruefung>> {
+    const hwIds = [...new Set(liste.map((x) => x.handwerker.id).filter(Boolean))];
+    const rIds = liste.map((x) => x.id);
+    const ap = schema.aenderungsprotokoll;
+    const [aenderungen, gezahlt, eingang] = await Promise.all([
+      hwIds.length
+        ? this.db
+            .select({ id: ap.datensatzId, am: sql<string>`${ap.zeitpunkt}::text`, von: ap.benutzer, aktion: ap.aktion, alt: sql<string | null>`${ap.alt}->>'iban'`, neu: sql<string | null>`${ap.neu}->>'iban'` })
+            .from(ap)
+            .where(and(eq(ap.tabelle, "geschaeftspartner"), inArray(ap.datensatzId, hwIds), sql`${ap.neu} ? 'iban'`))
+        : [],
+      hwIds.length
+        ? this.db
+            .selectDistinct({ handwerkerId: hv.handwerkerId, iban: za.empfaengerIban })
+            .from(za)
+            .innerJoin(er, eq(za.eingangsrechnungId, er.id))
+            .innerJoin(hv, eq(er.handwerkervertragId, hv.id))
+            .where(and(inArray(hv.handwerkerId, hwIds), sql`${za.empfaengerIban} is not null`))
+        : [],
+      rIds.length
+        ? this.db.select({ id: schema.belegeingang.eingangsrechnungId, iban: sql<string | null>`${schema.belegeingang.daten}->>'iban'` }).from(schema.belegeingang).where(inArray(schema.belegeingang.eingangsrechnungId, rIds))
+        : [],
+    ]);
+    const ergebnis = new Map<string, IbanPruefung>();
+    for (const x of liste)
+      ergebnis.set(
+        x.id,
+        ibanPruefen({
+          iban: x.handwerker.iban,
+          aenderungen: aenderungen.filter((a) => a.id === x.handwerker.id).map((a): IbanAenderung => ({ am: new Date(a.am).toISOString(), von: a.von, alt: a.alt, neu: a.neu, angelegt: a.aktion === "insert" })),
+          bisherGezahlt: gezahlt.filter((g) => g.handwerkerId === x.handwerker.id).map((g) => g.iban!),
+          rechnungsIban: eingang.find((e) => e.id === x.id)?.iban ?? null,
+          stichtag: heute(),
+          benutzer,
+          vierAugen: anmeldungAktiv(),
+        }),
+      );
+    return ergebnis;
+  }
+
   /** Zahlungsvorschlag: freigegebene Rechnungen mit Zahlbetrag am Ausführungstag, je Gesellschaft. */
   @Get("vorschlag")
-  async vorschlag(@Query("ausfuehrungAm") ausfuehrungAm?: string) {
+  async vorschlag(@Query("ausfuehrungAm") ausfuehrungAm: string | undefined, @Benutzer() benutzer: string) {
     const datum = istDatum(ausfuehrungAm) ?? heute();
     const liste = await this.freigegebene();
+    const pruefungen = await this.ibanPruefungen(liste, benutzer);
     const gruppen = new Map<string, { gesellschaft: (typeof liste)[number]["gesellschaft"] & { kontoOk: boolean }; rechnungen: unknown[]; summe: string }>();
     for (const x of liste) {
       const { r, e } = await this.kosten.zahlbetrag(x.id, datum).catch(() => ({ r: null, e: null }));
@@ -76,6 +122,7 @@ export class ZahlungslaufController {
         bauabzugsteuer: e.bauabzugsteuer,
         zahlbar: !!x.handwerker.iban && ibanGueltig(x.handwerker.iban),
         hinweise,
+        ibanPruefung: pruefungen.get(x.id) ?? null,
       });
       gr.summe = money(gr.summe).plus(e.auszahlung!).toFixed(2);
       gruppen.set(x.gesellschaft.id, gr);
@@ -86,7 +133,7 @@ export class ZahlungslaufController {
   /** Legt den Zahlungslauf an, verbucht die Zahlungen und erzeugt die SEPA-Datei. */
   @Post()
   async anlegen(@Body() body: unknown, @Benutzer() benutzer: string) {
-    const { rechnungIds, ausfuehrungAm } = pruefe(ZahlungslaufEingabe, body);
+    const { rechnungIds, ausfuehrungAm, ibanBestaetigt } = pruefe(ZahlungslaufEingabe, body);
     if (ausfuehrungAm < heute()) throw new BadRequestException("Das Ausführungsdatum darf nicht in der Vergangenheit liegen.");
     const ids = [...new Set(rechnungIds)];
     const liste = await this.freigegebene(ids);
@@ -97,6 +144,18 @@ export class ZahlungslaufController {
     if (!ges.iban || !ibanGueltig(ges.iban)) throw new BadRequestException(`Bei der Gesellschaft „${ges.name}“ ist keine gültige IBAN hinterlegt.`);
     const ohneKonto = liste.filter((x) => !x.handwerker.iban || !ibanGueltig(x.handwerker.iban));
     if (ohneKonto.length) throw new BadRequestException(`Keine gültige IBAN: ${ohneKonto.map((x) => `${x.handwerker.name} (${x.rechnungsnr})`).join(", ")}`);
+    // IBAN-Prüfung: gesperrte Zahlungen abweisen, kritische Hinweise müssen bestätigt sein
+    const pruefungen = await this.ibanPruefungen(liste, benutzer);
+    const gesperrt = liste.filter((x) => pruefungen.get(x.id)?.gesperrt);
+    if (gesperrt.length) throw new ConflictException(`${gesperrt.map((x) => `${x.rechnungsnr} (${x.handwerker.name})`).join(", ")}: ${pruefungen.get(gesperrt[0]!.id)!.gesperrt}`);
+    const offen = liste.filter((x) => pruefungen.get(x.id)?.bestaetigungNoetig && !ibanBestaetigt.includes(x.id));
+    if (offen.length)
+      throw new ConflictException(
+        `Bankverbindung bitte bestätigen (z. B. Rückruf beim Handwerker unter bekannter Nummer): ${offen
+          .map((x) => `${x.rechnungsnr} ${x.handwerker.name} – ${pruefungen.get(x.id)!.hinweise.filter((h) => h.stufe === "kritisch").map((h) => h.text).join("; ")}`)
+          .join(" | ")}`,
+      );
+    const bestaetigt = liste.filter((x) => pruefungen.get(x.id)?.bestaetigungNoetig).map((x) => ({ rechnung: x.rechnungsnr, iban: x.handwerker.iban, hinweise: pruefungen.get(x.id)!.hinweise.map((h) => h.text) }));
     const zahlungen = await Promise.all(liste.map(async (x) => ({ x, z: await this.kosten.zahlbetrag(x.id, ausfuehrungAm) })));
     return this.db.transaction(async (tx) => {
       const lfd = await this.verkauf.nummerZiehen(tx, ges.id, "SL", Number(ausfuehrungAm.slice(0, 4)));
@@ -117,8 +176,8 @@ export class ZahlungslaufController {
       });
       const gesamt = summe(zahlungen.map(({ z }) => money(z.e.auszahlung!)));
       const [lauf] = await tx.insert(zl).values({ gesellschaftId: ges.id, nr, ausfuehrungAm, anzahl: zahlungen.length, summe: gesamt.toFixed(2), xml, erstelltVon: benutzer }).returning({ id: zl.id });
-      for (const { z } of zahlungen) await this.kosten.zahlungBuchen(tx, z, ausfuehrungAm, benutzer, lauf!.id);
-      await protokollieren(tx, { tabelle: "zahlungslauf", id: lauf!.id, aktion: "insert", neu: { nr, ausfuehrungAm, anzahl: zahlungen.length, summe: gesamt.toFixed(2) }, benutzer });
+      for (const { x, z } of zahlungen) await this.kosten.zahlungBuchen(tx, z, ausfuehrungAm, benutzer, lauf!.id, x.handwerker.iban?.replace(/\s/g, "").toUpperCase());
+      await protokollieren(tx, { tabelle: "zahlungslauf", id: lauf!.id, aktion: "insert", neu: { nr, ausfuehrungAm, anzahl: zahlungen.length, summe: gesamt.toFixed(2), ...(bestaetigt.length ? { ibanBestaetigt: bestaetigt } : {}) }, benutzer });
       return { id: lauf!.id, nr, anzahl: zahlungen.length, summe: gesamt.toFixed(2) };
     });
   }

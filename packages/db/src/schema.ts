@@ -396,6 +396,8 @@ export const zahlungsausgang = pgTable("zahlungsausgang", {
   betrag: geld("betrag").notNull(),
   skonto: geld("skonto").notNull().default("0"),
   bauabzugsteuer: geld("bauabzugsteuer").notNull().default("0"),
+  /** IBAN, an die überwiesen wurde (Zahlungslauf) – Grundlage für „erste Zahlung an diese IBAN“ */
+  empfaengerIban: text("empfaenger_iban"),
   ...zeitstempel,
 });
 

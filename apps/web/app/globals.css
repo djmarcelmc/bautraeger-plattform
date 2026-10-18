@@ -3242,3 +3242,29 @@ table.saldentabelle tr.postenzeile ul {
 .eingang-neu .formular {
   margin-top: 10px;
 }
+
+/* IBAN-Prüfung im Zahlungslauf */
+.zahlungsgruppe tr.ibanpruefen td {
+  background: color-mix(in srgb, var(--warnung) 7%, transparent);
+}
+.ibanpruefung {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+.ibanpruefung.kritisch {
+  padding: 6px 8px;
+  border-left: 3px solid var(--gefahr);
+  background: var(--gefahr-weich);
+  border-radius: 4px;
+}
+.ibanpruefung .warntext {
+  display: inline-flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+.ibanpruefung .haken {
+  margin-top: 4px;
+  font-weight: 600;
+}
