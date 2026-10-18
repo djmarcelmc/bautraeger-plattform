@@ -16,8 +16,7 @@ import {
   KostenEinstellung,
   money,
 } from "@bt/domain";
-import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { KontextService } from "../common/kontext.service.js";
 import { anmeldungAktiv } from "../common/rechte.guard.js";
@@ -106,24 +105,7 @@ export class KostenController {
   @Get("projekte/:id/budgetumbuchungen")
   async budgetumbuchungen(@Param("id", ParseUUIDPipe) projektId: string) {
     await this.verkauf.projekt(projektId);
-    const { budgetumbuchung: bu } = schema;
-    const von = alias(gw, "von");
-    const nach = alias(gw, "nach");
-    return this.db
-      .select({
-        id: bu.id,
-        betrag: bu.betrag,
-        begruendung: bu.begruendung,
-        benutzer: bu.benutzer,
-        angelegtAm: bu.angelegtAm,
-        von: { id: von.id, nr: von.nr, bezeichnung: von.bezeichnung },
-        nach: { id: nach.id, nr: nach.nr, bezeichnung: nach.bezeichnung },
-      })
-      .from(bu)
-      .innerJoin(von, eq(bu.vonGewerkId, von.id))
-      .innerJoin(nach, eq(bu.nachGewerkId, nach.id))
-      .where(eq(bu.projektId, projektId))
-      .orderBy(desc(bu.angelegtAm));
+    return this.kosten.budgetumbuchungen(projektId);
   }
 
   /** Budget von einem Gewerk auf ein anderes desselben Projekts umbuchen (höchstens das freie Budget der Quelle). */

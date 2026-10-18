@@ -172,14 +172,18 @@ export class AuswertungenController {
   @Get("kostenreport/:projektId")
   async kostenreport(@Param("projektId", ParseUUIDPipe) projektId: string, @Query("format") format?: string) {
     const { projekt } = await this.verkauf.projekt(projektId);
-    const k = await this.kosten.kostenkontrolle(projektId);
-    if (format !== "xlsx") return { projekt: { id: projekt.id, nr: projekt.nr, suchcode: projekt.suchcode, strasse: projekt.strasse, plz: projekt.plz, ort: projekt.ort }, ...k };
+    const [k, umbuchungen] = await Promise.all([this.kosten.kostenkontrolle(projektId), this.kosten.budgetumbuchungen(projektId)]);
+    if (format !== "xlsx") return { projekt: { id: projekt.id, nr: projekt.nr, suchcode: projekt.suchcode, strasse: projekt.strasse, plz: projekt.plz, ort: projekt.ort }, ...k, umbuchungsliste: umbuchungen };
     const e = "euro" as const;
+    // Budgethistorie nur, wenn es im Projekt Umbuchungen gibt
+    const mitHistorie = umbuchungen.length > 0;
+    const summeVon = (feld: "budgetUrspruenglich" | "umgebucht") => k.gewerke.reduce((s, g) => s + Number(g[feld]), 0).toFixed(2);
     const zeilen = [
       ...k.gewerke.map((g) => [
         g.nr,
         g.bezeichnung,
         g.vertraege.map((v) => v.handwerker?.firma ?? v.handwerker?.nachname ?? v.handwerker?.suchcode).join(", "),
+        ...(mitHistorie ? [g.budgetUrspruenglich, Number(g.umgebucht) ? g.umgebucht : null] : []),
         g.stand.geschaetzt,
         g.stand.vergeben,
         g.stand.nachtraege,
@@ -188,8 +192,9 @@ export class AuswertungenController {
         g.stand.bezahlt,
         g.stand.abweichung,
       ]),
-      ["", "Summe", "", k.summe.geschaetzt, k.summe.vergeben, k.summe.nachtraege, k.summe.summeVergeben, k.summe.berechnet, k.summe.bezahlt, k.summe.abweichung],
+      ["", "Summe", "", ...(mitHistorie ? [summeVon("budgetUrspruenglich"), summeVon("umgebucht")] : []), k.summe.geschaetzt, k.summe.vergeben, k.summe.nachtraege, k.summe.summeVergeben, k.summe.berechnet, k.summe.bezahlt, k.summe.abweichung],
     ];
+    const de = (iso: string) => iso.slice(0, 10).split("-").reverse().join(".");
     return datei(
       await excelDatei("Kostenreport", `Kostenreport ${projekt.nr} ${projekt.suchcode} (Beträge brutto)`, [
         {
@@ -197,7 +202,8 @@ export class AuswertungenController {
             { titel: "Nr.", art: "zahl", breite: 7 },
             { titel: "Gewerk", breite: 28 },
             { titel: "Vertragspartner", breite: 26 },
-            { titel: "geschätzt", art: e, breite: 15 },
+            ...(mitHistorie ? [{ titel: "Budget ursprünglich", art: e, breite: 17 }, { titel: "Umbuchungen", art: e, breite: 14 }] : []),
+            { titel: mitHistorie ? "Budget aktuell" : "geschätzt", art: e, breite: 15 },
             { titel: "vergeben", art: e, breite: 15 },
             { titel: "Nachträge", art: e, breite: 14 },
             { titel: "Summe vergeben", art: e, breite: 15 },
@@ -208,6 +214,22 @@ export class AuswertungenController {
           zeilen,
           fett: [zeilen.length - 1],
         },
+        ...(mitHistorie
+          ? [
+              {
+                titel: "Budgetumbuchungen",
+                spalten: [
+                  { titel: "Datum", breite: 12 },
+                  { titel: "von Gewerk", breite: 28 },
+                  { titel: "nach Gewerk", breite: 28 },
+                  { titel: "Betrag", art: e, breite: 14 },
+                  { titel: "Begründung", breite: 50 },
+                  { titel: "Benutzer", breite: 24 },
+                ],
+                zeilen: umbuchungen.map((u) => [de(new Date(u.angelegtAm).toISOString()), `${u.von.nr} ${u.von.bezeichnung}`, `${u.nach.nr} ${u.nach.bezeichnung}`, u.betrag, u.begruendung, u.benutzer]),
+              },
+            ]
+          : []),
       ]),
       `Kostenreport-${projekt.nr}`,
     );
