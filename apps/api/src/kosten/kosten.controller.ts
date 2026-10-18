@@ -219,15 +219,7 @@ export class KostenController {
   @Post("eingangsrechnungen")
   async rechnungErfassen(@Body() body: unknown, @Benutzer() benutzer: string) {
     const werte = pruefe(EingangsrechnungEingabe, body);
-    const v = await this.kosten.vertrag(werte.handwerkervertragId);
-    const offen = v.rechnungen.find((r) => r.status !== "bezahlt");
-    if (offen) throw new ConflictException(`Rechnung ${offen.rechnungsnr} dieses Vertrags ist noch nicht bezahlt. Abschlagsrechnungen werden nacheinander abgerechnet.`);
-    if (v.rechnungen.some((r) => r.schlussrechnung)) throw new ConflictException("Für diesen Vertrag liegt bereits eine Schlussrechnung vor.");
-    return this.db.transaction(async (tx) => {
-      const [neu] = await tx.insert(er).values({ ...werte, betragBrutto: werte.betragBrutto!, rechnungsdatum: werte.rechnungsdatum!, eingangAm: werte.eingangAm! }).returning();
-      await protokollieren(tx, { tabelle: "eingangsrechnung", id: neu!.id, aktion: "insert", neu: werte, benutzer });
-      return neu;
-    });
+    return this.db.transaction((tx) => this.kosten.rechnungAnlegen(tx, werte, benutzer));
   }
 
   /** Sachliche und rechnerische Prüfung: geprüfter (kumulierter) Betrag; die Prüfkette wird gespeichert. */

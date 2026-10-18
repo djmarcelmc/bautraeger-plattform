@@ -268,6 +268,21 @@ export class CockpitService {
         link: "/bauabzug",
       });
     }
+    // ---------------------------------------------------------------- Rechnungseingang
+    const [eingang] = await this.db
+      .select({ anzahl: sql<number>`count(*)::int`, aeltester: sql<string | null>`min(${schema.belegeingang.empfangenAm})::date::text` })
+      .from(schema.belegeingang)
+      .where(and(eq(schema.belegeingang.mandantId, mandantId), eq(schema.belegeingang.status, "neu")));
+    if (eingang?.anzahl)
+      aufgaben.push({
+        bereich: "kosten",
+        dringlichkeit: eingang.aeltester && eingang.aeltester <= datumPlusTage(heute, -3) ? "mittel" : "info",
+        titel: `${eingang.anzahl} ${eingang.anzahl === 1 ? "Rechnung" : "Rechnungen"} im Eingang erfassen`,
+        text: `eingegangen seit ${de(eingang.aeltester!)} – Vertrag zuordnen und zur Prüfung geben (Skontofristen laufen ab Eingang)`,
+        datum: eingang.aeltester,
+        link: "/rechnungseingang",
+      });
+
     // ---------------------------------------------------------------- Buchhaltung: Bankabgleich, DATEV, Belege
     const gesellschaften = await this.db.select({ id: g.id, nr: g.nr, name: g.name }).from(g).where(eq(g.mandantId, mandantId)).orderBy(asc(g.nr));
     for (const ges of gesellschaften) {

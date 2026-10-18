@@ -123,6 +123,7 @@ Benachrichtigungen). Für den Versand in `.env.prod` eintragen und `docker compo
 | Variante | Variablen | Hinweis |
 | --- | --- | --- |
 | **Microsoft 365 (Outlook)** | `MAIL_ABSENDER`, `MAIL_GRAPH_TENANT`, `MAIL_GRAPH_CLIENT_ID`, `MAIL_GRAPH_SECRET` | App-Berechtigung *Mail.Send*, auf das Absender-Postfach beschränkt (siehe [Entra-Anleitung](microsoft-entra-app-registrierung.md)); gesendete Mails liegen in „Gesendete Elemente“ |
+| **Rechnungspostfach** | zusätzlich `RECHNUNGEN_POSTFACH` (optional `RECHNUNGEN_ABRUF=aus`) | App-Berechtigung *Mail.ReadWrite*, auf das Rechnungspostfach beschränkt; Abruf alle 10 Minuten in den Rechnungseingang |
 | SMTP | `MAIL_ABSENDER`, `MAIL_SMTP_URL` | z. B. `smtp://benutzer:passwort@smtp.example.de:587` |
 
 Danach unter **Einstellungen → Benachrichtigungen** die Empfänger eintragen und eine Testnachricht senden.
