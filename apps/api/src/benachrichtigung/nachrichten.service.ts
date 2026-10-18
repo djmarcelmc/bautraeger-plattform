@@ -122,7 +122,7 @@ export class NachrichtenService {
     const faellig = await this.db
       .select()
       .from(n)
-      .where(and(eq(n.status, "wartend"), lte(n.naechsterVersuchAm, new Date())))
+      .where(and(eq(n.status, "wartend"), lte(n.naechsterVersuchAm, sql`now()`)))
       .orderBy(asc(n.naechsterVersuchAm))
       .limit(limit);
     let gesendet = 0;
