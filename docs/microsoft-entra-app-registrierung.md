@@ -44,7 +44,7 @@ Dafür wird eine App-Registrierung in eurem Mandanten benötigt.
 | Buchhaltung | `Bautraeger.Buchhaltung` | Rechnungen, Zahlungen, DATEV-Export |
 | Vertrieb | `Bautraeger.Vertrieb` | Einheiten, Interessenten, Kaufverträge |
 | Bauleitung | `Bautraeger.Bauleitung` | Bautenstand, Mängel, sachliche Rechnungsprüfung |
-| Steuerberater | `Bautraeger.Steuerberater` | nur lesend, DATEV-Export |
+| Steuerberater | `Bautraeger.Steuerberater` | nur lesend, DATEV-Export; startet auf der Seite „Steuerberater“ mit reduzierter Navigation (Buchhaltung & DATEV, Saldenliste, Bauabzugsteuer, MaBV-Prüfbericht) |
 
 ## 4. API-Berechtigungen
 

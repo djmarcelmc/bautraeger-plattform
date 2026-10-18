@@ -92,3 +92,6 @@ export function benoetigtesRecht(methode: string, pfad: string): Recht {
 /** Rollen aus dem Header bzw. Token (nur bekannte Rollen werden übernommen). */
 export const rollenAus = (wert: unknown): Rolle[] =>
   (Array.isArray(wert) ? wert : typeof wert === "string" ? wert.split(",") : []).map((r) => String(r).trim()).filter((r): r is Rolle => r in ROLLEN);
+
+/** Nur Steuerberater-Rolle (ohne fachliche Rolle) → eigene Startseite und reduzierte Navigation. */
+export const nurSteuerberater = (rollen: readonly string[]) => rollen.includes("Bautraeger.Steuerberater") && !rollen.some((r) => ALLE_FACHLICHEN.includes(r as Rolle));

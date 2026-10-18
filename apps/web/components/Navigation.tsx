@@ -3,6 +3,9 @@
 import {
   ArrowLeftRight,
   BarChart3,
+  Briefcase,
+  Scale,
+  ShieldCheck as Pruefung,
   BookOpenCheck,
   Building2,
   Banknote,
@@ -51,10 +54,26 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     titel: "Werkzeuge",
     eintraege: [
       { href: "/mabv", text: "MaBV-Rechner", icon: Calculator },
+      { href: "/steuerberater", text: "Steuerberater-Sicht", icon: Briefcase },
       { href: "/einstellungen", text: "Einstellungen", icon: Settings },
     ],
   },
 ];
+
+/** Reduzierte Navigation für den reinen Steuerberater-Zugang. */
+const STEUERBERATER: typeof BEREICHE = [
+  {
+    titel: "Steuerberater",
+    eintraege: [
+      { href: "/steuerberater", text: "Übersicht", icon: Briefcase },
+      { href: "/buchhaltung", text: "Buchhaltung & DATEV", icon: BookOpenCheck },
+      { href: "/buchhaltung/saldenliste", text: "Saldenliste", icon: Scale },
+      { href: "/bauabzug", text: "Bauabzugsteuer", icon: Landmark },
+      { href: "/auswertungen/mabv-pruefbericht", text: "MaBV-Prüfbericht", icon: Pruefung },
+    ],
+  },
+];
+const FACHLICH = ["Bautraeger.Admin", "Bautraeger.Geschaeftsfuehrung", "Bautraeger.Buchhaltung", "Bautraeger.Vertrieb", "Bautraeger.Bauleitung"];
 
 export function Navigation({
   benutzer,
@@ -65,6 +84,8 @@ export function Navigation({
 }) {
   const verwaltung = !benutzer || benutzer.rollen.some((r) => r === "Bautraeger.Admin" || r === "Bautraeger.Geschaeftsfuehrung");
   const pfad = usePathname();
+  const nurSteuerberater = !!benutzer && benutzer.rollen.includes("Bautraeger.Steuerberater") && !benutzer.rollen.some((r) => FACHLICH.includes(r));
+  const bereiche = nurSteuerberater ? STEUERBERATER : BEREICHE;
   const aktiv = (href: string) =>
     href === "/"
       ? pfad === "/"
@@ -72,7 +93,9 @@ export function Navigation({
         ? ["/verkauf", "/kaufvertraege", "/zahlungsanforderungen", "/mahnungen"].some((x) => pfad.startsWith(x))
         : href === "/kosten"
           ? ["/kosten", "/gewerke", "/handwerkervertraege", "/eingangsrechnungen"].some((x) => pfad.startsWith(x))
-          : pfad.startsWith(href);
+          : href === "/buchhaltung"
+            ? pfad.startsWith("/buchhaltung") && !pfad.startsWith("/buchhaltung/saldenliste")
+            : pfad.startsWith(href);
   return (
     <aside className="seitenleiste">
       <a href="/" className="marke">
@@ -82,7 +105,7 @@ export function Navigation({
           <small>Plattform</small>
         </span>
       </a>
-      {BEREICHE.map((b) => (
+      {bereiche.map((b) => (
         <div key={b.titel} className="navgruppe">
           <div className="navtitel">{b.titel}</div>
           {b.eintraege.filter((e) => e.href !== "/einstellungen" || verwaltung).map(({ href, text, icon: Icon, bald }) =>
