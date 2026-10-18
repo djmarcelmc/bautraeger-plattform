@@ -29,6 +29,13 @@
       "when": 1792316248169,
       "tag": "0003_anforderung_ohne_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792318168950,
+      "tag": "0004_kosten_workflow",
+      "breakpoints": true
     }
   ]
 }

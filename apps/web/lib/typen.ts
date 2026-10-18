@@ -207,3 +207,135 @@ export interface OffenerPosten {
   empfaenger: string | null;
   tageUeberfaellig: number;
 }
+
+// ---------------------------------------------------------------- Kosten
+
+export interface Kostenstand {
+  geschaetzt: string;
+  vergeben: string;
+  nachtraege: string;
+  summeVergeben: string;
+  berechnet: string;
+  bezahlt: string;
+  trend: string;
+  abweichung: string;
+}
+
+export interface GewerkZeile {
+  id: string;
+  nr: number;
+  gruppe: string | null;
+  bezeichnung: string;
+  geschaetztBrutto: string;
+  stand: Kostenstand;
+  vertraege: {
+    id: string;
+    nrIntern: string | null;
+    vertragBrutto: string;
+    handwerker: { id: string; suchcode: string; firma: string | null; nachname: string | null } | null;
+    offeneRechnungen: number;
+  }[];
+}
+
+export interface Kostenkontrolle {
+  gewerke: GewerkZeile[];
+  summe: Kostenstand;
+}
+
+export interface Rechnung {
+  id: string;
+  rechnungsnr: string;
+  rechnungsdatum: string;
+  eingangAm: string;
+  schlussrechnung: boolean;
+  betragBrutto: string;
+  geprueftKumuliert: string | null;
+  status: "erfasst" | "sachlich_geprueft" | "rechnerisch_geprueft" | "freigegeben" | "bezahlt";
+  bemerkung: string | null;
+  geprueftAm: string | null;
+  geprueftVon: string | null;
+  freigegebenAm: string | null;
+  freigegebenVon: string | null;
+  pruefergebnis: Record<string, string> | null;
+}
+
+export interface Handwerkervertrag {
+  id: string;
+  gewerkId: string;
+  handwerkerId: string | null;
+  nrIntern: string | null;
+  angebotVom: string | null;
+  vertragVom: string | null;
+  vertragBrutto: string;
+  nachlassProzent: string | null;
+  skontoProzent: string | null;
+  skontoFristTage: number | null;
+  zahlungsfristTage: number | null;
+  umlagen: Record<string, string | null> | null;
+  einbehaltVertragserfuellungProzent: string | null;
+  einbehaltGewaehrleistungProzent: string | null;
+  gewaehrleistungMonate: number | null;
+  abnahmeAm: string | null;
+  gewerk: { id: string; nr: number; bezeichnung: string; gruppe: string | null };
+  projekt: { id: string; nr: number; suchcode: string };
+  handwerker: Partner | null;
+  nachtraege: { id: string; nr: number; text: string; betragBrutto: string; status: string }[];
+  rechnungen: Rechnung[];
+  zahlungen: { id: string; eingangsrechnungId: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; rechnungsnr: string }[];
+  summen: {
+    vertrag: string;
+    nachtraege: string;
+    auftrag: string;
+    berechnet: string;
+    abgegolten: string;
+    ausgezahlt: string;
+    skonto: string;
+    bauabzugsteuer: string;
+    restBerechnet: string;
+  };
+}
+
+export interface RechnungDetail extends Rechnung {
+  handwerkervertragId: string;
+  vertrag: {
+    id: string;
+    nrIntern: string | null;
+    projekt: { id: string; nr: number; suchcode: string };
+    gewerk: { id: string; nr: number; bezeichnung: string };
+    handwerker: Partner | null;
+    skontoProzent: string | null;
+    zahlungsfristTage: number | null;
+  };
+  zahlung: { datum: string; betrag: string; skonto: string; bauabzugsteuer: string } | null;
+  vorschau: {
+    zahlungsdatum: string;
+    skontoFristBis: string | null;
+    skontoMoeglich: boolean;
+    freistellungGueltig: boolean;
+    einbehaltProzent: number;
+    umlagenProzent: number;
+    nachlassProzent: number;
+    ohneSkonto: Record<string, string>;
+    mitSkonto: Record<string, string>;
+  };
+  faelligAm: string | null;
+}
+
+export interface RechnungsbuchZeile {
+  id: string;
+  rechnungsnr: string;
+  rechnungsdatum: string;
+  eingangAm: string;
+  schlussrechnung: boolean;
+  betragBrutto: string;
+  geprueftKumuliert: string | null;
+  status: Rechnung["status"];
+  auszahlung: string | null;
+  vertragId: string;
+  gewerkNr: number;
+  gewerk: string;
+  projektId: string;
+  projektNr: number;
+  projekt: string;
+  handwerker: string | null;
+}

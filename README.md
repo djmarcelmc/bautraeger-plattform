@@ -11,9 +11,9 @@ Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artif
 | --- | --- |
 | `packages/domain` | Fachlogik ohne UI/DB: Geldarithmetik (decimal.js), MaBV-Ratenplan (§ 3 MaBV), Prüfkette Handwerkerrechnung inkl. Bauabzugsteuer, DATEV-EXTF-Export |
 | `packages/db` | PostgreSQL-Schema (Drizzle), Migrationen, Demodaten |
-| `apps/api` | REST-API (NestJS): Stammdaten, Kaufverträge, Bautenstand, Zahlungsanforderungen, Zahlungseingänge, offene Posten, Dokumente, Änderungsprotokoll, DATEV-Export |
+| `apps/api` | REST-API (NestJS): Stammdaten, Verkauf (Kaufverträge, Bautenstand, Zahlungsanforderungen, offene Posten), Kosten (Gewerke, Handwerkerverträge, Nachträge, Eingangsrechnungen), Dokumente, Änderungsprotokoll, DATEV-Export |
 | `apps/mcp` | MCP-Server (stdio und Streamable HTTP) mit Tools für KI-Assistenten |
-| `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Geschäftspartner, Gesellschaften |
+| `apps/web` | Weboberfläche (Next.js): Übersicht, Projekte (Einheiten, Bautenstand-Raster, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Geschäftspartner, Gesellschaften |
 | `docs/` | Anleitungen: [Deployment auf dem vServer](docs/deployment.md), [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) |
 | `deploy/`, `Dockerfile`, `docker-compose.prod.yml` | Produktivbetrieb: Caddy (HTTPS, Passwortschutz), PostgreSQL, tägliche Sicherungen, Update-Skript |
 
@@ -57,6 +57,9 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `POST /api/zahlungsanforderungen`, `POST /api/projekte/:id/zahlungsanforderungen`, `GET /api/zahlungsanforderungen/:id` | Raten anfordern (einzeln, zusammengefasst oder als Sammelanforderung je Projekt) |
 | `POST /api/zahlungseingaenge`, `GET /api/offene-posten` | Zahlungen verbuchen (keine Überzahlung), offene Posten mit Verzugstagen |
 | `GET/POST /api/dokumente`, `GET /api/dokumente/:id/datei`, `DELETE /api/dokumente/:id` | Dokumentablage (SHA-256, nur Ausblenden statt Löschen) |
+| `GET /api/projekte/:id/kosten`, `POST /api/projekte/:id/gewerkeplan`, `POST /api/projekte/:id/gewerke`, `PUT/DELETE /api/gewerke/:id` | Kostenkontrolle, Gewerkeplan aus Vorlage (65 Gewerke), Gewerke |
+| `POST /api/handwerkervertraege`, `GET/PUT /api/handwerkervertraege/:id`, `POST /api/handwerkervertraege/:id/nachtraege`, `PUT /api/nachtraege/:id` | Handwerkerverträge (Nachlass, Skonto, Umlagen, Einbehalte) und Nachträge |
+| `GET/POST /api/eingangsrechnungen`, `GET /api/eingangsrechnungen/:id?zahlungsdatum=`, `POST …/:id/pruefen`, `…/freigeben`, `…/zahlung` | Rechnungseingangsbuch und Workflow Prüfen → Freigeben → Zahlen (Skontofrist, Bauabzugsteuer) |
 
 Alle schreibenden Aufrufe werden mit Benutzer, Zeitpunkt und alt → neu protokolliert. Bis zur Microsoft-Anmeldung
 wird der Benutzer übergangsweise aus dem Header `x-benutzer` gelesen.
@@ -82,7 +85,7 @@ DATABASE_URL=... node apps/mcp/dist/index.js --http   # http://localhost:3002/mc
 ```
 
 Tools: `mabv_ratenplan_berechnen`, `handwerker_pruefkette`, `projekte_auflisten`, `offene_zahlungsanforderungen`
-(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) und `anforderbare_raten` (über die REST-API, wenn
+(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten` und `kostenstand` (über die REST-API, wenn
 `API_URL` gesetzt ist – dort gelten dieselben Prüfregeln wie in der Oberfläche).
 
 Dokumente werden lokal unter `DOKUMENTE_PFAD` (Standard `data/dokumente`) abgelegt; eine S3-Ablage kann über die
@@ -103,5 +106,5 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓
 3. ~~Dokumentablage an Projekten, Einheiten, Partnern und Kaufverträgen~~ ✓
 4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – offen: Mahnwesen, Zusatzleistungen/Gutschriften, Versand per Outlook
-5. Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow
+5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – offen: SEPA-Zahlungsdatei, Bürgschaften, Rollen für Prüfung/Freigabe
 6. Buchungsjournal automatisch aus Verkauf und Kosten befüllen
