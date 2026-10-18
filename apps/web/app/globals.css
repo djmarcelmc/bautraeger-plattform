@@ -1910,6 +1910,123 @@ h2.kartentitel {
   margin: 0;
 }
 
+/* ------------------------------------------------------------------ Abnahmen */
+.hinweisbox.erfolg {
+  background: var(--gut-weich);
+  border-color: color-mix(in srgb, var(--gut) 35%, var(--linie));
+}
+.hinweisbox.erfolg svg {
+  color: var(--gut);
+}
+.vorlagenliste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  padding: 6px 10px;
+}
+.vorlagenliste summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.vorlagenliste .haken {
+  display: flex;
+  padding: 3px 0 3px 14px;
+  font-size: 13px;
+}
+.datenliste {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+.datenliste dt {
+  color: var(--text-2);
+}
+.datenliste dd {
+  margin: 0;
+}
+.umbruch {
+  white-space: pre-line;
+}
+.schreiben.protokoll h3 {
+  font-size: 14px;
+  margin: 22px 0 6px;
+}
+.schreiben.protokoll table.kopf th {
+  width: 190px;
+  text-align: left;
+  font-weight: 500;
+  vertical-align: top;
+}
+.schreiben.protokoll .klein {
+  font-size: 11.5px;
+  color: #444;
+}
+.ankreuzliste {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0;
+}
+.ankreuzliste li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 3px 0;
+}
+.kaestchen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid #111;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+.schreiben tr.leerzeile td {
+  height: 30px;
+}
+.unterschriften {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-top: 64px;
+  font-size: 11.5px;
+  color: #444;
+}
+.unterschriften span {
+  display: block;
+  border-top: 1px solid #111;
+  margin-bottom: 4px;
+}
+@media (max-width: 760px) {
+  .schreiben.protokoll table.kopf th {
+    width: auto;
+  }
+  .schreiben.protokoll table {
+    display: block;
+    overflow-x: auto;
+  }
+  .unterschriften {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+@media print {
+  .schreiben.protokoll table.druckliste tr {
+    break-inside: avoid;
+  }
+  .unterschriften {
+    break-inside: avoid;
+  }
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {

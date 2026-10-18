@@ -18,6 +18,7 @@ const MELDUNGEN: Record<string, string> = {
   ruege_stufe_je_mangel: "Diese Rüge wurde gleichzeitig erfasst – bitte Seite neu laden.",
   gewerk_nr_je_projekt: "Diese Gewerknummer ist im Projekt bereits vergeben.",
   vorgang_abschnitt_je_projekt: "Dieser MaBV-Bauabschnitt ist bereits einem anderen Vorgang zugeordnet.",
+  abnahme_nr_je_projekt: "Die Abnahmenummer wurde gleichzeitig vergeben – bitte erneut speichern.",
   kaufvertrag_nr_je_projekt: "Diese Kaufvertragsnummer ist im Projekt bereits vergeben.",
 };
 
