@@ -9,6 +9,7 @@ export interface Gesellschaft {
   sachkontenlaenge: number | null;
   iban: string | null;
   bic: string | null;
+  steuernummer: string | null;
 }
 
 export interface Partner {
@@ -28,6 +29,8 @@ export interface Partner {
   bic: string | null;
   rollen: string[];
   freistellungGueltigBis: string | null;
+  steuernummer: string | null;
+  finanzamt: string | null;
 }
 
 export interface ProjektListe {

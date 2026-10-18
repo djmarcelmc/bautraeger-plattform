@@ -44,6 +44,8 @@ export const gesellschaft = pgTable("gesellschaft", {
   /** Auftraggeberkonto für SEPA-Überweisungen. */
   iban: text("iban"),
   bic: text("bic"),
+  /** Steuernummer des Leistungsempfängers (Bauabzugsteuer-Anmeldung). */
+  steuernummer: text("steuernummer"),
   ...zeitstempel,
 }, (t) => [uniqueIndex("gesellschaft_nr_je_mandant").on(t.mandantId, t.nr)]);
 
@@ -79,6 +81,9 @@ export const geschaeftspartner = pgTable("geschaeftspartner", {
   rollen: partnerRolle("rollen").array().notNull().default([]),
   /** Freistellungsbescheinigung § 48b EStG (Bauabzugsteuer). */
   freistellungGueltigBis: date("freistellung_gueltig_bis"),
+  /** Steuernummer und zuständiges Finanzamt des Leistenden (Bauabzugsteuer wird dort angemeldet). */
+  steuernummer: text("steuernummer"),
+  finanzamt: text("finanzamt"),
   ...zeitstempel,
 }, (t) => [uniqueIndex("partner_nr_je_mandant").on(t.mandantId, t.nr)]);
 
@@ -592,3 +597,24 @@ export const aenderungsprotokoll = pgTable("aenderungsprotokoll", {
   quelle: text("quelle").notNull().default("ui"),
   zeitpunkt: timestamp("zeitpunkt", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Bauabzugsteuer-Anmeldung (§ 48a EStG) je Leistungsempfänger, Leistendem und Monat. */
+export const bauabzugAnmeldung = pgTable(
+  "bauabzug_anmeldung",
+  {
+    id: id(),
+    gesellschaftId: uuid("gesellschaft_id").notNull().references(() => gesellschaft.id),
+    handwerkerId: uuid("handwerker_id").notNull().references(() => geschaeftspartner.id),
+    /** Anmeldungszeitraum JJJJ-MM */
+    monat: text("monat").notNull(),
+    /** Stand bei der Anmeldung */
+    gegenleistung: geld("gegenleistung").notNull(),
+    abzugsbetrag: geld("abzugsbetrag").notNull(),
+    angemeldetAm: date("angemeldet_am").notNull(),
+    abgefuehrtAm: date("abgefuehrt_am"),
+    bemerkung: text("bemerkung"),
+    angemeldetVon: text("angemeldet_von"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("bauabzug_anmeldung_eindeutig").on(t.gesellschaftId, t.handwerkerId, t.monat)],
+);

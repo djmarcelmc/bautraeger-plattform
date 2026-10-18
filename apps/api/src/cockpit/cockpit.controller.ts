@@ -3,7 +3,6 @@ import { schema } from "@bt/db";
 import {
   MABV_ABSCHNITTE,
   basiszinsFehlt,
-  bauabzugTermine,
   datumPlusTage,
   fristDringlichkeit,
   mangelStatus,
@@ -15,6 +14,7 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { DB, type Db } from "../db.provider.js";
+import { BauabzugService } from "../bauabzug/bauabzug.service.js";
 import { BauzeitService } from "../bauzeit/bauzeit.service.js";
 import { KostenService } from "../kosten/kosten.service.js";
 import { MaengelService } from "../maengel/maengel.service.js";
@@ -37,6 +37,7 @@ export class CockpitService {
     @Inject(MaengelService) private readonly maengel: MaengelService,
     @Inject(BauzeitService) private readonly bauzeit: BauzeitService,
     @Inject(BuergschaftenService) private readonly buergschaften: BuergschaftenService,
+    @Inject(BauabzugService) private readonly bauabzug: BauabzugService,
   ) {}
 
   async cockpit() {
@@ -249,25 +250,19 @@ export class CockpitService {
     }
 
     // ---------------------------------------------------------------- Steuern & Einstellungen
-    const abzuege = await this.db
-      .select({ datum: schema.zahlungsausgang.datum, bauabzugsteuer: schema.zahlungsausgang.bauabzugsteuer })
-      .from(schema.zahlungsausgang)
-      .innerJoin(er, eq(schema.zahlungsausgang.eingangsrechnungId, er.id))
-      .innerJoin(hv, eq(er.handwerkervertragId, hv.id))
-      .innerJoin(gw, eq(hv.gewerkId, gw.id))
-      .innerJoin(p, eq(gw.projektId, p.id))
-      .innerJoin(g, eq(p.gesellschaftId, g.id))
-      .where(and(eq(g.mandantId, mandantId), sql`${schema.zahlungsausgang.bauabzugsteuer} > 0`, sql`${schema.zahlungsausgang.datum} >= ${datumPlusTage(heute, -80)}`));
-    for (const t of bauabzugTermine(abzuege, heute))
+    for (const m of (await this.bauabzug.uebersicht(12, heute)).monate) {
+      if (!m.nichtAbgefuehrt || m.faelligAm > datumPlusTage(heute, 45)) continue;
+      const anzahl = m.offen ? `${m.offen} von ${m.zeilen.length} Handwerkern noch anzumelden` : `${m.nichtAbgefuehrt} Anmeldung(en) noch nicht abgeführt`;
       aufgaben.push({
         bereich: "steuern",
-        dringlichkeit: fristDringlichkeit(t.faelligAm, heute, 5, 20),
-        titel: `Bauabzugsteuer anmelden: ${t.monatText}`,
-        text: `bis ${de(t.faelligAm)} beim Finanzamt des Leistenden anmelden und abführen (§ 48a EStG)`,
-        datum: t.faelligAm,
-        betrag: t.summe,
-        link: "/zahlungslaeufe",
+        dringlichkeit: fristDringlichkeit(m.faelligAm, heute, 5, 20),
+        titel: `Bauabzugsteuer ${m.offen ? "anmelden" : "abführen"}: ${m.monatText}`,
+        text: `bis ${de(m.faelligAm)} beim Finanzamt des Leistenden (§ 48a EStG) – ${anzahl}`,
+        datum: m.faelligAm,
+        betrag: m.summe.abzugsbetrag,
+        link: "/bauabzug",
       });
+    }
     const fehlt = basiszinsFehlt(await this.db.select({ gueltigAb: schema.basiszins.gueltigAb }).from(schema.basiszins), heute);
     if (fehlt)
       aufgaben.push({ bereich: "einstellungen", dringlichkeit: "hoch", titel: "Basiszinssatz nachtragen", text: `Für das Halbjahr ab ${de(fehlt)} fehlt der Basiszins – Verzugszinsen werden sonst zu niedrig berechnet.`, link: "/einstellungen" });

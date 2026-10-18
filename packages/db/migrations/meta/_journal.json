@@ -92,6 +92,13 @@
       "when": 1792328248326,
       "tag": "0012_abhaengigkeiten",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792332622778,
+      "tag": "0013_bauabzug",
+      "breakpoints": true
     }
   ]
 }

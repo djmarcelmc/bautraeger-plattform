@@ -47,6 +47,8 @@ export function PartnerFelder({ p, vorschlagNr }: { p?: Partner; vorschlagNr?: n
           wert={p?.freistellungGueltigBis}
           hinweis="§ 48b EStG – ohne gültige Bescheinigung werden 15 % Bauabzugsteuer einbehalten"
         />
+        <Feld label="Steuernummer" name="steuernummer" wert={p?.steuernummer} hinweis="für die Bauabzugsteuer-Anmeldung" />
+        <Feld label="Zuständiges Finanzamt" name="finanzamt" wert={p?.finanzamt} hinweis="dort wird die Bauabzugsteuer angemeldet" />
       </Gruppe>
     </>
   );

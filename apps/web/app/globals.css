@@ -2623,3 +2623,60 @@ main.portal {
   align-items: center;
   margin: 18px 0 10px;
 }
+
+/* ------------------------------------------------------------------ Bauabzugsteuer */
+.bauabzugkopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 20px 12px;
+}
+.bauabzugkopf h2 {
+  margin: 0;
+}
+.bauabzugmonat {
+  margin-bottom: 18px;
+}
+.warntext {
+  color: var(--warnung);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bauabzugerfassung {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: top;
+}
+.bauabzugerfassung summary {
+  list-style: none;
+  cursor: pointer;
+}
+.bauabzugerfassung summary::-webkit-details-marker {
+  display: none;
+}
+.bauabzugerfassung[open] {
+  display: block;
+  margin: 8px 0 0;
+  text-align: left;
+}
+.bauabzugerfassung .formular {
+  margin-top: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 300px;
+}
+.anmeldedaten .datenliste {
+  grid-template-columns: minmax(160px, 240px) 1fr;
+}
+.schreiben table.belegliste th,
+.schreiben table.belegliste td {
+  font-size: 12px;
+  padding: 6px 5px;
+}
+.schreiben table.belegliste .klein {
+  color: #555;
+  font-size: 11px;
+}

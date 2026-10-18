@@ -59,6 +59,7 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/eingangsrechnungen\/[^/]+\/freigeben$/, "kostenFreigeben"],
   [/^\/eingangsrechnungen\/[^/]+\/zahlung$/, "zahlungen"],
   [/^\/zahlungslaeufe(\/|$)/, "zahlungen"],
+  [/^\/bauabzug(\/|$)/, "zahlungen"],
   [/^\/eingangsrechnungen(\/[^/]+\/pruefen)?$/, "kostenPruefen"],
   [/^\/(handwerkervertraege|nachtraege|gewerke)(\/|$)/, "kostenBearbeiten"],
   [/^\/projekte\/[^/]+\/(gewerke|gewerkeplan)$/, "kostenBearbeiten"],

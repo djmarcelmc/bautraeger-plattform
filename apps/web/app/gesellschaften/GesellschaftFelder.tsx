@@ -26,6 +26,7 @@ export function GesellschaftFelder({ g, vorschlagNr }: { g?: Gesellschaft; vorsc
       <Gruppe titel="Bankverbindung (SEPA-Auftraggeberkonto)">
         <Feld label="IBAN" name="iban" wert={g?.iban?.replace(/(.{4})/g, "$1 ").trim()} breit hinweis="Von diesem Konto werden die Zahlungsläufe überwiesen" />
         <Feld label="BIC" name="bic" wert={g?.bic} hinweis="optional" />
+        <Feld label="Steuernummer" name="steuernummer" wert={g?.steuernummer} hinweis="erscheint auf der Bauabzugsteuer-Anmeldung" />
       </Gruppe>
     </>
   );

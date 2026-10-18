@@ -46,6 +46,7 @@ export const GesellschaftEingabe = z.object({
   /** Auftraggeberkonto für SEPA-Überweisungen. */
   iban: ibanFeld(),
   bic: bicFeld(),
+  steuernummer: text(30),
 });
 export type GesellschaftEingabe = z.infer<typeof GesellschaftEingabe>;
 
@@ -75,6 +76,8 @@ export const PartnerEingabe = z
     bic: bicFeld(),
     rollen: z.array(z.enum(PARTNER_ROLLEN)).min(1, "Mindestens eine Rolle wählen"),
     freistellungGueltigBis: datum(),
+    steuernummer: text(30),
+    finanzamt: text(100),
   })
   .refine((p) => p.firma || p.nachname, { message: "Firma oder Nachname angeben", path: ["nachname"] });
 export type PartnerEingabe = z.infer<typeof PartnerEingabe>;
