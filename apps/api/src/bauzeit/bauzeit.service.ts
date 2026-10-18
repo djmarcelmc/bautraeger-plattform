@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema } from "@bt/db";
 import {
   abschnittsAnteil,
+  kritischerPfad,
   cent,
   MABV_ABSCHNITTE,
   datumPlusTage,
@@ -85,6 +86,8 @@ export class BauzeitService {
           .groupBy(schema.bautenstand.abschnitt)
       : [];
     const verplant = new Set(vorgaenge.flatMap((v) => v.gewerkIds));
+    const kritisch = kritischerPfad(vorgaenge);
+    const jeId = new Map(vorgaenge.map((v) => [v.id, v]));
     const name = new Map(gewerke.map((x) => [x.id, { id: x.id, nr: x.nr, bezeichnung: x.bezeichnung, trend: x.stand.trend, berechnet: x.stand.berechnet }]));
     return {
       vorgaenge: vorgaenge.map((v) => ({
@@ -92,6 +95,8 @@ export class BauzeitService {
         gewerke: v.gewerkIds.map((id) => name.get(id)).filter((x) => !!x),
         meilenstein: v.mabvAbschnitt ? meilensteinDatum(v) : null,
         gemeldet: v.mabvAbschnitt ? (meldungen.find((m) => m.abschnitt === v.mabvAbschnitt)?.n ?? 0) : null,
+        kritisch: vorgaenge.some((x) => x.abhaengigkeiten.length) && kritisch.has(v.id),
+        vorgaenger: v.abhaengigkeiten.filter((a) => jeId.has(a.vorgangId)).map((a) => ({ id: a.vorgangId, nr: jeId.get(a.vorgangId)!.nr, abstandTage: a.abstandTage })),
       })),
       einheiten: einheiten.length,
       beginn: vorgaenge.reduce<string | null>((a, v) => (!a || v.beginn < a ? v.beginn : a), null),

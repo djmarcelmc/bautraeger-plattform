@@ -28,7 +28,7 @@ const KURZ: Record<string, string> = {
 };
 
 /** Formularfelder eines Vorgangs. */
-function VorgangFelder({ v, gewerke, belegt }: { v?: Vorgang; gewerke: Kostenkontrolle["gewerke"]; belegt: Set<string> }) {
+function VorgangFelder({ v, gewerke, belegt, vorgaenge }: { v?: Vorgang; gewerke: Kostenkontrolle["gewerke"]; belegt: Set<string>; vorgaenge: Vorgang[] }) {
   return (
     <>
       <div className="raster">
@@ -56,6 +56,25 @@ function VorgangFelder({ v, gewerke, belegt }: { v?: Vorgang; gewerke: Kostenkon
         </select>
         <small>Mehrfachauswahl mit Strg bzw. ⌘. Der noch nicht berechnete Teil der Gewerke wird gleichmäßig über die Dauer des Vorgangs verteilt.</small>
       </label>
+      {vorgaenge.length > (v ? 1 : 0) && (
+        <label className="breit">
+          <span>Vorgänger (beginnt nach deren Ende)</span>
+          <select name="vorgaengerIds" multiple size={Math.min(6, Math.max(3, vorgaenge.length - 1))} defaultValue={v?.vorgaenger.map((x) => x.id) ?? []}>
+            {vorgaenge
+              .filter((x) => x.id !== v?.id)
+              .map((x) => {
+                const a = v?.vorgaenger.find((y) => y.id === x.id);
+                return (
+                  <option key={x.id} value={x.id}>
+                    {x.nr} {x.bezeichnung}
+                    {a && a.abstandTage !== 0 ? ` (${a.abstandTage > 0 ? "+" : ""}${a.abstandTage} Tage)` : ""}
+                  </option>
+                );
+              })}
+          </select>
+          <small>Verzögert sich ein Vorgänger, rückt dieser Vorgang samt seinen Nachfolgern automatisch nach (Dauer bleibt gleich). Erledigte Vorgänge bleiben stehen.</small>
+        </label>
+      )}
     </>
   );
 }
@@ -65,7 +84,7 @@ export async function BauzeitReiter({ projektId, baubeginnSoll }: { projektId: s
   const belegt = new Set(plan.vorgaenge.flatMap((v) => (v.mabvAbschnitt ? [v.mabvAbschnitt] : [])));
   const neuerVorgang = (
     <Formular aktion={vorgangAnlegen.bind(null, projektId)} knopf="Vorgang anlegen" zuruecksetzen>
-      <VorgangFelder gewerke={kosten.gewerke} belegt={belegt} />
+      <VorgangFelder gewerke={kosten.gewerke} belegt={belegt} vorgaenge={plan.vorgaenge} />
     </Formular>
   );
 
@@ -152,7 +171,10 @@ export async function BauzeitReiter({ projektId, baubeginnSoll }: { projektId: s
                     <span className="gantt-nr">{v.nr}</span>
                     <span className="gantt-text">
                       {v.bezeichnung}
-                      <small>{v.gewerke.length ? v.gewerke.map((g) => g.nr).join(", ") : v.mabvAbschnitt ? "" : "ohne Gewerk"}</small>
+                      <small>
+                        {v.gewerke.length ? v.gewerke.map((g) => g.nr).join(", ") : v.mabvAbschnitt ? "" : "ohne Gewerk"}
+                        {v.vorgaenger.length ? `${v.gewerke.length ? " · " : ""}nach ${v.vorgaenger.map((x) => x.nr).join(", ")}` : ""}
+                      </small>
                     </span>
                   </div>
                   <div className="gantt-spur">
@@ -160,7 +182,7 @@ export async function BauzeitReiter({ projektId, baubeginnSoll }: { projektId: s
                       <i key={m.links} className="gantt-raster" style={{ left: m.links }} />
                     ))}
                     <span
-                      className={`gantt-balken ${zustand}`}
+                      className={`gantt-balken ${zustand}${v.kritisch && !v.endeIst ? " kritisch" : ""}`}
                       style={{ left: pos(v.beginn), width: `calc(${pos(istEnde, 1)} - ${pos(v.beginn)})` }}
                       title={`${deDatum(v.beginn)} – ${deDatum(istEnde)}${v.endeIst ? " (erledigt)" : ""}`}
                     />
@@ -177,7 +199,7 @@ export async function BauzeitReiter({ projektId, baubeginnSoll }: { projektId: s
                 </summary>
                 <div className="gantt-bearbeiten">
                   <Formular aktion={vorgangAendern.bind(null, projektId, v.id)} knopf="Speichern">
-                    <VorgangFelder v={v} gewerke={kosten.gewerke} belegt={belegt} />
+                    <VorgangFelder v={v} gewerke={kosten.gewerke} belegt={belegt} vorgaenge={plan.vorgaenge} />
                   </Formular>
                   <Formular aktion={vorgangLoeschen.bind(null, projektId, v.id)} knopf="Vorgang löschen" knopfArt="gefahr" bestaetigen={`Vorgang „${v.bezeichnung}“ löschen?`} className="formular rechts" />
                 </div>
@@ -189,7 +211,13 @@ export async function BauzeitReiter({ projektId, baubeginnSoll }: { projektId: s
       </div>
       <p className="hint gantt-legende">
         <span className="gantt-balken geplant" /> geplant <span className="gantt-balken laeuft" /> läuft <span className="gantt-balken verzug" /> über Plan-Ende{" "}
-        <span className="gantt-balken erledigt" /> erledigt <Flag size={11} /> MaBV-Meilenstein mit gemeldeten Einheiten · Zeile anklicken zum Bearbeiten
+        <span className="gantt-balken erledigt" /> erledigt{" "}
+        {plan.vorgaenge.some((v) => v.kritisch) ? (
+          <>
+            <span className="gantt-balken geplant kritisch" /> kritischer Pfad (ohne Puffer bis zum Bauende){" "}
+          </>
+        ) : null}
+        <Flag size={11} /> MaBV-Meilenstein mit gemeldeten Einheiten · Zeile anklicken zum Bearbeiten
       </p>
 
       {plan.gewerkeOhneVorgang.length ? (

@@ -1668,6 +1668,10 @@ table.berichtstabelle .trenner {
   background: var(--gut);
   border-color: var(--gut);
 }
+.gantt-balken.kritisch {
+  border: 2px solid var(--gefahr);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gefahr) 18%, transparent);
+}
 .gantt-meilenstein {
   position: absolute;
   top: 2px;

@@ -136,4 +136,47 @@ describe.skipIf(!url)("Bauzeitenplan und Liquiditätsplan (Integration)", () => 
     ws.eachRow((row) => row.eachCell((c) => texte.push(String(c.value))));
     expect(texte).toContain("KW 43/2026");
   });
+
+  it("legt mit der Vorlage Abhängigkeiten an und markiert den kritischen Pfad", async () => {
+    const plan = (await http.get(`/api/projekte/${projektId}/bauzeitenplan`)).body;
+    const nach = (name: string) => plan.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === name);
+    expect(nach("Rohbau").vorgaenger).toEqual([{ id: nach("Erdarbeiten, Baugrube").id, nr: 50, abstandTage: 2 }]);
+    expect(nach("Innenputz").vorgaenger.map((v: { nr: number }) => v.nr).sort()).toEqual([110, 120, 130, 140]);
+    expect(nach("Restarbeiten, Abnahme Gemeinschaftseigentum").kritisch).toBe(true);
+    expect(nach("Finanzierung, Versicherung, Vertrieb").kritisch).toBe(false);
+  });
+
+  it("schiebt bei Verzug alle Nachfolger mit und protokolliert das", async () => {
+    const plan = (await http.get(`/api/projekte/${projektId}/bauzeitenplan`)).body;
+    const roh = plan.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === "Rohbau");
+    const zimmerVorher = plan.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === "Zimmerarbeiten");
+    const ende = new Date(Date.parse(roh.ende) + 21 * 86_400_000).toISOString().slice(0, 10); // 3 Wochen Verzug
+    const res = await als(http.put(`/api/vorgaenge/${roh.id}`)).send({ bezeichnung: "Rohbau", beginn: roh.beginn, ende, gewerkIds: roh.gewerkIds, vorgaengerIds: roh.vorgaenger.map((v: { id: string }) => v.id) });
+    expect(res.status).toBe(200);
+    const tage = Object.fromEntries(res.body.nachfolgerVerschoben.map((v: { bezeichnung: string; tage: number }) => [v.bezeichnung, v.tage]));
+    // Direkte Kette rückt voll nach, Puffer werden aufgebraucht: Fenster hatte 2 Wochen, Fliesen 1 Woche Luft
+    expect(tage).toMatchObject({ Zimmerarbeiten: 21, "Dachdecker und Flaschner": 21, Estrich: 21, "Fenster, Rollläden, Garagentor": 7, "Fliesen, Treppen, Balkone": 14 });
+    // Maler, Außenanlage und Restarbeiten haben genug Puffer; Begleitvorgänge und Gerüst bleiben ohnehin stehen
+    for (const fest of ["Maler, Schlosser", "Restarbeiten, Abnahme Gemeinschaftseigentum", "Finanzierung, Versicherung, Vertrieb", "Gerüst"]) expect(tage[fest]).toBeUndefined();
+    const nachher = (await http.get(`/api/projekte/${projektId}/bauzeitenplan`)).body.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === "Zimmerarbeiten");
+    expect(Date.parse(nachher.beginn) - Date.parse(zimmerVorher.beginn)).toBe(21 * 86_400_000);
+    const protokoll = (await http.get(`/api/protokoll/${nachher.id}`)).body;
+    expect(JSON.stringify(protokoll[0].neu)).toContain("Vorgänger verschoben");
+  });
+
+  it("weist Zirkelbezüge ab und entfernt Verweise beim Löschen", async () => {
+    const plan = (await http.get(`/api/projekte/${projektId}/bauzeitenplan`)).body;
+    const erd = plan.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === "Erdarbeiten, Baugrube");
+    const rest = plan.vorgaenge.find((v: { bezeichnung: string }) => v.bezeichnung === "Restarbeiten, Abnahme Gemeinschaftseigentum");
+    const zirkel = await als(http.put(`/api/vorgaenge/${erd.id}`)).send({ bezeichnung: erd.bezeichnung, beginn: erd.beginn, ende: erd.ende, mabvAbschnitt: "erdarbeiten", vorgaengerIds: [...erd.vorgaenger.map((v: { id: string }) => v.id), rest.id] });
+    expect(zirkel.status).toBe(400);
+    expect(zirkel.body.message).toMatch(/^Zirkelbezug – „Erdarbeiten, Baugrube“ würde auf sich selbst warten: „Erdarbeiten, Baugrube“ wartet auf „Restarbeiten, Abnahme Gemeinschaftseigentum“ wartet auf .* wartet auf „Erdarbeiten, Baugrube“\.$/);
+    expect((await als(http.put(`/api/vorgaenge/${erd.id}`)).send({ bezeichnung: erd.bezeichnung, beginn: erd.beginn, ende: erd.ende, vorgaengerIds: [erd.id] })).status).toBe(400);
+    const neu = (await als(http.post(`/api/projekte/${projektId}/vorgaenge`)).send({ bezeichnung: "Zwischenschritt", beginn: rest.beginn, ende: rest.ende, vorgaengerIds: [erd.id] })).body;
+    await als(http.put(`/api/vorgaenge/${rest.id}`)).send({ bezeichnung: rest.bezeichnung, beginn: rest.beginn, ende: rest.ende, mabvAbschnitt: "fertigstellung", vorgaengerIds: [...rest.vorgaenger.map((v: { id: string }) => v.id), neu.id] });
+    expect((await als(http.delete(`/api/vorgaenge/${neu.id}`))).status).toBe(200);
+    const restNachher = (await http.get(`/api/projekte/${projektId}/bauzeitenplan`)).body.vorgaenge.find((v: { id: string }) => v.id === rest.id);
+    expect(restNachher.vorgaenger.map((v: { id: string }) => v.id)).not.toContain(neu.id);
+    expect(restNachher.vorgaenger).toHaveLength(1);
+  });
 });

@@ -14,7 +14,7 @@ async function ausfuehren(projektId: string, fn: () => Promise<unknown>, meldung
   return meldung ? { meldung } : {};
 }
 
-const daten = (fd: FormData) => formularDaten(fd, { listen: ["gewerkIds"] });
+const daten = (fd: FormData) => formularDaten(fd, { listen: ["gewerkIds", "vorgaengerIds"] });
 
 export async function bauzeitenplanAnlegen(projektId: string, fd: FormData) {
   return ausfuehren(projektId, () => api(`/projekte/${projektId}/bauzeitenplan`, { method: "POST", body: formularDaten(fd) }), "Bauzeitenplan angelegt.");
@@ -33,7 +33,14 @@ export async function vorgangAnlegen(projektId: string, fd: FormData) {
 }
 
 export async function vorgangAendern(projektId: string, id: string, fd: FormData) {
-  return ausfuehren(projektId, () => api(`/vorgaenge/${id}`, { method: "PUT", body: daten(fd) }), "Gespeichert.");
+  let verschoben: { bezeichnung: string; tage: number }[] = [];
+  const r = await ausfuehren(projektId, async () => {
+    verschoben = (await api<{ nachfolgerVerschoben: { bezeichnung: string; tage: number }[] }>(`/vorgaenge/${id}`, { method: "PUT", body: daten(fd) })).nachfolgerVerschoben;
+  });
+  if (r.fehler) return r;
+  if (!verschoben.length) return { meldung: "Gespeichert." };
+  const liste = verschoben.map((v) => `${v.bezeichnung} (+${v.tage} T.)`).join(", ");
+  return { meldung: `Gespeichert. ${verschoben.length} ${verschoben.length === 1 ? "Nachfolger" : "Nachfolger"} mitverschoben: ${liste}` };
 }
 
 export async function vorgangLoeschen(projektId: string, id: string) {
