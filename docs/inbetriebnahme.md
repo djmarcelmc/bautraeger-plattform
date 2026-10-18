@@ -67,6 +67,7 @@ von der Plattform selbst berechnet und geprüft werden:
       mit Personenkontolänge (z. B. 70001) werden übernommen, sonst Basis + Partnernummer
 - [ ] DATEV-Export einmal mit dem Steuerberater testen (Testimport, Festschreibung erst danach im Echtbetrieb)
 - [ ] SEPA-Datei einmal im Onlinebanking der Hausbank einlesen (ohne Ausführung)
+- [ ] IBAN je Gesellschaft eintragen und einen Kontoauszug (CAMT.053, sonst MT940) im **Bankabgleich** einlesen; Zuordnung mit den offenen Posten vergleichen
 
 ## 7. Umstellung
 

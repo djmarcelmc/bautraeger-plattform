@@ -127,6 +127,13 @@
       "when": 1792338934256,
       "tag": "0017_buchungsjournal",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792340168729,
+      "tag": "0018_bankabgleich",
+      "breakpoints": true
     }
   ]
 }

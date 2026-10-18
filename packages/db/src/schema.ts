@@ -266,6 +266,8 @@ export const zahlungseingang = pgTable("zahlungseingang", {
   datum: date("datum").notNull(),
   betrag: geld("betrag").notNull(),
   verwendungszweck: text("verwendungszweck"),
+  /** Aus dem Bankabgleich zugeordnet */
+  bankumsatzId: uuid("bankumsatz_id").references((): AnyPgColumn => bankumsatz.id),
   ...zeitstempel,
 });
 
@@ -655,4 +657,52 @@ export const sonderwunsch = pgTable(
     ...zeitstempel,
   },
   (t) => [uniqueIndex("sonderwunsch_nr_je_vertrag").on(t.kaufvertragId, t.nr)],
+);
+
+// ---------------------------------------------------------------- Bankabgleich
+
+/** Eingelesene Kontoauszugsdatei (CAMT.053/MT940). */
+export const bankimport = pgTable("bankimport", {
+  id: id(),
+  gesellschaftId: uuid("gesellschaft_id").notNull().references(() => gesellschaft.id),
+  dateiname: text("dateiname").notNull(),
+  format: text("format").notNull(),
+  kontoIban: text("konto_iban"),
+  von: date("von"),
+  bis: date("bis"),
+  anzahl: integer("anzahl").notNull(),
+  neu: integer("neu").notNull(),
+  importiertVon: text("importiert_von"),
+  ...zeitstempel,
+});
+
+export const bankumsatzStatus = pgEnum("bankumsatz_status", ["offen", "zugeordnet", "ignoriert"]);
+
+/** Umsatz vom Bankkonto einer Gesellschaft; Zuordnung zu Zahlungseingängen (Gutschriften) oder Zahlungsläufen/-ausgängen (Belastungen). */
+export const bankumsatz = pgTable(
+  "bankumsatz",
+  {
+    id: id(),
+    gesellschaftId: uuid("gesellschaft_id").notNull().references(() => gesellschaft.id),
+    bankimportId: uuid("bankimport_id").notNull().references(() => bankimport.id),
+    /** SHA-256 über Konto, Datum, Betrag, Referenzen und Text – verhindert doppelten Import */
+    schluessel: text("schluessel").notNull(),
+    buchungsdatum: date("buchungsdatum").notNull(),
+    valuta: date("valuta"),
+    betrag: geld("betrag").notNull(),
+    waehrung: text("waehrung").notNull().default("EUR"),
+    name: text("name"),
+    iban: text("iban"),
+    verwendungszweck: text("verwendungszweck").notNull().default(""),
+    endToEndId: text("end_to_end_id"),
+    bankreferenz: text("bankreferenz"),
+    status: bankumsatzStatus("status").notNull().default("offen"),
+    zahlungslaufId: uuid("zahlungslauf_id").references(() => zahlungslauf.id),
+    zahlungsausgangId: uuid("zahlungsausgang_id").references(() => zahlungsausgang.id),
+    bemerkung: text("bemerkung"),
+    zugeordnetVon: text("zugeordnet_von"),
+    zugeordnetAm: timestamp("zugeordnet_am", { withTimezone: true }),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("bankumsatz_schluessel").on(t.gesellschaftId, t.schluessel), index("bankumsatz_status").on(t.gesellschaftId, t.status)],
 );

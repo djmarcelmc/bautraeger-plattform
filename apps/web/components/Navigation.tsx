@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeftRight,
   BarChart3,
   BookOpenCheck,
   Building2,
@@ -36,6 +37,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
       { href: "/zahlungslaeufe", text: "Zahlungsläufe", icon: Banknote },
+      { href: "/bankabgleich", text: "Bankabgleich", icon: ArrowLeftRight },
       { href: "/bauabzug", text: "Bauabzugsteuer", icon: Landmark },
       { href: "/buchhaltung", text: "Buchhaltung", icon: BookOpenCheck },
       { href: "/buergschaften", text: "Bürgschaften", icon: ShieldCheck },
