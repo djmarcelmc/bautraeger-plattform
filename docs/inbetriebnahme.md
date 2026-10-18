@@ -59,7 +59,8 @@ von der Plattform selbst berechnet und geprüft werden:
 
 ## 6. Abgleich vor dem Echtbetrieb
 
-- [ ] Offene Posten Verkauf = Debitorensaldo laut Buchhaltung
+- [ ] Offene Posten Verkauf = Debitorensaldo laut Buchhaltung: unter **Buchhaltung › Saldenliste & OP-Abgleich** die
+      Summen- und Saldenliste (Personenkonten) aus DATEV als CSV zum selben Stichtag hochladen; Abweichungen klären
 - [ ] Kostenstand je Projekt = Werte aus AMADEUS X bzw. Kostenkontrolle
 - [ ] MaBV-Prüfbericht ohne unerklärte Feststellungen
 - [ ] Kontenzuordnung je Gesellschaft unter **Buchhaltung** mit dem Steuerberater abstimmen (Bank, Erhaltene

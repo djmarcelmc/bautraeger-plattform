@@ -1,6 +1,6 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { schema, type DbOderTx } from "@bt/db";
-import { extfBuchungsstapel, journalAbgleich, journalSoll, kontierungFuer, money, type JournalIst, type JournalPosten, type JournalQuellen, type QuelleTyp } from "@bt/domain";
+import { datevSaldenLesen, extfBuchungsstapel, journalAbgleich, journalSoll, kontensalden, kontierungFuer, money, offenePosten, saldenAbgleich, summe, type JournalIst, type JournalPosten, type JournalQuellen, type QuelleTyp } from "@bt/domain";
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
@@ -56,7 +56,7 @@ export class BuchhaltungService {
         .innerJoin(p, eq(kv.projektId, p.id))
         .where(eq(p.gesellschaftId, gesellschaftId)),
       tx
-        .select({ id: ze.id, datum: ze.datum, betrag: ze.betrag, rechnungsnr: zan.rechnungsnr, debitorId, kostenstelle, kaufvertragId: kv.id })
+        .select({ id: ze.id, zahlungsanforderungId: ze.zahlungsanforderungId, datum: ze.datum, betrag: ze.betrag, rechnungsnr: zan.rechnungsnr, debitorId, kostenstelle, kaufvertragId: kv.id })
         .from(ze)
         .innerJoin(kv, eq(ze.kaufvertragId, kv.id))
         .innerJoin(p, eq(kv.projektId, p.id))
@@ -157,6 +157,36 @@ export class BuchhaltungService {
       if (r.neu.length || r.aendern.length || r.loeschen.length) await protokollieren(tx, { tabelle: "buchung", id: gesellschaftId, aktion: "update", neu: { abgleich: stand }, benutzer });
       return { ...stand, ohnePartner, verweise };
     });
+  }
+
+  /**
+   * Saldenliste der Personenkonten zum Stichtag: Journal-Saldo, offene Posten aus Verkauf/Kosten und optional der
+   * Saldo aus einer DATEV-Saldenliste (CSV). Vorher wird das Journal abgeglichen.
+   */
+  async saldenliste(gesellschaftId: string, stichtag: string, benutzer: string, datevDatei?: Uint8Array) {
+    const ges = await this.gesellschaft(gesellschaftId);
+    await this.abgleichen(gesellschaftId, benutzer);
+    const k = kontierungFuer(ges);
+    const [{ q }, buchungen] = await Promise.all([
+      this.quellen(this.db, gesellschaftId),
+      this.db.select({ konto: b.konto, gegenkonto: b.gegenkonto, betrag: b.betrag, sollHaben: b.sollHaben, belegdatum: b.belegdatum }).from(b).where(and(eq(b.gesellschaftId, gesellschaftId), lte(b.belegdatum, stichtag))),
+    ]);
+    const datev = datevDatei ? datevSaldenLesen(datevDatei) : null;
+    if (datev?.fehler) throw new BadRequestException(`DATEV-Saldenliste: ${datev.fehler}`);
+    const namen = new Map<string, string>(datev?.namen ?? []);
+    const posten = offenePosten(q, k, stichtag);
+    for (const p of posten) namen.set(p.konto, p.name);
+    const zeilen = saldenAbgleich(kontensalden(buchungen, stichtag), posten, { sachkontenlaenge: ges.sachkontenlaenge ?? 4, kreditorBasis: k.kreditorBasis, namen, datev: datev?.salden });
+    const sum = (f: (z: (typeof zeilen)[number]) => string | null, art: string) => summe(zeilen.filter((z) => z.art === art).map((z) => money(f(z) ?? "0"))).toFixed(2);
+    return {
+      gesellschaft: { id: ges.id, nr: ges.nr, name: ges.name },
+      stichtag,
+      mitDatev: !!datev,
+      zeilen,
+      summen: Object.fromEntries(
+        (["debitor", "kreditor"] as const).map((art) => [art, { journal: sum((z) => z.journal, art), op: sum((z) => z.op, art), datev: datev ? sum((z) => z.datev, art) : null, abweichungen: zeilen.filter((z) => z.art === art && (!money(z.differenzOp).isZero() || (z.differenzDatev !== null && !money(z.differenzDatev).isZero()))).length }]),
+      ),
+    };
   }
 
   /** Wie viele Buchungen wären nach dem Abgleich noch nicht exportiert? (nur lesend, z. B. fürs Cockpit) */

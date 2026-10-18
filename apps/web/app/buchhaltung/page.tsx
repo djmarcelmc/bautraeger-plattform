@@ -117,6 +117,9 @@ export default async function Buchhaltung({ searchParams }: { searchParams: Prom
             Buchungsjournal aus Verkauf und Kosten · DATEV-Export für {j.gesellschaft.nr} {j.gesellschaft.name}
           </p>
         </div>
+        <a className="knopf zweitrangig" href={`/buchhaltung/saldenliste?g=${gid}`}>
+          Saldenliste &amp; OP-Abgleich
+        </a>
       </div>
 
       {abgleichText ? (

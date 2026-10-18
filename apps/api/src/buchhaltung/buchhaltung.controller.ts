@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Header, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, Res, StreamableFile } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Header, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import { schema } from "@bt/db";
 import { DatevExportEingabe, KontierungEingabe, kontierungFuer } from "@bt/domain";
 import { z } from "zod";
@@ -79,6 +81,20 @@ export class BuchhaltungController {
         ),
       );
     return this.buchhaltung.belege(gesellschaftId, ids.map((x) => x.id));
+  }
+
+  @Get("saldenliste")
+  saldenliste(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string, @Query("stichtag") stichtag: string | undefined, @Benutzer() benutzer: string) {
+    return this.buchhaltung.saldenliste(gesellschaftId, datum(stichtag) ?? new Date().toISOString().slice(0, 10), benutzer);
+  }
+
+  /** Saldenliste mit Vergleich gegen eine DATEV-Saldenliste (CSV). */
+  @Post("saldenliste")
+  @UseInterceptors(FileInterceptor("datei", { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }))
+  saldenlisteVergleich(@UploadedFile() datei: Express.Multer.File | undefined, @Body() body: { gesellschaftId?: string; stichtag?: string }, @Benutzer() benutzer: string) {
+    if (!datei?.size) throw new BadRequestException("Bitte die Saldenliste aus DATEV (CSV) auswählen.");
+    if (!/^[0-9a-f-]{36}$/.test(body?.gesellschaftId ?? "")) throw new BadRequestException("Gesellschaft wählen");
+    return this.buchhaltung.saldenliste(body.gesellschaftId!, datum(body.stichtag) ?? new Date().toISOString().slice(0, 10), benutzer, new Uint8Array(datei.buffer));
   }
 
   @Get("kontierung/:gesellschaftId")

@@ -93,10 +93,10 @@ export interface JournalQuellen {
   anforderungen: { id: string; kaufvertragId: string; rechnungsnr: string; angefordertAm: string; betrag: string; debitorNr: number; debitorKonto?: string | null; name: string; kostenstelle: string | null }[];
   /** Kaufverträge mit Übergabe (Besitzübergang = Gewinnrealisierung) */
   uebergaben: { kaufvertragId: string; datum: string; vertragNr: string; name: string; kostenstelle: string | null }[];
-  eingaenge: { id: string; datum: string; betrag: string; debitorNr: number; debitorKonto?: string | null; name: string; rechnungsnr: string | null; kostenstelle: string | null }[];
+  eingaenge: { id: string; zahlungsanforderungId?: string | null; datum: string; betrag: string; debitorNr: number; debitorKonto?: string | null; name: string; rechnungsnr: string | null; kostenstelle: string | null }[];
   /** Freigegebene oder bezahlte Rechnungen; Betrag = geprüft fällig (nach Nachlass, Umlagen und Einbehalt, vor Skonto). */
   rechnungen: { id: string; rechnungsnr: string; rechnungsdatum: string; betrag: string; kreditorNr: number; kreditorKonto?: string | null; name: string; kostenstelle: string | null }[];
-  ausgaenge: { id: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; kreditorNr: number; kreditorKonto?: string | null; name: string; rechnungsnr: string; kostenstelle: string | null }[];
+  ausgaenge: { id: string; eingangsrechnungId?: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; kreditorNr: number; kreditorKonto?: string | null; name: string; rechnungsnr: string; kostenstelle: string | null }[];
   abfuehrungen: { id: string; abgefuehrtAm: string; abzugsbetrag: string; monat: string; name: string }[];
 }
 

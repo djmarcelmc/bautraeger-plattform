@@ -183,6 +183,19 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
     );
   });
 
+  it("Saldenliste: Journal = offene Posten, Abweichung zur DATEV-Saldenliste", async () => {
+    const l = (await als(http.get(`/api/buchhaltung/saldenliste?gesellschaftId=${ids.g}`))).body;
+    expect(l.zeilen.map((z: { konto: string; journal: string; op: string; differenzOp: string }) => [z.konto, z.journal, z.op, z.differenzOp])).toEqual([["12345", "60000.00", "60000.00", "0.00"]]);
+    expect(l.summen.debitor).toMatchObject({ journal: "60000.00", op: "60000.00", abweichungen: 0 });
+    const csv = Buffer.from("Konto;Beschriftung;Saldo;S/H\n12345;Müller;59.000,00;S\n70001;Rohbau KG;0,00;H\n", "utf8");
+    const v = await als(http.post("/api/buchhaltung/saldenliste")).field("gesellschaftId", ids.g).attach("datei", csv, "SuSa.csv");
+    expect(v.status).toBe(201);
+    expect(v.body.mitDatev).toBe(true);
+    expect(v.body.zeilen[0]).toMatchObject({ konto: "12345", datev: "59000.00", differenzDatev: "1000.00" });
+    expect(v.body.summen.debitor.abweichungen).toBe(1);
+    expect((await als(http.post("/api/buchhaltung/saldenliste")).field("gesellschaftId", ids.g).attach("datei", Buffer.from("x;y\n1;2"), "a.csv")).body.message).toMatch(/Konto/);
+  });
+
   it("protokolliert Abgleich und Export", async () => {
     const p = (await http.get(`/api/protokoll/${ids.g}`)).body as { neu: Record<string, unknown> }[];
     expect(p.some((e) => e.neu && "export" in e.neu)).toBe(true);
