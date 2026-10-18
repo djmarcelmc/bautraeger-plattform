@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Header, Inject, Param, ParseUUIDPipe, Post, Put, Query, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, Res, StreamableFile } from "@nestjs/common";
 import { schema } from "@bt/db";
 import { DatevExportEingabe, KontierungEingabe, kontierungFuer } from "@bt/domain";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lte } from "drizzle-orm";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
@@ -45,10 +45,40 @@ export class BuchhaltungController {
 
   @Post("export")
   @Header("Content-Type", "text/csv; charset=windows-1252")
-  async export(@Body() body: unknown, @Benutzer() benutzer: string) {
+  async export(@Body() body: unknown, @Benutzer() benutzer: string, @Res({ passthrough: true }) res: { setHeader(k: string, v: string): void }) {
     const e = pruefe(DatevExportEingabe, body);
     const r = await this.buchhaltung.exportieren(e, benutzer);
+    res.setHeader("X-Export-Stapel", r.stapel);
     return new StreamableFile(r.datei, { disposition: `attachment; filename="${r.dateiname}"` });
+  }
+
+  @Get("stapel")
+  stapel(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string) {
+    return this.buchhaltung.stapelListe(gesellschaftId);
+  }
+
+  /** Einen früheren Stapel erneut herunterladen (keine neue Festschreibung). */
+  @Get("stapel/:stapel")
+  @Header("Content-Type", "text/csv; charset=windows-1252")
+  async stapelDatei(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string, @Param("stapel") stapel: string) {
+    if (!/^EXTF-\d{14}$/.test(stapel)) throw new NotFoundException("Exportstapel nicht gefunden");
+    const r = await this.buchhaltung.stapelErneut(gesellschaftId, stapel);
+    return new StreamableFile(r.datei, { disposition: `attachment; filename="${r.dateiname}"` });
+  }
+
+  /** Belege zu einem Stapel bzw. zu allen exportierten Buchungen eines Zeitraums. */
+  @Get("belege")
+  async belege(@Query("gesellschaftId", ParseUUIDPipe) gesellschaftId: string, @Query("stapel") stapel?: string, @Query("von") von?: string, @Query("bis") bis?: string) {
+    const ids = await this.db
+      .select({ id: schema.buchung.id })
+      .from(schema.buchung)
+      .where(
+        and(
+          eq(schema.buchung.gesellschaftId, gesellschaftId),
+          stapel ? eq(schema.buchung.exportStapel, stapel) : and(isNotNull(schema.buchung.exportiertAm), datum(von) ? gte(schema.buchung.belegdatum, datum(von)!) : undefined, datum(bis) ? lte(schema.buchung.belegdatum, datum(bis)!) : undefined),
+        ),
+      );
+    return this.buchhaltung.belege(gesellschaftId, ids.map((x) => x.id));
   }
 
   @Get("kontierung/:gesellschaftId")

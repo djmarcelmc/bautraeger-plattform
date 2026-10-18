@@ -23,11 +23,12 @@ export function ExportFormular({ gesellschaftId, von, bis, bereit, neu }: { gese
         return;
       }
       const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "EXTF_Buchungsstapel.csv";
+      const fehlend = Number(res.headers.get("x-belege-fehlend") ?? 0);
       const url = URL.createObjectURL(await res.blob());
       const a = Object.assign(document.createElement("a"), { href: url, download: name });
       a.click();
       URL.revokeObjectURL(url);
-      setMeldung(`${name} erstellt – die Buchungen sind als exportiert festgeschrieben.`);
+      setMeldung(`${name} erstellt – die Buchungen sind als exportiert festgeschrieben.${fehlend ? ` ${fehlend} Beleg(e) fehlen in der Ablage (siehe Belegliste).` : ""}`);
       router.refresh();
     } finally {
       setLaeuft(false);
@@ -51,11 +52,15 @@ export function ExportFormular({ gesellschaftId, von, bis, bereit, neu }: { gese
         <input type="checkbox" name="nurNeue" defaultChecked />
         <span>nur noch nicht exportierte Buchungen ({neu})</span>
       </label>
+      <label className="haken">
+        <input type="checkbox" name="mitBelegen" defaultChecked />
+        <span>Belege beifügen (ZIP mit Zahlungsanforderungen, Rechnungsscans und Belegliste)</span>
+      </label>
       {fehler ? <p className="fehler">{fehler}</p> : null}
       {meldung ? <p className="meldung">{meldung}</p> : null}
       <div className="knopfleiste">
         <button type="submit" disabled={!bereit || laeuft}>
-          <Download size={16} /> {laeuft ? "Export läuft …" : "DATEV-Buchungsstapel erstellen"}
+          <Download size={16} /> {laeuft ? "Export läuft – Belege werden zusammengestellt …" : "DATEV-Export erstellen"}
         </button>
       </div>
       {!bereit ? <p className="hint">Für den Export fehlen DATEV-Berater- und Mandantennummer bei der Gesellschaft.</p> : null}

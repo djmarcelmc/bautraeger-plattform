@@ -66,7 +66,9 @@ von der Plattform selbst berechnet und geprüft werden:
       Anzahlungen, Erlöse ab Übergabe, Bauleistungen, Skonti, Bauabzugsteuer, Personenkontenbereiche). Personenkonten: eigenes Debitoren-/Kreditorenkonto
       am Geschäftspartner (auch per Import, Spalten „Debitorenkonto“/„Kreditorenkonto“), sonst Partnernummer mit
       Personenkontolänge (z. B. 70001), sonst Basis + Partnernummer
-- [ ] DATEV-Export einmal mit dem Steuerberater testen (Testimport, Festschreibung erst danach im Echtbetrieb)
+- [ ] DATEV-Export einmal mit dem Steuerberater testen (Testimport, Festschreibung erst danach im Echtbetrieb);
+      Weg für die Belege abstimmen (ZIP „mit Belegen“ → DATEV Unternehmen online „Belege hochladen“). Rechnungsscans
+      an der Eingangsrechnung ablegen, damit sie im Paket landen
 - [ ] SEPA-Datei einmal im Onlinebanking der Hausbank einlesen (ohne Ausführung)
 - [ ] IBAN je Gesellschaft eintragen und einen Kontoauszug (CAMT.053, sonst MT940) im **Bankabgleich** einlesen; Zuordnung mit den offenen Posten vergleichen
 

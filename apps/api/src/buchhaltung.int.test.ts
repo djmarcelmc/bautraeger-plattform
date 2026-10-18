@@ -94,9 +94,26 @@ describe.skipIf(!url)("Buchungsjournal (Integration)", () => {
   it("exportiert nur mit DATEV-Daten, schreibt fest und exportiert danach nur Neues", async () => {
     expect((await exportieren()).status).toBe(409);
     await als(http.put(`/api/gesellschaften/${ids.g}`)).send({ nr: 1, name: "Muster Wohnbau GmbH", datevBeraternr: 1234567, datevMandantennr: 42 });
+    // Rechnungsscan an der Eingangsrechnung → Beleg für Rechnung und Zahlung
+    await als(http.post("/api/dokumente")).field("objektTyp", "eingangsrechnung").field("objektId", ids.r).attach("datei", Buffer.from("%PDF-1.4 scan"), "Rechnung R 300-1.pdf");
     const r = await exportieren();
     expect(r.status).toBe(201);
     expect(r.headers["content-disposition"]).toMatch(/EXTF-\d{14}_1_/);
+    const stapel = r.headers["x-export-stapel"];
+    expect(stapel).toMatch(/^EXTF-\d{14}$/);
+    const belege = (await http.get(`/api/buchhaltung/belege?gesellschaftId=${ids.g}&stapel=${stapel}`)).body;
+    expect(belege).toEqual([
+      expect.objectContaining({ art: "Zahlungsanforderung", id: ids.za, belegnr: expect.stringMatching(/^ZA-/), dokumente: [], pfad: `/zahlungsanforderungen/${ids.za}` }),
+      expect.objectContaining({ art: "Eingangsrechnung", id: ids.r, belegnr: "R300/1", pfad: null, dokumente: [expect.objectContaining({ dateiname: "Rechnung R 300-1.pdf" })] }),
+    ]);
+    const liste = (await http.get(`/api/buchhaltung/stapel?gesellschaftId=${ids.g}`)).body;
+    expect(liste[0]).toMatchObject({ stapel, anzahl: 5 });
+    const kopie = await http.get(`/api/buchhaltung/stapel/${stapel}?gesellschaftId=${ids.g}`).buffer(true).parse((res, cb) => {
+      const t: Buffer[] = [];
+      res.on("data", (c: Buffer) => t.push(c));
+      res.on("end", () => cb(null, Buffer.concat(t)));
+    });
+    expect((kopie.body as Buffer).toString("latin1").split("\r\n").filter((z) => /^\d/.test(z))).toHaveLength(5);
     const text = (r.body as Buffer).toString("latin1").split("\r\n");
     expect(text[0]).toMatch(/^"EXTF";700;21;"Buchungsstapel"/);
     expect(text.filter((z) => /^\d/.test(z))).toHaveLength(5);
