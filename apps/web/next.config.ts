@@ -9,6 +9,8 @@ const config: NextConfig = {
   outputFileTracingRoot: join(import.meta.dirname, "../.."),
   // Dokument-Uploads bis 25 MB laufen über Server Actions
   experimental: { serverActions: { bodySizeLimit: "26mb" } },
+  // PDF-Erzeugung der Schreiben über Chromium (lib/pdf.ts)
+  serverExternalPackages: ["playwright-core"],
 };
 
 export default config;

@@ -65,6 +65,8 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/projekte\/[^/]+\/(gewerke|gewerkeplan)$/, "kostenBearbeiten"],
   [/^\/(zahlungseingaenge|mahnungen)(\/|$)/, "verkaufZahlungen"],
   [/^\/(kaufvertraege|sonderwuensche)(\/|$)/, "verkauf"],
+  [/^\/schreiben\/(zahlungsanforderung|sonderwunsch)\//, "verkauf"],
+  [/^\/schreiben\/mahnung\//, "verkaufZahlungen"],
   [/^\/(projekte\/[^/]+\/)?zahlungsanforderungen(\/|$)/, "verkauf"],
   [/^\/(maengel|abnahmen|vorgaenge|bautenstand)(\/|$)/, "bau"],
   [/^\/projekte\/[^/]+\/(abnahmen|bautenstand|vorgaenge|bauzeitenplan)(\/|$)/, "bau"],

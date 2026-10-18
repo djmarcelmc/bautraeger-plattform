@@ -27,6 +27,10 @@ describe("Versandwege", () => {
     const body = JSON.parse(String(senden.init.body));
     expect(body.message.toRecipients).toEqual([{ emailAddress: { address: "a@x.de" } }, { emailAddress: { address: "b@x.de" } }]);
     expect(body.message.body).toEqual({ contentType: "HTML", content: "<p>t</p>" });
+    expect(body.message.attachments).toBeUndefined();
+    await v.senden({ an: ["a@x.de"], betreff: "Mit Anhang", text: "t", anhaenge: [{ dateiname: "ZA-2026-00003.pdf", typ: "application/pdf", inhalt: Buffer.from("%PDF-1.7") }] });
+    const mitAnhang = JSON.parse(String(aufrufe.at(-1)!.init.body));
+    expect(mitAnhang.message.attachments).toEqual([{ "@odata.type": "#microsoft.graph.fileAttachment", name: "ZA-2026-00003.pdf", contentType: "application/pdf", contentBytes: Buffer.from("%PDF-1.7").toString("base64") }]);
   });
 
   it("meldet Fehler von Microsoft verständlich", async () => {

@@ -132,6 +132,12 @@ mit Fehlertext angezeigt.
 Danach geht es mit der [Checkliste zur Inbetriebnahme](inbetriebnahme.md) weiter (Grundeinstellungen,
 Datenübernahme, Abgleich).
 
+
+**Schreiben per E-Mail:** Mit eingerichtetem Versand lassen sich Zahlungsanforderungen, Mahnungen und Sonderwunsch-Angebote
+direkt aus der Druckansicht als PDF an die Käufer senden („Per E-Mail senden“). Das PDF erzeugt der Web-Container mit
+Chromium (im Image enthalten, `CHROMIUM_PFAD=/usr/bin/chromium`); es wird zusätzlich am Kaufvertrag unter
+„Schriftverkehr“ abgelegt. Microsoft 365 nimmt Anhänge bis 3 MB pro Nachricht an – die Schreiben liegen bei rund 120 KB.
+
 ## 7. Updates
 
 ```bash

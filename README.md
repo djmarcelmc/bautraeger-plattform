@@ -72,6 +72,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/auswertungen/liquiditaetsplan?projektId=&wochen=&anfangsbestand=&unverkauft=1&skonto=0&stichtag=` | Liquiditätsplan nach Kalenderwochen; Kosten nach Prüfkette der Verträge (Nachlass, Umlagen, Einbehalte, Skonto), Schlusszahlungen und Gewährleistungseinbehalte (auch `format=xlsx`) |
 | `GET /api/zahlungslaeufe/vorschlag?ausfuehrungAm=`, `POST /api/zahlungslaeufe`, `GET /api/zahlungslaeufe[/:id]`, `GET …/:id/xml` | Zahlungsvorschlag, Zahlungslauf mit Verbuchung, SEPA-Datei (pain.001.001.09) |
 | `GET /api/sonderwuensche?projektId=&status=`, `POST /api/kaufvertraege/:id/sonderwuensche`, `GET/PUT/DELETE /api/sonderwuensche/:id`, `POST …/:id/beauftragen`, `…/ablehnen`, `…/zuruecksetzen` | Sonderwünsche und Gutschriften: Angebot, Beauftragung legt eine Rate an (sofort oder mit einem MaBV-Abschnitt anforderbar), Gutschriften werden mit der Anforderung verrechnet |
+| `GET /api/schreiben/:art/:id`, `POST /api/schreiben/:art/:id/versenden` | Zahlungsanforderung, Mahnung oder Sonderwunsch-Angebot als PDF per E-Mail an die Käufer (Vorschlag für Empfänger und Text, Ablage am Kaufvertrag unter „Schriftverkehr“, Versandvermerk) |
 | `GET /api/bauabzug?monate=`, `GET /api/bauabzug/beleg?gesellschaftId=&handwerkerId=&monat=`, `POST /api/bauabzug/anmeldungen`, `DELETE /api/bauabzug/anmeldungen/:id` | Bauabzugsteuer (§ 48a EStG): Monatsübersicht je Handwerker mit Termin, Abrechnungsbeleg und Angaben für die Anmeldung, Erfassung von Anmeldung/Abführung |
 | `GET/POST /api/buergschaften?status=offen\|handlung&richtung=`, `GET/PUT/DELETE /api/buergschaften/:id` | Bürgschaften (erhalten/§ 7 MaBV) mit Ablauf- und Rückgabeüberwachung |
 | `GET /api/abnahmen?projektId=`, `POST /api/projekte/:id/abnahmen`, `GET/PUT/DELETE /api/abnahmen/:id`, `POST …/:id/maengel`, `POST …/:id/abschliessen` | Abnahmen (Sondereigentum, Gemeinschaftseigentum, Handwerker) mit Mängeln, Zählerständen, Schlüsseln; Abschluss setzt Übergabe/Abnahme und Gewährleistung |
@@ -129,7 +130,7 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 1. ~~Login über Microsoft Entra ID mit App-Rollen~~ ✓ eingebaut, wird mit den Daten der [App-Registrierung](docs/microsoft-entra-app-registrierung.md) eingeschaltet
 2. ~~Masken: Geschäftspartner, Projekte, Einheiten~~ ✓ – Datenimport aus Excel/CSV ✓
 3. ~~Dokumentablage an Projekten, Einheiten, Partnern und Kaufverträgen~~ ✓
-4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – Mahnwesen ✓, Sonderwünsche/Gutschriften ✓; offen: Versand per Outlook
+4. ~~Kaufverträge mit Ratenplan, Bautenstand, Zahlungsanforderungen, offene Posten~~ ✓ – Mahnwesen ✓, Sonderwünsche/Gutschriften ✓, Versand der Schreiben als PDF per E-Mail (Outlook/SMTP) ✓
 5. ~~Gewerke, Handwerkerverträge, Eingangsrechnungen mit Freigabe-Workflow~~ ✓ – SEPA-Zahlungslauf (pain.001.001.09) und Bürgschaften ✓; Rollen für Prüfung/Freigabe ✓, Bauabzugsteuer-Anmeldung mit Abrechnungsbeleg ✓
 6. ~~Mängelverwaltung mit Fotos, Rügen und Fristen~~ ✓ – Standardmängel-Katalog und Abnahmeprotokolle ✓
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen

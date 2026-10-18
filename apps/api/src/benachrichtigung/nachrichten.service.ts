@@ -16,7 +16,8 @@ import {
 import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { DB, type Db } from "../db.provider.js";
-import { MAIL_VERSAND, type MailVersand } from "./versand.js";
+import { SPEICHER, type Speicher } from "../dokumente/speicher.js";
+import { MAIL_VERSAND, type MailAnhang, type MailVersand } from "./versand.js";
 
 const { nachricht: n, einstellung: es, mangel: m } = schema;
 const BENACHRICHTIGUNG = "benachrichtigung";
@@ -34,6 +35,7 @@ export class NachrichtenService {
     @Inject(DB) private readonly db: Db,
     @Inject(KontextService) private readonly kontext: KontextService,
     @Inject(MAIL_VERSAND) readonly versand: MailVersand,
+    @Inject(SPEICHER) private readonly speicher: Speicher,
   ) {}
 
   // ---------------------------------------------------------------- Einstellungen
@@ -62,12 +64,15 @@ export class NachrichtenService {
 
   // ---------------------------------------------------------------- Postausgang
 
-  async einreihen(e: { an: string[]; mail: Mail; anlass: string; bezugId?: string | null; mandantId?: string }, db: DbOderTx = this.db) {
+  async einreihen(
+    e: { an: string[]; mail: Mail; anlass: string; bezugId?: string | null; mandantId?: string; anhaenge?: { dokumentId: string; dateiname: string }[] },
+    db: DbOderTx = this.db,
+  ) {
     const an = [...new Set(e.an.map((x) => x.trim()).filter(Boolean))];
     if (!an.length) return null;
     const [x] = await db
       .insert(n)
-      .values({ mandantId: e.mandantId ?? (await this.kontext.mandantId()), an, betreff: e.mail.betreff, text: e.mail.text, html: e.mail.html, anlass: e.anlass, bezugId: e.bezugId ?? null })
+      .values({ mandantId: e.mandantId ?? (await this.kontext.mandantId()), an, betreff: e.mail.betreff, text: e.mail.text, html: e.mail.html, anlass: e.anlass, bezugId: e.bezugId ?? null, anhaenge: e.anhaenge ?? [] })
       .returning({ id: n.id });
     return x!.id;
   }
@@ -88,6 +93,30 @@ export class NachrichtenService {
       .where(and(eq(n.id, id), eq(n.mandantId, await this.kontext.mandantId())));
   }
 
+  /** Anhänge aus der Dokumentablage lesen. */
+  private async anhaengeLaden(anhaenge: { dokumentId: string; dateiname: string }[]): Promise<MailAnhang[]> {
+    if (!anhaenge.length) return [];
+    const dok = await this.db.select().from(schema.dokument).where(inArray(schema.dokument.id, anhaenge.map((a) => a.dokumentId)));
+    return Promise.all(
+      anhaenge.map(async (a) => {
+        const d = dok.find((x) => x.id === a.dokumentId);
+        if (!d) throw new Error(`Anhang ${a.dateiname} nicht mehr vorhanden`);
+        const teile: Buffer[] = [];
+        for await (const t of this.speicher.lesen(d.speicherKey)) teile.push(t as Buffer);
+        return { dateiname: a.dateiname, typ: d.mimeType ?? "application/octet-stream", inhalt: Buffer.concat(teile) };
+      }),
+    );
+  }
+
+  /** Nachrichten zu einem Bezug (z. B. Versandvermerk eines Schreibens), neueste zuerst. */
+  async zuBezug(bezugId: string) {
+    return this.db
+      .select({ id: n.id, an: n.an, betreff: n.betreff, anlass: n.anlass, status: n.status, fehler: n.fehler, gesendetAm: n.gesendetAm, angelegtAm: n.angelegtAm, anhaenge: n.anhaenge })
+      .from(n)
+      .where(and(eq(n.bezugId, bezugId), eq(n.mandantId, await this.kontext.mandantId())))
+      .orderBy(desc(n.angelegtAm));
+  }
+
   /** Versendet fällige Nachrichten; Fehler werden mit wachsendem Abstand wiederholt (5 Versuche). */
   async versendeAusstehende(limit = 20) {
     const faellig = await this.db
@@ -99,7 +128,7 @@ export class NachrichtenService {
     let gesendet = 0;
     for (const x of faellig) {
       try {
-        const echt = await this.versand.senden({ an: x.an, betreff: x.betreff, text: x.text, html: x.html });
+        const echt = await this.versand.senden({ an: x.an, betreff: x.betreff, text: x.text, html: x.html, anhaenge: await this.anhaengeLaden(x.anhaenge) });
         await this.db.update(n).set({ status: echt ? "gesendet" : "protokolliert", gesendetAm: new Date(), versuche: x.versuche + 1, fehler: null, geaendertAm: new Date() }).where(eq(n.id, x.id));
         gesendet++;
       } catch (e) {

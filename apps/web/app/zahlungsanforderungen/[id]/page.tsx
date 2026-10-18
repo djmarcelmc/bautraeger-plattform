@@ -1,6 +1,7 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
+import { PerMailSenden } from "@/components/PerMailSenden";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 import { partnerName, type Anforderung, type Partner, type Rate, type VertragDetail } from "@/lib/typen";
@@ -149,6 +150,7 @@ export default async function Zahlungsanforderung({ params }: { params: Promise<
         <p>Mit freundlichen Grüßen</p>
         <p>{a.gesellschaft.name}</p>
       </article>
+      <PerMailSenden art="zahlungsanforderung" id={id} pfad={`/zahlungsanforderungen/${id}`} />
     </>
   );
 }
