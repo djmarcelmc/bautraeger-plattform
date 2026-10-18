@@ -282,6 +282,7 @@ export interface Handwerkervertrag {
   nachtraege: { id: string; nr: number; text: string; betragBrutto: string; status: string }[];
   rechnungen: Rechnung[];
   zahlungen: { id: string; eingangsrechnungId: string; datum: string; betrag: string; skonto: string; bauabzugsteuer: string; rechnungsnr: string }[];
+  maengel: { offen: number; einbehalt: string };
   summen: {
     vertrag: string;
     nachtraege: string;
@@ -307,6 +308,7 @@ export interface RechnungDetail extends Rechnung {
     zahlungsfristTage: number | null;
   };
   zahlung: { datum: string; betrag: string; skonto: string; bauabzugsteuer: string } | null;
+  maengel: { offen: number; einbehalt: string };
   vorschau: {
     zahlungsdatum: string;
     skontoFristBis: string | null;
@@ -338,4 +340,87 @@ export interface RechnungsbuchZeile {
   projektNr: number;
   projekt: string;
   handwerker: string | null;
+}
+
+// ---------------------------------------------------------------- Mängel
+
+export type MangelStatusTyp = "neu" | "frist_laeuft" | "ueberfaellig" | "erledigt";
+
+export interface MangelListe {
+  id: string;
+  nr: number;
+  titel: string;
+  ort: string | null;
+  mangelart: string | null;
+  eigentum: "sonder" | "gemeinschaft";
+  festgestelltAm: string;
+  erledigtAm: string | null;
+  einbehalt: boolean;
+  wertHandwerkerBrutto: string | null;
+  projektId: string;
+  projektNr: number;
+  projekt: string;
+  einheit: string | null;
+  gewerk: string | null;
+  handwerker: string | null;
+  fotos: number;
+  status: MangelStatusTyp;
+  ruegen: number;
+  fristBis: string | null;
+}
+
+export interface Ruege {
+  id: string;
+  stufe: number;
+  geruegtAm: string;
+  fristBis: string;
+  nachfristBis: string | null;
+  bemerkung: string | null;
+}
+
+export interface MangelDetail {
+  id: string;
+  projektId: string;
+  nr: number;
+  einheitId: string | null;
+  gewerkId: string | null;
+  handwerkervertragId: string | null;
+  handwerkerId: string | null;
+  kaufvertragId: string | null;
+  eigentum: "sonder" | "gemeinschaft";
+  festgestelltAm: string;
+  festgestelltDurch: string | null;
+  titel: string;
+  ort: string | null;
+  beschreibung: string | null;
+  mangelart: string | null;
+  wertHandwerkerBrutto: string | null;
+  wertKundeBrutto: string | null;
+  einbehalt: boolean;
+  angebotsanforderungAm: string | null;
+  auftragserteilungAm: string | null;
+  ersatzvornahmeAm: string | null;
+  erledigtAm: string | null;
+  erledigtVon: string | null;
+  projekt: { id: string; nr: number; suchcode: string; strasse: string | null; plz: string | null; ort: string | null };
+  gesellschaft: { id: string; name: string; anschrift: string | null };
+  einheit: { id: string; nr: string; typ: string } | null;
+  gewerk: { id: string; nr: number; bezeichnung: string } | null;
+  vertrag: { id: string; nrIntern: string | null; abnahmeAm: string | null; gewaehrleistungMonate: number | null; gewaehrleistungBis: string | null } | null;
+  handwerker: Partner | null;
+  kaufvertrag: { id: string; nr: string } | null;
+  ruegen: Ruege[];
+  status: MangelStatusTyp;
+  gewaehrleistungAbgelaufen: boolean | null;
+  naechsteRuege: { stufe: number; fristBis: string } | null;
+}
+
+export interface DokumentInfo {
+  id: string;
+  dateiname: string;
+  mimeType: string | null;
+  groesse: number | null;
+  beschreibung: string | null;
+  hochgeladenVon: string | null;
+  angelegtAm: string;
 }

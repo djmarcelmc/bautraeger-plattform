@@ -184,6 +184,46 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "maengel_offen",
+      {
+        title: "Offene Mängel",
+        description:
+          "Listet offene Mängel mit Status (nicht gerügt, Frist läuft, Frist überschritten), Rügestufe, Frist, Einheit und verantwortlichem Handwerker – optional für ein Projekt (Projektnummer) oder nur überfällige.",
+        inputSchema: { projektNr: z.number().int().optional(), nurUeberfaellig: z.boolean().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ projektNr, nurUeberfaellig }) => {
+        let projektId: string | undefined;
+        if (projektNr !== undefined) {
+          const projekte = await apiGet<{ id: string; nr: number }[]>(`/projekte?abgeschlossen=alle&suche=${projektNr}`);
+          projektId = projekte.find((x) => x.nr === projektNr)?.id;
+          if (!projektId) return text(`Projekt ${projektNr} nicht gefunden.`);
+        }
+        const q = new URLSearchParams({ status: nurUeberfaellig ? "ueberfaellig" : "offen", ...(projektId ? { projektId } : {}) });
+        const liste = await apiGet<
+          { nr: number; projektNr: number; projekt: string; titel: string; ort: string | null; einheit: string | null; handwerker: string | null; status: string; ruegen: number; fristBis: string | null; einbehalt: boolean }[]
+        >(`/maengel?${q}`);
+        const statusText: Record<string, string> = { neu: "nicht gerügt", frist_laeuft: "Frist läuft", ueberfaellig: "Frist überschritten" };
+        if (!liste.length) return text(nurUeberfaellig ? "Keine überfälligen Mängel." : "Keine offenen Mängel.");
+        return json(
+          liste.map((m) => ({
+            mangel: `${m.projektNr}-${m.nr}`,
+            projekt: m.projekt,
+            titel: m.titel,
+            ort: m.ort,
+            einheit: m.einheit ?? "Gemeinschaft",
+            handwerker: m.handwerker,
+            status: statusText[m.status] ?? m.status,
+            ruegen: m.ruegen,
+            fristBis: m.fristBis,
+            einbehalt: m.einbehalt,
+          })),
+        );
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(

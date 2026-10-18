@@ -12,7 +12,7 @@ import {
   datumPlusTage,
   type VertragKosten,
 } from "@bt/domain";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { KontextService } from "../common/kontext.service.js";
 import { DB, type Db } from "../db.provider.js";
 
@@ -121,6 +121,13 @@ export class KostenService {
         .orderBy(asc(za.datum)),
     ]);
     const k = (await this.vertragsKennzahlen([id], db)).get(id)!;
+    const [maengel] = await db
+      .select({
+        offen: sql<number>`count(*) filter (where ${schema.mangel.erledigtAm} is null)::int`,
+        einbehalt: sql<string>`coalesce(sum(${schema.mangel.wertHandwerkerBrutto}) filter (where ${schema.mangel.erledigtAm} is null and ${schema.mangel.einbehalt}), 0)::text`,
+      })
+      .from(schema.mangel)
+      .where(eq(schema.mangel.handwerkervertragId, id));
     const stand = kostenstand("0", [{ ...k, vertragBrutto: r.vertrag.vertragBrutto }]);
     const ausgezahlt = summe(zahlungen.map((z) => money(z.zahlung.betrag)));
     const bauabzug = summe(zahlungen.map((z) => money(z.zahlung.bauabzugsteuer)));
@@ -133,6 +140,7 @@ export class KostenService {
       nachtraege,
       rechnungen,
       zahlungen: zahlungen.map((z) => ({ ...z.zahlung, rechnungsnr: z.rechnungsnr })),
+      maengel: { offen: maengel?.offen ?? 0, einbehalt: maengel?.einbehalt ?? "0" },
       summen: {
         vertrag: stand.vergeben,
         nachtraege: stand.nachtraege,
@@ -170,6 +178,7 @@ export class KostenService {
     const skontoFristBis = v.skontoFristTage !== null && v.skontoFristTage !== undefined ? datumPlusTage(x.eingangAm, v.skontoFristTage) : null;
     return {
       ...x,
+      maengel: v.maengel,
       vertrag: { id: v.id, nrIntern: v.nrIntern, projekt: v.projekt, gewerk: { id: v.gewerk.id, nr: v.gewerk.nr, bezeichnung: v.gewerk.bezeichnung }, handwerker: v.handwerker, skontoProzent: v.skontoProzent, zahlungsfristTage: v.zahlungsfristTage },
       zahlung: zahlung ?? null,
       vorschau: {

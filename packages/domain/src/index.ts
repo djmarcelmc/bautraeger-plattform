@@ -6,3 +6,4 @@ export * from "./stammdaten.js";
 export * from "./verkauf.js";
 export * from "./gewerkeplan.js";
 export * from "./kosten.js";
+export * from "./maengel.js";

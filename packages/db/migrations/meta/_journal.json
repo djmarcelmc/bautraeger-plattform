@@ -36,6 +36,13 @@
       "when": 1792318168950,
       "tag": "0004_kosten_workflow",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792319351974,
+      "tag": "0005_maengel",
+      "breakpoints": true
     }
   ]
 }

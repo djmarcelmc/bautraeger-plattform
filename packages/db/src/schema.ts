@@ -334,21 +334,27 @@ export const mangel = pgTable("mangel", {
   nr: integer("nr").notNull(),
   einheitId: uuid("einheit_id").references(() => einheit.id),
   gewerkId: uuid("gewerk_id").references(() => gewerk.id),
+  handwerkervertragId: uuid("handwerkervertrag_id").references(() => handwerkervertrag.id),
   handwerkerId: uuid("handwerker_id").references(() => geschaeftspartner.id),
   kaufvertragId: uuid("kaufvertrag_id").references(() => kaufvertrag.id),
   eigentum: text("eigentum", { enum: ["sonder", "gemeinschaft"] }).notNull().default("sonder"),
   festgestelltAm: date("festgestellt_am").notNull(),
   festgestelltDurch: text("festgestellt_durch"),
   titel: text("titel").notNull(),
+  /** Lage, z. B. „Bad OG, Dusche“. */
+  ort: text("ort"),
   beschreibung: text("beschreibung"),
   mangelart: text("mangelart"),
   wertHandwerkerBrutto: geld("wert_handwerker_brutto").default("0"),
   wertKundeBrutto: geld("wert_kunde_brutto").default("0"),
   einbehalt: boolean("einbehalt").notNull().default(false),
+  angebotsanforderungAm: date("angebotsanforderung_am"),
+  auftragserteilungAm: date("auftragserteilung_am"),
   ersatzvornahmeAm: date("ersatzvornahme_am"),
   erledigtAm: date("erledigt_am"),
+  erledigtVon: text("erledigt_von"),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("mangel_nr_je_projekt").on(t.projektId, t.nr)]);
 
 export const ruege = pgTable("ruege", {
   id: id(),
@@ -357,8 +363,9 @@ export const ruege = pgTable("ruege", {
   geruegtAm: date("geruegt_am").notNull(),
   fristBis: date("frist_bis").notNull(),
   nachfristBis: date("nachfrist_bis"),
+  bemerkung: text("bemerkung"),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("ruege_stufe_je_mangel").on(t.mangelId, t.stufe)]);
 
 // ---------------------------------------------------------------- Buchhaltung & Dokumente
 

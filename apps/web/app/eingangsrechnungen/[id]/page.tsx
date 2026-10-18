@@ -76,6 +76,13 @@ export default async function RechnungSeite({ params, searchParams }: { params: 
                   : `Skontofrist abgelaufen am ${deDatum(v.skontoFristBis)}`
                 : "Kein Skonto vereinbart"}
             </div>
+            {r.maengel.offen ? (
+              <div className="fehlt">
+                <AlertTriangle size={16} />
+                {r.maengel.offen} offene Mängel bei diesem Handwerker
+                {Number(r.maengel.einbehalt) ? ` – Einbehalt ${deZahl(r.maengel.einbehalt)} € beim geprüften Betrag berücksichtigen` : ""}
+              </div>
+            ) : null}
             {r.geprueftVon ? (
               <div className="neutral">
                 Geprüft von {r.geprueftVon}, {deZeit(r.geprueftAm!)}

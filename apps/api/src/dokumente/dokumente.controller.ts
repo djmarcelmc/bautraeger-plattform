@@ -25,11 +25,12 @@ import { KontextService } from "../common/kontext.service.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { KostenService } from "../kosten/kosten.service.js";
+import { MaengelService } from "../maengel/maengel.service.js";
 import { SPEICHER, type Speicher } from "./speicher.js";
 
 const d = schema.dokument;
 export const MAX_GROESSE = 25 * 1024 * 1024;
-const OBJEKT_TYPEN = ["projekt", "einheit", "geschaeftspartner", "kaufvertrag", "gesellschaft", "handwerkervertrag", "eingangsrechnung"] as const;
+const OBJEKT_TYPEN = ["projekt", "einheit", "geschaeftspartner", "kaufvertrag", "gesellschaft", "handwerkervertrag", "eingangsrechnung", "mangel"] as const;
 
 const Metadaten = z.object({
   objektTyp: z.enum(OBJEKT_TYPEN),
@@ -45,6 +46,7 @@ export class DokumenteController {
     @Inject(KontextService) private readonly kontext: KontextService,
     @Inject(SPEICHER) private readonly speicher: Speicher,
     @Inject(KostenService) private readonly kosten: KostenService,
+    @Inject(MaengelService) private readonly maengel: MaengelService,
   ) {}
 
   /** Prüft, dass das Objekt existiert und zum Mandanten gehört. */
@@ -72,6 +74,7 @@ export class DokumenteController {
     };
     if (typ === "handwerkervertrag") return void (await this.kosten.vertrag(id));
     if (typ === "eingangsrechnung") return void (await this.kosten.rechnung(id));
+    if (typ === "mangel") return void (await this.maengel.mangel(id));
     const [x] = await abfragen[typ]();
     if (!x) throw new NotFoundException("Objekt nicht gefunden");
   }

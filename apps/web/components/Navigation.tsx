@@ -29,7 +29,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     eintraege: [
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
-      { href: "#", text: "Mängel", icon: Wrench, bald: true },
+      { href: "/maengel", text: "Mängel", icon: Wrench },
       { href: "#", text: "Auswertungen", icon: BarChart3, bald: true },
     ],
   },

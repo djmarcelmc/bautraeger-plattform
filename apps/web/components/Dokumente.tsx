@@ -1,4 +1,4 @@
-import { FileText, Image as Bild, Paperclip } from "lucide-react";
+import { FileText, Paperclip } from "lucide-react";
 import { dokumentAusblenden, dokumentHochladen } from "@/app/dokumente/aktionen";
 import { api } from "@/lib/api";
 import { Formular } from "./Formular";
@@ -26,7 +26,14 @@ export async function Dokumente({ objektTyp, objektId, pfad }: { objektTyp: stri
           <ul className="dokliste">
             {liste.map((d) => (
               <li key={d.id}>
-                <span className="dokicon">{d.mimeType?.startsWith("image/") ? <Bild size={18} /> : <FileText size={18} />}</span>
+                {d.mimeType?.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="dokbild" src={`/dokumente/${d.id}`} alt="" loading="lazy" />
+                ) : (
+                  <span className="dokicon">
+                    <FileText size={18} />
+                  </span>
+                )}
                 <a href={`/dokumente/${d.id}`} target="_blank" rel="noreferrer" className="dokname">
                   {d.dateiname}
                   <small>
