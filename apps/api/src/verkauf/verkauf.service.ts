@@ -56,7 +56,7 @@ export class VerkaufService {
       .where(and(eq(k.id, id), eq(g.mandantId, await this.kontext.mandantId())));
     if (!kopf) throw new NotFoundException("Kaufvertrag nicht gefunden");
 
-    const [kaeufer, einheiten, raten, anforderungen, eingaenge, mahnungen] = await Promise.all([
+    const [kaeufer, einheiten, raten, anforderungen, eingaenge, mahnungen, sonderwuensche] = await Promise.all([
       db
         .select({ partner: schema.geschaeftspartner, anteilProzent: schema.kaufvertragKaeufer.anteilProzent })
         .from(schema.kaufvertragKaeufer)
@@ -77,6 +77,7 @@ export class VerkaufService {
         .innerJoin(schema.zahlungsanforderung, eq(schema.mahnung.zahlungsanforderungId, schema.zahlungsanforderung.id))
         .where(eq(schema.zahlungsanforderung.kaufvertragId, id))
         .orderBy(asc(schema.mahnung.datum)),
+      db.select().from(schema.sonderwunsch).where(eq(schema.sonderwunsch.kaufvertragId, id)).orderBy(asc(schema.sonderwunsch.nr)),
     ]);
 
     const meldungen = einheiten.length
@@ -103,11 +104,16 @@ export class VerkaufService {
       if (e.zahlungsanforderungId)
         bezahltJeAnforderung.set(e.zahlungsanforderungId, (bezahltJeAnforderung.get(e.zahlungsanforderungId) ?? money(0)).plus(e.betrag));
     const restJeAnforderung = new Map(bezahltJeAnforderung);
+    // Gutschriften (negative Raten) sind mit der Anforderung verrechnet; sobald Zahlungen eingehen, decken sie die übrigen Raten mit
+    for (const r of raten)
+      if (r.zahlungsanforderungId && money(r.betrag).isNegative() && bezahltJeAnforderung.has(r.zahlungsanforderungId))
+        restJeAnforderung.set(r.zahlungsanforderungId, (restJeAnforderung.get(r.zahlungsanforderungId) ?? money(0)).minus(r.betrag));
 
     const ratenMitStatus = raten.map((r) => {
       const betrag = money(r.betrag);
       let bezahlt = money(0);
-      if (r.zahlungsanforderungId) {
+      if (r.zahlungsanforderungId && betrag.isNegative()) bezahlt = betrag;
+      else if (r.zahlungsanforderungId) {
         const rest = restJeAnforderung.get(r.zahlungsanforderungId) ?? money(0);
         bezahlt = rest.gte(betrag) ? betrag : rest;
         restJeAnforderung.set(r.zahlungsanforderungId, rest.minus(bezahlt));
@@ -117,7 +123,8 @@ export class VerkaufService {
         angefordert: !!r.zahlungsanforderungId,
         betrag,
         bezahlt,
-        abschnitteFertig: r.typ === "mabv" ? abschnitteFertig : true,
+        // Sonderwünsche ohne Abschnitt sind sofort nach Beauftragung anforderbar
+        abschnitteFertig: r.typ === "mabv" || r.abschnitte.length ? abschnitteFertig : true,
         voraussetzungenErfuellt,
       });
       const anf = anforderungen.find((a) => a.id === r.zahlungsanforderungId);
@@ -139,6 +146,7 @@ export class VerkaufService {
     });
 
     const vertragssumme = summe(einheiten.map((e) => money(e.vkBrutto)));
+    const sonderwunschSumme = summe(raten.filter((r) => r.typ !== "mabv").map((r) => money(r.betrag)));
     const angefordert = summe(anforderungen.map((a) => money(a.betrag)));
     const bezahlt = summe(eingaenge.map((e) => money(e.betrag)));
     return {
@@ -148,6 +156,7 @@ export class VerkaufService {
       kaeufer: kaeufer.map((x) => ({ ...x.partner, anteilProzent: x.anteilProzent })),
       einheiten,
       raten: ratenMitStatus,
+      sonderwuensche,
       anforderungen: anforderungenMitStand,
       eingaenge,
       bautenstand: meldungen,
@@ -155,10 +164,13 @@ export class VerkaufService {
       voraussetzungen: { ...voraussetzungen, erfuellt: voraussetzungenErfuellt, anforderungssperre: v.anforderungssperre },
       summen: {
         vertragssumme: vertragssumme.toFixed(2),
+        /** beauftragte Zusatzleistungen abzüglich Gutschriften */
+        sonderwuensche: sonderwunschSumme.toFixed(2),
+        gesamt: vertragssumme.plus(sonderwunschSumme).toFixed(2),
         angefordert: angefordert.toFixed(2),
         bezahlt: bezahlt.toFixed(2),
         offen: offen(angefordert, bezahlt).toFixed(2),
-        nichtAngefordert: vertragssumme.minus(angefordert).toFixed(2),
+        nichtAngefordert: vertragssumme.plus(sonderwunschSumme).minus(angefordert).toFixed(2),
       },
     };
   }

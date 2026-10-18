@@ -184,6 +184,7 @@ export interface VertragDetail {
   kaeufer: (Partner & { anteilProzent: string })[];
   einheiten: { id: string; nr: string; typ: string; art: string | null; wohnflaeche: string | null; vkBrutto: string }[];
   raten: Rate[];
+  sonderwuensche: Sonderwunsch[];
   anforderungen: Anforderung[];
   eingaenge: { id: string; zahlungsanforderungId: string | null; datum: string; betrag: string; verwendungszweck: string | null }[];
   fertigeAbschnitte: string[];
@@ -195,7 +196,25 @@ export interface VertragDetail {
     erfuellt: boolean;
     anforderungssperre: boolean;
   };
-  summen: { vertragssumme: string; angefordert: string; bezahlt: string; offen: string; nichtAngefordert: string };
+  summen: { vertragssumme: string; sonderwuensche: string; gesamt: string; angefordert: string; bezahlt: string; offen: string; nichtAngefordert: string };
+}
+
+export interface Sonderwunsch {
+  id: string;
+  kaufvertragId: string;
+  nr: number;
+  art: "zusatzleistung" | "gutschrift";
+  bezeichnung: string;
+  beschreibung: string | null;
+  betragBrutto: string;
+  kostenBrutto: string | null;
+  gewerkId: string | null;
+  abschnitt: string | null;
+  status: "angebot" | "beauftragt" | "abgelehnt";
+  angebotAm: string | null;
+  gueltigBis: string | null;
+  entschiedenAm: string | null;
+  rateId: string | null;
 }
 
 export interface OffenerPosten {

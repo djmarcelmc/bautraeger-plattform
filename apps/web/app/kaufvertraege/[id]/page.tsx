@@ -3,6 +3,7 @@ import { Check, Printer, X } from "lucide-react";
 import { BuergschaftenAbschnitt } from "@/components/Buergschaften";
 import { portalLinkErzeugen, portalLinkWiderrufen } from "../portal-aktionen";
 import { PortalLinkErzeugen } from "../PortalLink";
+import { Sonderwuensche } from "../Sonderwuensche";
 import { Dokumente } from "@/components/Dokumente";
 import { Feld, Gruppe, Haken, Protokoll } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 
 const REITER = [
   ["raten", "Raten"],
+  ["sonderwuensche", "Sonderwünsche"],
   ["zahlungen", "Zahlungen"],
   ["konditionen", "Konditionen"],
   ["buergschaften", "Bürgschaften"],
@@ -62,7 +64,10 @@ export default async function KaufvertragSeite({
         <div className="kpi">
           <span>Vertragssumme brutto</span>
           <b>{deZahl(v.summen.vertragssumme)} €</b>
-          <small>{v.raten.length} Raten nach MaBV</small>
+          <small>
+            {v.raten.filter((r) => r.typ === "mabv").length} Raten nach MaBV
+            {Number(v.summen.sonderwuensche) ? ` · Sonderwünsche ${Number(v.summen.sonderwuensche) > 0 ? "+" : ""}${deZahl(v.summen.sonderwuensche, 0)} €` : ""}
+          </small>
         </div>
         <div className="kpi">
           <span>Angefordert</span>
@@ -144,9 +149,7 @@ export default async function KaufvertragSeite({
                     <td className="num">{deZahl(r.prozent)}</td>
                     <td className="num">{deZahl(r.betrag)}</td>
                     <td className="ratentext">{r.text}</td>
-                    <td>
-                      <RatenStatus status={r.status} />
-                    </td>
+                    <td>{Number(r.betrag) < 0 && r.zahlungsanforderungId ? <span className="badge gut">verrechnet</span> : <RatenStatus status={r.status} />}</td>
                     <td>
                       {r.zahlungsanforderungId ? <a href={`/zahlungsanforderungen/${r.zahlungsanforderungId}`}>{r.rechnungsnr}</a> : ""}
                       {r.faelligAm ? <div className="hint">fällig {deDatum(r.faelligAm)}</div> : null}
@@ -161,7 +164,8 @@ export default async function KaufvertragSeite({
                   <td />
                   <td className="num">100,00</td>
                   <td className="num">
-                    <b>{deZahl(v.summen.vertragssumme)}</b>
+                    <b>{deZahl(v.summen.gesamt)}</b>
+                    {Number(v.summen.sonderwuensche) ? <div className="hint">davon Sonderwünsche {deZahl(v.summen.sonderwuensche)}</div> : null}
                   </td>
                   <td colSpan={3} />
                   <td className="num">
@@ -187,6 +191,8 @@ export default async function KaufvertragSeite({
           )}
         </Formular>
       )}
+
+      {reiter === "sonderwuensche" && <Sonderwuensche v={v} gewerke={(await api<{ gewerke: { id: string; nr: number; bezeichnung: string }[] }>(`/projekte/${v.projekt.id}/kosten`)).gewerke} />}
 
       {reiter === "zahlungen" && (
         <>

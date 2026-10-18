@@ -405,6 +405,37 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
 
   if (apiUrl)
     server.registerTool(
+      "sonderwuensche",
+      {
+        title: "Sonderwünsche",
+        description: "Sonderwünsche (Zusatzleistungen) und Gutschriften der Käufer mit Stand (Angebot, beauftragt, abgelehnt), Preis, Marge und Summen. Optional nach Status filtern.",
+        inputSchema: { status: z.enum(["angebot", "beauftragt", "abgelehnt"]).optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ status }) => {
+        const d = await apiGet<{
+          sonderwuensche: { nr: number; art: string; bezeichnung: string; betragBrutto: string; kostenBrutto: string | null; status: string; gueltigBis: string | null; abgelaufen: boolean; vertrag: { nr: string }; projekt: { nr: number; suchcode: string } }[];
+          summen: { angebote: string; beauftragt: string; marge: string | null; offeneAngebote: number };
+        }>(`/sonderwuensche${status ? `?status=${status}` : ""}`);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        return json({
+          summen: { offeneAngebote: d.summen.offeneAngebote, angebotsvolumen: euro(d.summen.angebote), beauftragtSaldo: euro(d.summen.beauftragt), marge: d.summen.marge ? euro(d.summen.marge) : null },
+          sonderwuensche: d.sonderwuensche.map((x) => ({
+            projekt: `${x.projekt.nr} ${x.projekt.suchcode}`,
+            kaufvertrag: x.vertrag.nr,
+            nr: x.nr,
+            leistung: x.bezeichnung,
+            art: x.art === "gutschrift" ? "Gutschrift" : "Zusatzleistung",
+            preis: euro(x.betragBrutto),
+            stand: x.abgelaufen ? "Angebot abgelaufen" : x.status,
+            gueltigBis: x.gueltigBis,
+          })),
+        });
+      },
+    );
+
+  if (apiUrl)
+    server.registerTool(
       "mabv_pruefbericht",
       {
         title: "MaBV-Prüfbericht (§ 16 MaBV)",

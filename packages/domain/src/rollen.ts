@@ -64,7 +64,7 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/(handwerkervertraege|nachtraege|gewerke)(\/|$)/, "kostenBearbeiten"],
   [/^\/projekte\/[^/]+\/(gewerke|gewerkeplan)$/, "kostenBearbeiten"],
   [/^\/(zahlungseingaenge|mahnungen)(\/|$)/, "verkaufZahlungen"],
-  [/^\/kaufvertraege(\/|$)/, "verkauf"],
+  [/^\/(kaufvertraege|sonderwuensche)(\/|$)/, "verkauf"],
   [/^\/(projekte\/[^/]+\/)?zahlungsanforderungen(\/|$)/, "verkauf"],
   [/^\/(maengel|abnahmen|vorgaenge|bautenstand)(\/|$)/, "bau"],
   [/^\/projekte\/[^/]+\/(abnahmen|bautenstand|vorgaenge|bauzeitenplan)(\/|$)/, "bau"],

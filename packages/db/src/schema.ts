@@ -618,3 +618,32 @@ export const bauabzugAnmeldung = pgTable(
   },
   (t) => [uniqueIndex("bauabzug_anmeldung_eindeutig").on(t.gesellschaftId, t.handwerkerId, t.monat)],
 );
+
+export const sonderwunschStatus = pgEnum("sonderwunsch_status", ["angebot", "beauftragt", "abgelehnt"]);
+
+/** Sonderwünsche/Zusatzleistungen und Gutschriften (Minderleistungen) eines Kaufvertrags. */
+export const sonderwunsch = pgTable(
+  "sonderwunsch",
+  {
+    id: id(),
+    kaufvertragId: uuid("kaufvertrag_id").notNull().references(() => kaufvertrag.id),
+    nr: integer("nr").notNull(),
+    art: rateTyp("art").notNull().default("zusatzleistung"),
+    bezeichnung: text("bezeichnung").notNull(),
+    beschreibung: text("beschreibung"),
+    /** Preis für den Käufer (brutto, immer positiv; Gutschriften werden abgezogen) */
+    betragBrutto: geld("betrag_brutto").notNull(),
+    /** Voraussichtliche Mehr-/Minderkosten beim Handwerker (brutto) – für die Marge */
+    kostenBrutto: geld("kosten_brutto"),
+    gewerkId: uuid("gewerk_id").references(() => gewerk.id),
+    /** Abrechnung mit diesem MaBV-Abschnitt (leer = sofort nach Beauftragung anforderbar) */
+    abschnitt: text("abschnitt"),
+    status: sonderwunschStatus("status").notNull().default("angebot"),
+    angebotAm: date("angebot_am"),
+    gueltigBis: date("gueltig_bis"),
+    entschiedenAm: date("entschieden_am"),
+    rateId: uuid("rate_id").references(() => rate.id),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("sonderwunsch_nr_je_vertrag").on(t.kaufvertragId, t.nr)],
+);
