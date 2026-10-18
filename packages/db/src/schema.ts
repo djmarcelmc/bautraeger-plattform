@@ -40,7 +40,7 @@ export const gesellschaft = pgTable("gesellschaft", {
   skr: text("skr").default("03"),
   sachkontenlaenge: integer("sachkontenlaenge").default(4),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("gesellschaft_nr_je_mandant").on(t.mandantId, t.nr)]);
 
 // ---------------------------------------------------------------- Geschäftspartner
 
@@ -74,7 +74,7 @@ export const geschaeftspartner = pgTable("geschaeftspartner", {
   /** Freistellungsbescheinigung § 48b EStG (Bauabzugsteuer). */
   freistellungGueltigBis: date("freistellung_gueltig_bis"),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("partner_nr_je_mandant").on(t.mandantId, t.nr)]);
 
 // ---------------------------------------------------------------- Projekte & Einheiten
 
@@ -129,7 +129,7 @@ export const einheit = pgTable("einheit", {
   /** Verknüpfter Stellplatz o. Ä. */
   zugehoerigZuEinheitId: uuid("zugehoerig_zu_einheit_id"),
   ...zeitstempel,
-});
+}, (t) => [uniqueIndex("einheit_nr_je_projekt").on(t.projektId, t.nr)]);
 
 /** Fertigmeldung eines MaBV-Bauabschnitts je Einheit. */
 export const bautenstand = pgTable("bautenstand", {

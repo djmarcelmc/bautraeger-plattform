@@ -8,19 +8,25 @@ export default async function MabvRechner({ searchParams }: { searchParams: Prom
     : [];
   return (
     <>
-      <h1>MaBV-Ratenrechner</h1>
-      <form>
+      <div className="seitenkopf">
+        <div>
+          <h1>MaBV-Ratenrechner</h1>
+          <p className="untertitel">Ratenplan nach § 3 Abs. 2 MaBV</p>
+        </div>
+      </div>
+      <form className="filterleiste">
         <label>
           Vertragssumme brutto (EUR)
           <input name="summe" defaultValue={summe} inputMode="decimal" />
         </label>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <label className="haken">
           <input type="checkbox" name="erbbau" value="1" defaultChecked={erbbau === "1"} /> Erbbaurecht
         </label>
         <button type="submit">Berechnen</button>
       </form>
       {!gueltig && <p className="hint">Bitte einen Betrag wie 324930,00 eingeben.</p>}
       {gueltig && (
+        <div className="karte ohne-innenabstand">
         <table>
           <thead>
             <tr><th className="num">Rate</th><th className="num">%</th><th className="num">Betrag €</th><th>Bauabschnitt</th></tr>
@@ -36,6 +42,7 @@ export default async function MabvRechner({ searchParams }: { searchParams: Prom
             ))}
           </tbody>
         </table>
+        </div>
       )}
       <p className="hint">Standardplan mit 7 Raten nach § 3 Abs. 2 MaBV. Rundungsdifferenzen trägt die letzte Rate.</p>
     </>

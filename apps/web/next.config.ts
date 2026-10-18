@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
-const config: NextConfig = {
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${process.env.API_URL ?? "http://localhost:3001"}/api/:path*` }];
-  },
-};
+// Die Weboberfläche ruft die API serverseitig über API_URL auf (siehe lib/api.ts).
+// /api/* bleibt frei für die spätere Anmeldung (Auth.js).
+const config: NextConfig = {};
 
 export default config;
