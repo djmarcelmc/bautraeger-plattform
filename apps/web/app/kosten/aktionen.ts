@@ -87,3 +87,7 @@ export async function rechnungBezahlen(id: string, fd: FormData) {
 export async function kostenEinstellungSpeichern(fd: FormData) {
   return ausfuehren(() => api("/einstellungen/kosten", { method: "PUT", body: formularDaten(fd) }), ["/einstellungen"], "Budgetschwelle gespeichert.");
 }
+
+export async function budgetUmbuchen(projektId: string, fd: FormData) {
+  return ausfuehren(() => api(`/projekte/${projektId}/budgetumbuchungen`, { method: "POST", body: formularDaten(fd) }), [`/projekte/${projektId}`, `/gewerke/${fd.get("nachGewerkId")}`, `/gewerke/${fd.get("vonGewerkId")}`], "Budget umgebucht.");
+}

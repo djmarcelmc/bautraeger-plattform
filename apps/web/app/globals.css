@@ -3557,3 +3557,34 @@ table.saldentabelle tr.postenzeile ul {
 .fehler-kurz {
   color: var(--gefahr);
 }
+
+/* ------------------------------------------------------------------ Budget umschichten */
+.umbuchung summary,
+.umbuchungen summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.umbuchung[open] summary {
+  margin-bottom: 12px;
+}
+.umbuchungen {
+  margin: 12px 0;
+}
+.umbuchungen summary {
+  color: var(--text-2);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.umbuchung-weg {
+  white-space: nowrap;
+}
+.umbuchung-weg svg {
+  vertical-align: -2px;
+  color: var(--text-3);
+}
+td.positiv {
+  color: var(--gut);
+}
+td.negativ {
+  color: var(--gefahr);
+}

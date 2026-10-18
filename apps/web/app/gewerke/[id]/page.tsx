@@ -5,6 +5,7 @@ import { deZahl } from "@/lib/format";
 import { partnerName, type Kostenkontrolle, type Partner } from "@/lib/typen";
 import { Abweichung } from "../../kosten/Abweichung";
 import { BudgetHinweisGewerk } from "../../kosten/Budget";
+import { BudgetUmschichten, UmbuchungenListe, type Budgetumbuchung } from "../../kosten/Umbuchung";
 import { gewerkAendern, vertragAnlegen } from "../../kosten/aktionen";
 import { VertragFelder } from "../../kosten/VertragFelder";
 
@@ -14,10 +15,11 @@ export default async function GewerkSeite({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { projekt: projektId } = await searchParams;
   if (!projektId) return <p className="fehler">Projekt fehlt im Link.</p>;
-  const [k, projekt, partner] = await Promise.all([
+  const [k, projekt, partner, umbuchungen] = await Promise.all([
     api<Kostenkontrolle>(`/projekte/${projektId}/kosten`),
     api<{ id: string; nr: number; suchcode: string }>(`/projekte/${projektId}`),
     api<Partner[]>("/partner"),
+    api<Budgetumbuchung[]>(`/projekte/${projektId}/budgetumbuchungen`),
   ]);
   const g = k.gewerke.find((x) => x.id === id);
   if (!g) return <p className="fehler">Gewerk nicht gefunden.</p>;
@@ -61,6 +63,9 @@ export default async function GewerkSeite({ params, searchParams }: { params: Pr
         </div>
       </div>
       <BudgetHinweisGewerk b={g.budget} />
+      <BudgetUmschichten projektId={projektId} gewerk={g} gewerke={k.gewerke} />
+      {umbuchungen.some((u) => u.von.id === g.id || u.nach.id === g.id) ? <h2>Budgetumbuchungen</h2> : null}
+      <UmbuchungenListe liste={umbuchungen} gewerkId={g.id} projektId={projektId} />
       <h2>Verträge</h2>
       <div className="karte ohne-innenabstand">
         <table>

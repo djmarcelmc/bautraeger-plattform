@@ -1,6 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Inject, Param, ParseUUIDPipe, Post, Put, Query } from "@nestjs/common";
 import { schema } from "@bt/db";
 import {
+  BudgetumbuchungEingabe,
   EingangsrechnungEingabe,
   GewerkEingabe,
   GewerkeplanEingabe,
@@ -11,10 +12,12 @@ import {
   RechnungPruefen,
   RechnungZahlung,
   gewerkeplanAusVorlage,
+  umbuchungPruefen,
   KostenEinstellung,
   money,
 } from "@bt/domain";
-import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { Benutzer, pruefe } from "../common/eingabe.js";
 import { KontextService } from "../common/kontext.service.js";
 import { anmeldungAktiv } from "../common/rechte.guard.js";
@@ -95,6 +98,53 @@ export class KostenController {
       const d = differenz(alt, neu!);
       if (d.geaendert) await protokollieren(tx, { tabelle: "gewerk", id, aktion: "update", ...d, benutzer });
       return neu;
+    });
+  }
+
+  // ------------------------------------------------------------ Budget umschichten
+
+  @Get("projekte/:id/budgetumbuchungen")
+  async budgetumbuchungen(@Param("id", ParseUUIDPipe) projektId: string) {
+    await this.verkauf.projekt(projektId);
+    const { budgetumbuchung: bu } = schema;
+    const von = alias(gw, "von");
+    const nach = alias(gw, "nach");
+    return this.db
+      .select({
+        id: bu.id,
+        betrag: bu.betrag,
+        begruendung: bu.begruendung,
+        benutzer: bu.benutzer,
+        angelegtAm: bu.angelegtAm,
+        von: { id: von.id, nr: von.nr, bezeichnung: von.bezeichnung },
+        nach: { id: nach.id, nr: nach.nr, bezeichnung: nach.bezeichnung },
+      })
+      .from(bu)
+      .innerJoin(von, eq(bu.vonGewerkId, von.id))
+      .innerJoin(nach, eq(bu.nachGewerkId, nach.id))
+      .where(eq(bu.projektId, projektId))
+      .orderBy(desc(bu.angelegtAm));
+  }
+
+  /** Budget von einem Gewerk auf ein anderes desselben Projekts umbuchen (höchstens das freie Budget der Quelle). */
+  @Post("projekte/:id/budgetumbuchungen")
+  async budgetUmbuchen(@Param("id", ParseUUIDPipe) projektId: string, @Body() body: unknown, @Benutzer() benutzer: string) {
+    const w = pruefe(BudgetumbuchungEingabe, body);
+    await this.verkauf.projekt(projektId);
+    const k = await this.kosten.kostenkontrolle(projektId);
+    const von = k.gewerke.find((x) => x.id === w.vonGewerkId);
+    const nach = k.gewerke.find((x) => x.id === w.nachGewerkId);
+    if (!von || !nach) throw new BadRequestException({ message: "Eingabe ungültig", fehler: ["Beide Gewerke müssen zum Projekt gehören."] });
+    const fehler = umbuchungPruefen(von, w.betrag!);
+    if (fehler) throw new ConflictException(fehler);
+    return this.db.transaction(async (tx) => {
+      const [a] = await tx.update(gw).set({ geschaetztBrutto: sql`${gw.geschaetztBrutto} - ${w.betrag}`, geaendertAm: new Date() }).where(eq(gw.id, von.id)).returning({ geschaetztBrutto: gw.geschaetztBrutto });
+      if (Number(a!.geschaetztBrutto) < 0) throw new ConflictException("Die Schätzung der Quelle würde negativ.");
+      const [b] = await tx.update(gw).set({ geschaetztBrutto: sql`${gw.geschaetztBrutto} + ${w.betrag}`, geaendertAm: new Date() }).where(eq(gw.id, nach.id)).returning({ geschaetztBrutto: gw.geschaetztBrutto });
+      const [u] = await tx.insert(schema.budgetumbuchung).values({ projektId, vonGewerkId: von.id, nachGewerkId: nach.id, betrag: w.betrag!, begruendung: w.begruendung!, benutzer }).returning();
+      await protokollieren(tx, { tabelle: "gewerk", id: von.id, aktion: "update", alt: { geschaetztBrutto: von.geschaetztBrutto }, neu: { geschaetztBrutto: a!.geschaetztBrutto, umbuchung: u!.id, nach: `${nach.nr} ${nach.bezeichnung}` }, benutzer });
+      await protokollieren(tx, { tabelle: "gewerk", id: nach.id, aktion: "update", alt: { geschaetztBrutto: nach.geschaetztBrutto }, neu: { geschaetztBrutto: b!.geschaetztBrutto, umbuchung: u!.id, von: `${von.nr} ${von.bezeichnung}` }, benutzer });
+      return u;
     });
   }
 
