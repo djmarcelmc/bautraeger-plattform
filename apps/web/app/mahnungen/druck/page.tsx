@@ -1,5 +1,5 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
-import { Printer } from "lucide-react";
+import { Mail, Printer } from "lucide-react";
 import { DruckKnopf } from "@/components/DruckKnopf";
 import { PerMailSenden } from "@/components/PerMailSenden";
 import { api } from "@/lib/api";
@@ -21,9 +21,16 @@ export default async function MahnungenDruck({ searchParams }: { searchParams: P
           </p>
           <h1>{liste.length === 1 ? liste[0]!.titel : `${liste.length} Mahnschreiben`}</h1>
         </div>
-        <DruckKnopf>
-          <Printer size={16} /> Drucken / PDF
-        </DruckKnopf>
+        <div className="knopfleiste">
+          {liste.length > 1 ? (
+            <a className="knopf zweitrangig" href={`/schreiben/sammelversand?art=mahnung&ids=${liste.map((m) => m.id).join(",")}`}>
+              <Mail size={16} /> Per E-Mail senden
+            </a>
+          ) : null}
+          <DruckKnopf>
+            <Printer size={16} /> Drucken / PDF
+          </DruckKnopf>
+        </div>
       </div>
       {liste.map((m) => (
         <Schreiben key={m.id} m={m} />

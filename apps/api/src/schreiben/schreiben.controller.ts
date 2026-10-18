@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Inject, NotFoundException, Param, ParseUUIDPipe, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { schema } from "@bt/db";
 import { briefAnrede, EINHEIT_TYP_TEXT, MAHNSTUFEN, mailAusText, money, SCHREIBEN_ARTEN, SchreibenVersandEingabe, schreibenVorlage, type SchreibenArt, type SchreibenDaten } from "@bt/domain";
@@ -61,6 +61,40 @@ export class SchreibenController {
     const objekt = `${v.projekt.suchcode}, ${v.einheiten.map((e) => `${EINHEIT_TYP_TEXT[e.typ as keyof typeof EINHEIT_TYP_TEXT] ?? e.typ} ${e.nr}`).join(", ")}`;
     const daten: SchreibenDaten = { bautraeger: v.gesellschaft.name, anrede: briefAnrede(empfaenger), objekt, ...teil };
     return { art, v, daten };
+  }
+
+  /** Mehrere Schreiben einer Art (z. B. Mahnlauf, Sammelanforderung) mit Empfängern und Versandstand. */
+  @Get(":art")
+  async sammel(@Param("art") art: string, @Query("ids") ids?: string) {
+    const liste = [...new Set((ids ?? "").split(",").filter((x) => /^[0-9a-f-]{36}$/.test(x)))];
+    if (!liste.length || liste.length > 100) throw new BadRequestException({ message: "Eingabe ungültig", fehler: ["1 bis 100 Schreiben angeben."] });
+    const ergebnis = [];
+    for (const id of liste) {
+      const { art: a, v, daten } = await this.aufloesen(art, id);
+      const vorlage = schreibenVorlage(a, daten);
+      ergebnis.push({
+        id,
+        nummer: daten.nummer,
+        titel: daten.titel ?? null,
+        betrag: daten.betrag,
+        dateiname: vorlage.dateiname,
+        betreff: vorlage.betreff,
+        kaufvertrag: { id: v.id, nr: v.nr },
+        kaeufer: v.kaeufer.map((k) => [k.vorname, k.nachname].filter(Boolean).join(" ") || k.firma || k.suchcode).join(", "),
+        an: [...new Set(v.kaeufer.map((k) => k.email).filter((e): e is string => !!e))],
+        vermerke: await this.nachrichten.zuBezug(id),
+      });
+    }
+    return { art, versandweg: { art: this.nachrichten.versand.name, beschreibung: this.nachrichten.versand.beschreibung }, schreiben: ergebnis };
+  }
+
+  /** Versand mit dem vorgeschlagenen Text (für den Sammelversand). */
+  @Post(":art/:id/versenden-standard")
+  @UseInterceptors(FileInterceptor("datei", { storage: memoryStorage(), limits: { fileSize: MAX_PDF } }))
+  async versendenStandard(@Param("art") art: string, @Param("id", ParseUUIDPipe) id: string, @UploadedFile() datei: Express.Multer.File | undefined, @Benutzer() benutzer: string) {
+    const v = await this.vorlage(art, id);
+    if (!v.an.length) throw new BadRequestException({ message: "Eingabe ungültig", fehler: ["Für diesen Kaufvertrag ist keine E-Mail-Adresse hinterlegt."] });
+    return this.versenden(art, id, datei, { an: v.an.join(", "), betreff: v.betreff, text: v.text }, benutzer);
   }
 
   @Get(":art/:id")
