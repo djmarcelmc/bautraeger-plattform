@@ -41,6 +41,9 @@ export const gesellschaft = pgTable("gesellschaft", {
   datevMandantennr: integer("datev_mandantennr"),
   skr: text("skr").default("03"),
   sachkontenlaenge: integer("sachkontenlaenge").default(4),
+  /** Auftraggeberkonto für SEPA-Überweisungen. */
+  iban: text("iban"),
+  bic: text("bic"),
   ...zeitstempel,
 }, (t) => [uniqueIndex("gesellschaft_nr_je_mandant").on(t.mandantId, t.nr)]);
 
@@ -72,6 +75,7 @@ export const geschaeftspartner = pgTable("geschaeftspartner", {
   email: text("email"),
   telefon: text("telefon"),
   iban: text("iban"),
+  bic: text("bic"),
   rollen: partnerRolle("rollen").array().notNull().default([]),
   /** Freistellungsbescheinigung § 48b EStG (Bauabzugsteuer). */
   freistellungGueltigBis: date("freistellung_gueltig_bis"),
@@ -350,9 +354,23 @@ export const eingangsrechnung = pgTable("eingangsrechnung", {
   ...zeitstempel,
 });
 
+/** SEPA-Sammelüberweisung (pain.001) mit den darin bezahlten Rechnungen. */
+export const zahlungslauf = pgTable("zahlungslauf", {
+  id: id(),
+  gesellschaftId: uuid("gesellschaft_id").notNull().references(() => gesellschaft.id),
+  nr: text("nr").notNull(),
+  ausfuehrungAm: date("ausfuehrung_am").notNull(),
+  anzahl: integer("anzahl").notNull(),
+  summe: geld("summe").notNull(),
+  xml: text("xml").notNull(),
+  erstelltVon: text("erstellt_von"),
+  ...zeitstempel,
+});
+
 export const zahlungsausgang = pgTable("zahlungsausgang", {
   id: id(),
   eingangsrechnungId: uuid("eingangsrechnung_id").notNull().references(() => eingangsrechnung.id),
+  zahlungslaufId: uuid("zahlungslauf_id").references(() => zahlungslauf.id),
   datum: date("datum").notNull(),
   betrag: geld("betrag").notNull(),
   skonto: geld("skonto").notNull().default("0"),
@@ -367,9 +385,12 @@ export const buergschaft = pgTable("buergschaft", {
   handwerkervertragId: uuid("handwerkervertrag_id").references(() => handwerkervertrag.id),
   kaufvertragId: uuid("kaufvertrag_id").references(() => kaufvertrag.id),
   buergeId: uuid("buerge_id").references(() => geschaeftspartner.id),
+  nr: text("nr"),
   betrag: geld("betrag").notNull(),
+  ausgestelltAm: date("ausgestellt_am"),
   gueltigBis: date("gueltig_bis"),
   rueckgabeAm: date("rueckgabe_am"),
+  bemerkung: text("bemerkung"),
   ...zeitstempel,
 });
 

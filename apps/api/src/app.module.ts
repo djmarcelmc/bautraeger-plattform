@@ -7,6 +7,8 @@ import { AuswertungenController } from "./auswertungen/auswertungen.controller.j
 import { AuswertungenService } from "./auswertungen/auswertungen.service.js";
 import { BauzeitController } from "./bauzeit/bauzeit.controller.js";
 import { BauzeitService } from "./bauzeit/bauzeit.service.js";
+import { BuergschaftenController } from "./sepa/buergschaften.controller.js";
+import { ZahlungslaufController } from "./sepa/zahlungslauf.controller.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
 import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
@@ -50,6 +52,8 @@ class HealthController {
     MahnwesenController,
     AuswertungenController,
     BauzeitController,
+    ZahlungslaufController,
+    BuergschaftenController,
     DatevController,
   ],
   providers: [

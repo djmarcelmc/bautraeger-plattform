@@ -264,15 +264,8 @@ export class KostenController {
   @Post("eingangsrechnungen/:id/zahlung")
   async zahlung(@Param("id", ParseUUIDPipe) id: string, @Body() body: unknown, @Benutzer() benutzer: string) {
     const { datum } = pruefe(RechnungZahlung, body);
-    const r = await this.kosten.rechnung(id, datum!);
-    if (r.status !== "freigegeben") throw new ConflictException("Nur freigegebene Rechnungen können bezahlt werden.");
-    const e = r.vorschau.skontoMoeglich ? r.vorschau.mitSkonto : r.vorschau.ohneSkonto;
-    if (money(e.faellig!).lte(0)) throw new ConflictException("Kein Zahlbetrag offen (Rechnung durch frühere Zahlungen abgegolten).");
-    await this.db.transaction(async (tx) => {
-      await tx.insert(schema.zahlungsausgang).values({ eingangsrechnungId: id, datum: datum!, betrag: e.auszahlung!, skonto: e.skonto!, bauabzugsteuer: e.bauabzugsteuer! });
-      await tx.update(er).set({ status: "bezahlt", pruefergebnis: e, geaendertAm: new Date() }).where(eq(er.id, id));
-      await protokollieren(tx, { tabelle: "eingangsrechnung", id, aktion: "update", alt: { status: r.status }, neu: { status: "bezahlt", datum, auszahlung: e.auszahlung, skonto: e.skonto, bauabzugsteuer: e.bauabzugsteuer }, benutzer });
-    });
+    const z = await this.kosten.zahlbetrag(id, datum!);
+    await this.db.transaction((tx) => this.kosten.zahlungBuchen(tx, z, datum!, benutzer));
     return this.kosten.rechnung(id);
   }
 }

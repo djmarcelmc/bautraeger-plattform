@@ -39,6 +39,7 @@ export function PartnerFelder({ p, vorschlagNr }: { p?: Partner; vorschlagNr?: n
       </Gruppe>
       <Gruppe titel="Zahlungsverkehr & Steuern">
         <Feld label="IBAN" name="iban" wert={p?.iban?.replace(/(.{4})/g, "$1 ").trim()} breit />
+        <Feld label="BIC" name="bic" wert={p?.bic} hinweis="optional, im SEPA-Raum nicht erforderlich" />
         <Feld
           label="Freistellungsbescheinigung gültig bis"
           name="freistellungGueltigBis"

@@ -314,6 +314,41 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
       },
     );
 
+  if (apiUrl)
+    server.registerTool(
+      "buergschaften",
+      {
+        title: "Bürgschaften",
+        description:
+          "Listet erhaltene (Handwerker) und ausgegebene Bürgschaften (§ 7 MaBV) mit Status: aktiv, läuft bald ab, Rückgabe fällig, abgelaufen, zurückgegeben. Standard: nur solche mit Handlungsbedarf.",
+        inputSchema: { alle: z.boolean().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ alle }) => {
+        const d = await apiGet<{
+          buergschaften: { artText: string; richtung: string; projekt: { nr: number; suchcode: string } | null; bezug: string; buerge: string | null; nr: string | null; betrag: string; gueltigBis: string | null; rueckgabeFaelligAb: string | null; status: string }[];
+          summen: { erhalten: string; ausgegeben: string; handlungsbedarf: number };
+        }>(`/buergschaften?status=${alle ? "offen" : "handlung"}`);
+        const statusText: Record<string, string> = { aktiv: "aktiv", laeuft_ab: "läuft bald ab", rueckgabe_faellig: "Rückgabe fällig", abgelaufen: "abgelaufen", zurueckgegeben: "zurückgegeben" };
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        return json({
+          summen: { erhalten: euro(d.summen.erhalten), ausgegeben: euro(d.summen.ausgegeben), handlungsbedarf: d.summen.handlungsbedarf },
+          buergschaften: d.buergschaften.map((x) => ({
+            art: x.artText,
+            richtung: x.richtung,
+            projekt: x.projekt ? `${x.projekt.nr} ${x.projekt.suchcode}` : null,
+            bezug: x.bezug,
+            buerge: x.buerge,
+            nr: x.nr,
+            betrag: euro(x.betrag),
+            gueltigBis: x.gueltigBis,
+            rueckgabeFaelligAb: x.rueckgabeFaelligAb,
+            status: statusText[x.status] ?? x.status,
+          })),
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(

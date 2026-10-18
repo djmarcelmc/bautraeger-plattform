@@ -3,6 +3,8 @@
 import {
   BarChart3,
   Building2,
+  Banknote,
+  ShieldCheck,
   Calculator,
   ClipboardList,
   FolderKanban,
@@ -30,6 +32,8 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     eintraege: [
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
+      { href: "/zahlungslaeufe", text: "Zahlungsläufe", icon: Banknote },
+      { href: "/buergschaften", text: "Bürgschaften", icon: ShieldCheck },
       { href: "/maengel", text: "Mängel", icon: Wrench },
       { href: "/auswertungen", text: "Auswertungen", icon: BarChart3 },
     ],

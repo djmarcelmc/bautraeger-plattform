@@ -7,6 +7,8 @@ export interface Gesellschaft {
   datevMandantennr: number | null;
   skr: string | null;
   sachkontenlaenge: number | null;
+  iban: string | null;
+  bic: string | null;
 }
 
 export interface Partner {
@@ -23,6 +25,7 @@ export interface Partner {
   email: string | null;
   telefon: string | null;
   iban: string | null;
+  bic: string | null;
   rollen: string[];
   freistellungGueltigBis: string | null;
 }
@@ -521,4 +524,70 @@ export interface Liquiditaetsplan {
   ueberfaellig: { ein: string; aus: string };
   spaeter: { ein: string; aus: string };
   ohneTermin: { ein: string; aus: string };
+}
+
+export interface ZahlungsvorschlagRechnung {
+  id: string;
+  rechnungsnr: string;
+  rechnungsdatum: string;
+  projekt: { id: string; nr: number; suchcode: string };
+  gewerk: string;
+  handwerker: { name: string; iban: string | null };
+  faelligAm: string | null;
+  skontoFristBis: string | null;
+  skontoMoeglich: boolean;
+  auszahlung: string;
+  skonto: string;
+  bauabzugsteuer: string;
+  zahlbar: boolean;
+  hinweise: string[];
+}
+
+export interface Zahlungsvorschlag {
+  ausfuehrungAm: string;
+  gesellschaften: { gesellschaft: { id: string; nr: number; name: string; iban: string | null; kontoOk: boolean }; rechnungen: ZahlungsvorschlagRechnung[]; summe: string }[];
+}
+
+export interface ZahlungslaufListe {
+  id: string;
+  nr: string;
+  ausfuehrungAm: string;
+  anzahl: number;
+  summe: string;
+  erstelltVon: string | null;
+  angelegtAm: string;
+  gesellschaft: string;
+}
+
+export interface ZahlungslaufDetail extends Omit<ZahlungslaufListe, "gesellschaft"> {
+  gesellschaft: { id: string; name: string; iban: string | null; bic: string | null };
+  zahlungen: { rechnungId: string; rechnungsnr: string; betrag: string; skonto: string; bauabzugsteuer: string; projekt: string; gewerk: string; handwerker: string; iban: string | null }[];
+  bauabzugsteuer: { summe: string; faelligAm: string | null };
+  skonto: string;
+}
+
+export interface Buergschaft {
+  id: string;
+  richtung: "erhalten" | "ausgegeben";
+  art: string;
+  artText: string;
+  handwerkervertragId: string | null;
+  kaufvertragId: string | null;
+  buergeId: string | null;
+  nr: string | null;
+  betrag: string;
+  ausgestelltAm: string | null;
+  gueltigBis: string | null;
+  rueckgabeAm: string | null;
+  bemerkung: string | null;
+  projekt: { id: string; nr: number; suchcode: string } | null;
+  bezug: string;
+  buerge: string | null;
+  rueckgabeFaelligAb: string | null;
+  status: "zurueckgegeben" | "abgelaufen" | "rueckgabe_faellig" | "laeuft_ab" | "aktiv";
+}
+
+export interface BuergschaftListe {
+  buergschaften: Buergschaft[];
+  summen: { erhalten: string; ausgegeben: string; handlungsbedarf: number };
 }

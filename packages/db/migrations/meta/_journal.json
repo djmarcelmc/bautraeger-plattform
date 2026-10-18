@@ -57,6 +57,13 @@
       "when": 1792322004018,
       "tag": "0007_bauzeitenplan",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792322978767,
+      "tag": "0008_sepa_buergschaften",
+      "breakpoints": true
     }
   ]
 }
