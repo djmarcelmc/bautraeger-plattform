@@ -1,0 +1,56 @@
+# Lokaler Betrieb auf einem PC (Windows/Mac/Linux mit Docker Desktop) – ohne HTTPS und Passwortschutz.
+# Start per Doppelklick: lokal/Starten.bat (Windows) bzw. lokal/starten.sh (Mac/Linux).
+# Danach im Browser: http://localhost:3000   ·   Daten bleiben in Docker-Volumes erhalten.
+name: bautraeger-lokal
+
+x-node-build: &node-build
+  context: .
+  args:
+    NODE_IMAGE: ${NODE_IMAGE:-node:22-bookworm-slim}
+
+services:
+  db:
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bt
+      POSTGRES_PASSWORD: bt
+      POSTGRES_DB: bautraeger
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bt -d bautraeger"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: { <<: *node-build, target: api }
+    image: bautraeger-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://bt:bt@db:5432/bautraeger
+      MIGRATE_ON_START: "true"
+      PUBLIC_URL: http://localhost:3000
+      # lokal kein Abruf aus einem Rechnungspostfach
+      RECHNUNGEN_ABRUF: aus
+    volumes:
+      - dokumente:/data/dokumente
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    build: { <<: *node-build, target: web }
+    image: bautraeger-web
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:3001
+      PUBLIC_URL: http://localhost:3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  dokumente:
