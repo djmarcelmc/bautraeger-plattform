@@ -2,6 +2,7 @@ import {
   type AnyPgColumn,
   boolean,
   date,
+  index,
   integer,
   jsonb,
   numeric,
@@ -48,6 +49,8 @@ export const gesellschaft = pgTable("gesellschaft", {
   steuernummer: text("steuernummer"),
   /** Briefbogen (PDF in der Dokumentablage) und Satzspiegel für Schreiben */
   briefbogen: jsonb("briefbogen").$type<Record<string, unknown>>(),
+  /** Kontenzuordnung für das Buchungsjournal (DATEV); leer = Standard des Kontenrahmens */
+  kontierung: jsonb("kontierung").$type<Record<string, unknown>>(),
   ...zeitstempel,
 }, (t) => [uniqueIndex("gesellschaft_nr_je_mandant").on(t.mandantId, t.nr)]);
 
@@ -519,8 +522,10 @@ export const buchung = pgTable("buchung", {
   dokumentId: uuid("dokument_id"),
   exportiertAm: timestamp("exportiert_am", { withTimezone: true }),
   exportStapel: text("export_stapel"),
+  /** Stornobuchung zu dieser (exportierten) Buchung */
+  stornoVon: uuid("storno_von").references((): AnyPgColumn => buchung.id),
   ...zeitstempel,
-});
+}, (t) => [index("buchung_quelle").on(t.gesellschaftId, t.quelleTyp, t.quelleId), index("buchung_datum").on(t.gesellschaftId, t.belegdatum)]);
 
 export const dokument = pgTable("dokument", {
   id: id(),

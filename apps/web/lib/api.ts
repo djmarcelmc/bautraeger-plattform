@@ -39,6 +39,11 @@ export async function api<T = unknown>(pfad: string, init: { method?: string; bo
 }
 
 /** Rohe Antwort (z. B. für Datei-Downloads). */
-export async function apiRoh(pfad: string) {
-  return fetch(`${BASIS}/api${pfad}`, { headers: await kennung(), cache: "no-store" });
+export async function apiRoh(pfad: string, init: { method?: string; body?: unknown } = {}) {
+  return fetch(`${BASIS}/api${pfad}`, {
+    method: init.method ?? "GET",
+    headers: { ...(init.body === undefined ? {} : { "content-type": "application/json" }), ...(await kennung()) },
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    cache: "no-store",
+  });
 }

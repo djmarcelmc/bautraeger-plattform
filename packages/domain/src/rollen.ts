@@ -26,6 +26,7 @@ export const RECHTE = {
   kostenFreigeben: "Rechnungen freigeben",
   zahlungen: "Rechnungen bezahlen und Zahlungsläufe",
   sicherheiten: "Bürgschaften",
+  buchhaltung: "Buchungsjournal, Kontenzuordnung und DATEV-Export",
   dokumente: "Dokumente hochladen und ausblenden",
   verwaltung: "Gesellschaften und Einstellungen",
 } as const;
@@ -46,6 +47,7 @@ export const RECHTE_JE_ROLLE: Record<Recht, Rolle[]> = {
   kostenFreigeben: LEITUNG,
   zahlungen: [...LEITUNG, "Bautraeger.Buchhaltung"],
   sicherheiten: [...LEITUNG, "Bautraeger.Buchhaltung", "Bautraeger.Bauleitung"],
+  buchhaltung: [...LEITUNG, "Bautraeger.Buchhaltung", "Bautraeger.Steuerberater"],
   dokumente: ALLE_FACHLICHEN,
   verwaltung: LEITUNG,
 };
@@ -60,6 +62,7 @@ const REGELN: [RegExp, Recht][] = [
   [/^\/eingangsrechnungen\/[^/]+\/zahlung$/, "zahlungen"],
   [/^\/zahlungslaeufe(\/|$)/, "zahlungen"],
   [/^\/bauabzug(\/|$)/, "zahlungen"],
+  [/^\/buchhaltung(\/|$)/, "buchhaltung"],
   [/^\/eingangsrechnungen(\/[^/]+\/pruefen)?$/, "kostenPruefen"],
   [/^\/(handwerkervertraege|nachtraege|gewerke)(\/|$)/, "kostenBearbeiten"],
   [/^\/projekte\/[^/]+\/(gewerke|gewerkeplan)$/, "kostenBearbeiten"],

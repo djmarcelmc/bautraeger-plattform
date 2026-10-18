@@ -32,6 +32,8 @@ import { SonderwuenscheController } from "./sonderwunsch/sonderwuensche.controll
 import { SchreibenController } from "./schreiben/schreiben.controller.js";
 import { BriefbogenController } from "./gesellschaften/briefbogen.controller.js";
 import { BauabzugService } from "./bauabzug/bauabzug.service.js";
+import { BuchhaltungController } from "./buchhaltung/buchhaltung.controller.js";
+import { BuchhaltungService } from "./buchhaltung/buchhaltung.service.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
 import { KostenController } from "./kosten/kosten.controller.js";
 import { KostenService } from "./kosten/kosten.service.js";
@@ -61,6 +63,7 @@ class HealthController {
     EinheitenController,
     ImportController,
     BauabzugController,
+    BuchhaltungController,
     SonderwuenscheController,
     SchreibenController,
     BriefbogenController,
@@ -95,6 +98,7 @@ class HealthController {
     BuergschaftenService,
     CockpitService,
     BauabzugService,
+    BuchhaltungService,
     NachrichtenService,
     Versandlauf,
     { provide: MAIL_VERSAND, useFactory: () => versandAusUmgebung() },

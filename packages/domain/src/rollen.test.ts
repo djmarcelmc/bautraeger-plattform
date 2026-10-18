@@ -11,6 +11,8 @@ describe("Rollen und Rechte", () => {
     expect(r("POST", "/eingangsrechnungen/abc/zahlung")).toBe("zahlungen");
     expect(r("POST", "/zahlungslaeufe")).toBe("zahlungen");
     expect(r("POST", "/bauabzug/anmeldungen")).toBe("zahlungen");
+    expect(r("POST", "/buchhaltung/export")).toBe("buchhaltung");
+    expect(r("PUT", "/buchhaltung/kontierung/x")).toBe("buchhaltung");
     expect(r("POST", "/kaufvertraege/abc/portal")).toBe("verkauf");
     expect(r("POST", "/sonderwuensche/abc/beauftragen")).toBe("verkauf");
     expect(r("POST", "/schreiben/zahlungsanforderung/abc/versenden")).toBe("verkauf");
@@ -35,6 +37,7 @@ describe("Rollen und Rechte", () => {
   it("vergibt Rechte je Rolle", () => {
     expect(darf(["Bautraeger.Steuerberater"], "lesen")).toBe(true);
     expect(darf(["Bautraeger.Steuerberater"], "dokumente")).toBe(false);
+    expect(darf(["Bautraeger.Steuerberater"], "buchhaltung")).toBe(true);
     expect(darf(["Bautraeger.Bauleitung"], "kostenPruefen")).toBe(true);
     expect(darf(["Bautraeger.Bauleitung"], "kostenFreigeben")).toBe(false);
     expect(darf(["Bautraeger.Buchhaltung"], "zahlungen")).toBe(true);

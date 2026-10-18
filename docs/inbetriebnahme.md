@@ -62,7 +62,10 @@ von der Plattform selbst berechnet und geprüft werden:
 - [ ] Offene Posten Verkauf = Debitorensaldo laut Buchhaltung
 - [ ] Kostenstand je Projekt = Werte aus AMADEUS X bzw. Kostenkontrolle
 - [ ] MaBV-Prüfbericht ohne unerklärte Feststellungen
-- [ ] DATEV-Export einmal mit dem Steuerberater testen (Kontenzuordnung abstimmen)
+- [ ] Kontenzuordnung je Gesellschaft unter **Buchhaltung** mit dem Steuerberater abstimmen (Bank, Erhaltene
+      Anzahlungen bzw. Erlöse, Bauleistungen, Skonti, Bauabzugsteuer, Personenkontenbereiche). Personenkonten: Partnernummern
+      mit Personenkontolänge (z. B. 70001) werden übernommen, sonst Basis + Partnernummer
+- [ ] DATEV-Export einmal mit dem Steuerberater testen (Testimport, Festschreibung erst danach im Echtbetrieb)
 - [ ] SEPA-Datei einmal im Onlinebanking der Hausbank einlesen (ohne Ausführung)
 
 ## 7. Umstellung

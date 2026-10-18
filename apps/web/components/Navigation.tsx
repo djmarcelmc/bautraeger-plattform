@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BookOpenCheck,
   Building2,
   Banknote,
   Landmark,
@@ -36,6 +37,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
       { href: "/kosten", text: "Kosten", icon: ClipboardList },
       { href: "/zahlungslaeufe", text: "Zahlungsläufe", icon: Banknote },
       { href: "/bauabzug", text: "Bauabzugsteuer", icon: Landmark },
+      { href: "/buchhaltung", text: "Buchhaltung", icon: BookOpenCheck },
       { href: "/buergschaften", text: "Bürgschaften", icon: ShieldCheck },
       { href: "/maengel", text: "Mängel", icon: Wrench },
       { href: "/auswertungen", text: "Auswertungen", icon: BarChart3 },
