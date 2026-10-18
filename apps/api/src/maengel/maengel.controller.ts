@@ -7,6 +7,7 @@ import { KontextService } from "../common/kontext.service.js";
 import { differenz, protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { VerkaufService } from "../verkauf/verkauf.service.js";
+import { NachrichtenService } from "../benachrichtigung/nachrichten.service.js";
 import { MaengelService, heute } from "./maengel.service.js";
 
 const { mangel: m, ruege: r } = schema;
@@ -18,7 +19,16 @@ export class MaengelController {
     @Inject(KontextService) private readonly kontext: KontextService,
     @Inject(VerkaufService) private readonly verkauf: VerkaufService,
     @Inject(MaengelService) private readonly maengel: MaengelService,
+    @Inject(NachrichtenService) private readonly nachrichten: NachrichtenService,
   ) {}
+
+  /** Führt eine Änderung aus und informiert ggf. den Käufer über den neuen Bearbeitungsstand. */
+  private async mitKaeuferInfo<T>(id: string, fn: () => Promise<T>): Promise<T> {
+    const vorher = await this.nachrichten.portalStatusVon(id);
+    const ergebnis = await fn();
+    await this.nachrichten.mangelStatusGeaendert(id, vorher).catch((e: Error) => console.error("Benachrichtigung:", e.message));
+    return ergebnis;
+  }
 
   /** Mängelliste mit Status und Fristen; status = offen | ueberfaellig | erledigt | alle. */
   @Get()
@@ -123,12 +133,12 @@ export class MaengelController {
     const alt = await this.maengel.mangel(id);
     const werte = await this.bezuegeAufloesen(pruefe(MangelEingabe, body));
     if (werte.projektId !== alt.projektId) throw new BadRequestException("Das Projekt eines Mangels kann nicht geändert werden");
-    return this.db.transaction(async (tx) => {
+    return this.mitKaeuferInfo(id, () => this.db.transaction(async (tx) => {
       const [neu] = await tx.update(m).set({ ...werte, geaendertAm: new Date() }).where(eq(m.id, id)).returning();
       const d = differenz(alt as unknown as Record<string, unknown>, neu!);
       if (d.geaendert) await protokollieren(tx, { tabelle: "mangel", id, aktion: "update", ...d, benutzer });
       return neu;
-    });
+    }));
   }
 
   /** Nächste Rüge (höchstens drei); ohne Frist wird die Standardfrist der Stufe gesetzt. */
@@ -142,14 +152,14 @@ export class MaengelController {
     if (!vorschlag) throw new ConflictException("Der Mangel wurde bereits dreimal gerügt – jetzt Ersatzvornahme prüfen.");
     const letzte = x.ruegen.at(-1);
     if (letzte && e.geruegtAm! < letzte.geruegtAm) throw new BadRequestException("Die Rüge kann nicht vor der vorherigen Rüge liegen.");
-    return this.db.transaction(async (tx) => {
+    return this.mitKaeuferInfo(id, () => this.db.transaction(async (tx) => {
       const [neu] = await tx
         .insert(r)
         .values({ mangelId: id, stufe: vorschlag.stufe, geruegtAm: e.geruegtAm!, fristBis: e.fristBis ?? vorschlag.fristBis, bemerkung: e.bemerkung })
         .returning();
       await protokollieren(tx, { tabelle: "mangel", id, aktion: "update", neu: { ruege: neu!.stufe, geruegtAm: neu!.geruegtAm, fristBis: neu!.fristBis }, benutzer });
       return neu;
-    });
+    }));
   }
 
   @Post(":id/erledigt")
@@ -157,10 +167,12 @@ export class MaengelController {
     const e = pruefe(ErledigtEingabe, body);
     const x = await this.maengel.mangel(id);
     if (x.erledigtAm) throw new ConflictException("Der Mangel ist bereits erledigt.");
+    const vorher = await this.nachrichten.portalStatusVon(id);
     await this.db.transaction(async (tx) => {
       await tx.update(m).set({ erledigtAm: e.erledigtAm!, erledigtVon: e.erledigtVon ?? benutzer, geaendertAm: new Date() }).where(eq(m.id, id));
       await protokollieren(tx, { tabelle: "mangel", id, aktion: "update", alt: { erledigtAm: null }, neu: { erledigtAm: e.erledigtAm, erledigtVon: e.erledigtVon ?? benutzer }, benutzer });
     });
+    await this.nachrichten.mangelStatusGeaendert(id, vorher).catch((err: Error) => console.error("Benachrichtigung:", err.message));
     return this.maengel.mangel(id);
   }
 

@@ -13,7 +13,10 @@ import { BuergschaftenService } from "./sepa/buergschaften.service.js";
 import { ZahlungslaufController } from "./sepa/zahlungslauf.controller.js";
 import { AbnahmenController } from "./abnahme/abnahmen.controller.js";
 import { MangelvorlagenController } from "./abnahme/mangelvorlagen.controller.js";
-import { CockpitController } from "./cockpit/cockpit.controller.js";
+import { BenachrichtigungenController, Versandlauf } from "./benachrichtigung/benachrichtigungen.controller.js";
+import { NachrichtenService } from "./benachrichtigung/nachrichten.service.js";
+import { MAIL_VERSAND, versandAusUmgebung } from "./benachrichtigung/versand.js";
+import { CockpitController, CockpitService } from "./cockpit/cockpit.controller.js";
 import { PortalController, PortalLinkController } from "./portal/portal.controller.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
@@ -61,6 +64,7 @@ class HealthController {
     PortalController,
     PortalLinkController,
     CockpitController,
+    BenachrichtigungenController,
     AbnahmenController,
     MangelvorlagenController,
     ZahlungslaufController,
@@ -77,6 +81,10 @@ class HealthController {
     MabvPruefberichtService,
     BauzeitService,
     BuergschaftenService,
+    CockpitService,
+    NachrichtenService,
+    Versandlauf,
+    { provide: MAIL_VERSAND, useFactory: () => versandAusUmgebung() },
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],

@@ -1,0 +1,4010 @@
+{
+  "id": "0ce7e30c-be7a-4d36-a4cc-2229f88af10b",
+  "prevId": "8fb94a3c-fd02-46b9-ab1c-9b96c16e712b",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.abnahme": {
+      "name": "abnahme",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "einheit_id": {
+          "name": "einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handwerkervertrag_id": {
+          "name": "handwerkervertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datum": {
+          "name": "datum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ort": {
+          "name": "ort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "teilnehmer": {
+          "name": "teilnehmer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bemerkung": {
+          "name": "bemerkung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schluessel": {
+          "name": "schluessel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zaehler": {
+          "name": "zaehler",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "ergebnis": {
+          "name": "ergebnis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vorbehalt_vertragsstrafe": {
+          "name": "vorbehalt_vertragsstrafe",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "gewaehrleistung_monate": {
+          "name": "gewaehrleistung_monate",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abgeschlossen_am": {
+          "name": "abgeschlossen_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abgeschlossen_von": {
+          "name": "abgeschlossen_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "abnahme_nr_je_projekt": {
+          "name": "abnahme_nr_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "abnahme_projekt_id_projekt_id_fk": {
+          "name": "abnahme_projekt_id_projekt_id_fk",
+          "tableFrom": "abnahme",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "abnahme_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "abnahme_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "abnahme",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "abnahme_einheit_id_einheit_id_fk": {
+          "name": "abnahme_einheit_id_einheit_id_fk",
+          "tableFrom": "abnahme",
+          "tableTo": "einheit",
+          "columnsFrom": [
+            "einheit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "abnahme_handwerkervertrag_id_handwerkervertrag_id_fk": {
+          "name": "abnahme_handwerkervertrag_id_handwerkervertrag_id_fk",
+          "tableFrom": "abnahme",
+          "tableTo": "handwerkervertrag",
+          "columnsFrom": [
+            "handwerkervertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.aenderungsprotokoll": {
+      "name": "aenderungsprotokoll",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tabelle": {
+          "name": "tabelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datensatz_id": {
+          "name": "datensatz_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aktion": {
+          "name": "aktion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alt": {
+          "name": "alt",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neu": {
+          "name": "neu",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "benutzer": {
+          "name": "benutzer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quelle": {
+          "name": "quelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ui'"
+        },
+        "zeitpunkt": {
+          "name": "zeitpunkt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.basiszins": {
+      "name": "basiszins",
+      "schema": "",
+      "columns": {
+        "gueltig_ab": {
+          "name": "gueltig_ab",
+          "type": "date",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "satz": {
+          "name": "satz",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bautenstand": {
+      "name": "bautenstand",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "einheit_id": {
+          "name": "einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "abschnitt": {
+          "name": "abschnitt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fertig_am": {
+          "name": "fertig_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gemeldet_von": {
+          "name": "gemeldet_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bautenstand_einheit_abschnitt": {
+          "name": "bautenstand_einheit_abschnitt",
+          "columns": [
+            {
+              "expression": "einheit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "abschnitt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bautenstand_einheit_id_einheit_id_fk": {
+          "name": "bautenstand_einheit_id_einheit_id_fk",
+          "tableFrom": "bautenstand",
+          "tableTo": "einheit",
+          "columnsFrom": [
+            "einheit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.buchung": {
+      "name": "buchung",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gesellschaft_id": {
+          "name": "gesellschaft_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "belegdatum": {
+          "name": "belegdatum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "belegnr": {
+          "name": "belegnr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "konto": {
+          "name": "konto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gegenkonto": {
+          "name": "gegenkonto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "soll_haben": {
+          "name": "soll_haben",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "steuerschluessel": {
+          "name": "steuerschluessel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buchungstext": {
+          "name": "buchungstext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kostenstelle": {
+          "name": "kostenstelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quelle_typ": {
+          "name": "quelle_typ",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quelle_id": {
+          "name": "quelle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dokument_id": {
+          "name": "dokument_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exportiert_am": {
+          "name": "exportiert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "export_stapel": {
+          "name": "export_stapel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "buchung_gesellschaft_id_gesellschaft_id_fk": {
+          "name": "buchung_gesellschaft_id_gesellschaft_id_fk",
+          "tableFrom": "buchung",
+          "tableTo": "gesellschaft",
+          "columnsFrom": [
+            "gesellschaft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.buergschaft": {
+      "name": "buergschaft",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "richtung": {
+          "name": "richtung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "handwerkervertrag_id": {
+          "name": "handwerkervertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buerge_id": {
+          "name": "buerge_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nr": {
+          "name": "nr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ausgestellt_am": {
+          "name": "ausgestellt_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gueltig_bis": {
+          "name": "gueltig_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rueckgabe_am": {
+          "name": "rueckgabe_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bemerkung": {
+          "name": "bemerkung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "buergschaft_handwerkervertrag_id_handwerkervertrag_id_fk": {
+          "name": "buergschaft_handwerkervertrag_id_handwerkervertrag_id_fk",
+          "tableFrom": "buergschaft",
+          "tableTo": "handwerkervertrag",
+          "columnsFrom": [
+            "handwerkervertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "buergschaft_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "buergschaft_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "buergschaft",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "buergschaft_buerge_id_geschaeftspartner_id_fk": {
+          "name": "buergschaft_buerge_id_geschaeftspartner_id_fk",
+          "tableFrom": "buergschaft",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "buerge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dokument": {
+      "name": "dokument",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objekt_typ": {
+          "name": "objekt_typ",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objekt_id": {
+          "name": "objekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordner": {
+          "name": "ordner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dateiname": {
+          "name": "dateiname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "speicher_key": {
+          "name": "speicher_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "groesse": {
+          "name": "groesse",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beschreibung": {
+          "name": "beschreibung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hochgeladen_von": {
+          "name": "hochgeladen_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geloescht_am": {
+          "name": "geloescht_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geloescht_von": {
+          "name": "geloescht_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dokument_mandant_id_mandant_id_fk": {
+          "name": "dokument_mandant_id_mandant_id_fk",
+          "tableFrom": "dokument",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.eingangsrechnung": {
+      "name": "eingangsrechnung",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "handwerkervertrag_id": {
+          "name": "handwerkervertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rechnungsnr": {
+          "name": "rechnungsnr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rechnungsdatum": {
+          "name": "rechnungsdatum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eingang_am": {
+          "name": "eingang_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schlussrechnung": {
+          "name": "schlussrechnung",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "betrag_brutto": {
+          "name": "betrag_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geprueft_kumuliert": {
+          "name": "geprueft_kumuliert",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pruefergebnis": {
+          "name": "pruefergebnis",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "rechnung_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'erfasst'"
+        },
+        "bemerkung": {
+          "name": "bemerkung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geprueft_am": {
+          "name": "geprueft_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geprueft_von": {
+          "name": "geprueft_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "freigegeben_am": {
+          "name": "freigegeben_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "freigegeben_von": {
+          "name": "freigegeben_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "eingangsrechnung_handwerkervertrag_id_handwerkervertrag_id_fk": {
+          "name": "eingangsrechnung_handwerkervertrag_id_handwerkervertrag_id_fk",
+          "tableFrom": "eingangsrechnung",
+          "tableTo": "handwerkervertrag",
+          "columnsFrom": [
+            "handwerkervertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.einheit": {
+      "name": "einheit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "typ": {
+          "name": "typ",
+          "type": "einheit_typ",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bauabschnitt": {
+          "name": "bauabschnitt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
+        "etage": {
+          "name": "etage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wohnflaeche": {
+          "name": "wohnflaeche",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "miteigentum_tsd": {
+          "name": "miteigentum_tsd",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preis_pro_m2": {
+          "name": "preis_pro_m2",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vk_brutto": {
+          "name": "vk_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mindest_vk": {
+          "name": "mindest_vk",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reserviert_fuer": {
+          "name": "reserviert_fuer",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reserviert_bis": {
+          "name": "reserviert_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zugehoerig_zu_einheit_id": {
+          "name": "zugehoerig_zu_einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "einheit_nr_je_projekt": {
+          "name": "einheit_nr_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "einheit_projekt_id_projekt_id_fk": {
+          "name": "einheit_projekt_id_projekt_id_fk",
+          "tableFrom": "einheit",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "einheit_reserviert_fuer_geschaeftspartner_id_fk": {
+          "name": "einheit_reserviert_fuer_geschaeftspartner_id_fk",
+          "tableFrom": "einheit",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "reserviert_fuer"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.einstellung": {
+      "name": "einstellung",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schluessel": {
+          "name": "schluessel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wert": {
+          "name": "wert",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "einstellung_je_mandant": {
+          "name": "einstellung_je_mandant",
+          "columns": [
+            {
+              "expression": "mandant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "schluessel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "einstellung_mandant_id_mandant_id_fk": {
+          "name": "einstellung_mandant_id_mandant_id_fk",
+          "tableFrom": "einstellung",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.geschaeftspartner": {
+      "name": "geschaeftspartner",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suchcode": {
+          "name": "suchcode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firma": {
+          "name": "firma",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anrede": {
+          "name": "anrede",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vorname": {
+          "name": "vorname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nachname": {
+          "name": "nachname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "strasse": {
+          "name": "strasse",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plz": {
+          "name": "plz",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ort": {
+          "name": "ort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telefon": {
+          "name": "telefon",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "iban": {
+          "name": "iban",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bic": {
+          "name": "bic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rollen": {
+          "name": "rollen",
+          "type": "partner_rolle[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "freistellung_gueltig_bis": {
+          "name": "freistellung_gueltig_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "partner_nr_je_mandant": {
+          "name": "partner_nr_je_mandant",
+          "columns": [
+            {
+              "expression": "mandant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "geschaeftspartner_mandant_id_mandant_id_fk": {
+          "name": "geschaeftspartner_mandant_id_mandant_id_fk",
+          "tableFrom": "geschaeftspartner",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gesellschaft": {
+      "name": "gesellschaft",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anschrift": {
+          "name": "anschrift",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datev_beraternr": {
+          "name": "datev_beraternr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datev_mandantennr": {
+          "name": "datev_mandantennr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skr": {
+          "name": "skr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'03'"
+        },
+        "sachkontenlaenge": {
+          "name": "sachkontenlaenge",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 4
+        },
+        "iban": {
+          "name": "iban",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bic": {
+          "name": "bic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gesellschaft_nr_je_mandant": {
+          "name": "gesellschaft_nr_je_mandant",
+          "columns": [
+            {
+              "expression": "mandant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "gesellschaft_mandant_id_mandant_id_fk": {
+          "name": "gesellschaft_mandant_id_mandant_id_fk",
+          "tableFrom": "gesellschaft",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gewerk": {
+      "name": "gewerk",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gruppe": {
+          "name": "gruppe",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bezeichnung": {
+          "name": "bezeichnung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geschaetzt_brutto": {
+          "name": "geschaetzt_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gewerk_nr_je_projekt": {
+          "name": "gewerk_nr_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "gewerk_projekt_id_projekt_id_fk": {
+          "name": "gewerk_projekt_id_projekt_id_fk",
+          "tableFrom": "gewerk",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.handwerkervertrag": {
+      "name": "handwerkervertrag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gewerk_id": {
+          "name": "gewerk_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "handwerker_id": {
+          "name": "handwerker_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nr_intern": {
+          "name": "nr_intern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angebot_vom": {
+          "name": "angebot_vom",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vertrag_vom": {
+          "name": "vertrag_vom",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vertrag_brutto": {
+          "name": "vertrag_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "nachlass_prozent": {
+          "name": "nachlass_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "skonto_prozent": {
+          "name": "skonto_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "skonto_frist_tage": {
+          "name": "skonto_frist_tage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zahlungsfrist_tage": {
+          "name": "zahlungsfrist_tage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "umlagen": {
+          "name": "umlagen",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "einbehalt_ve_prozent": {
+          "name": "einbehalt_ve_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "einbehalt_gw_prozent": {
+          "name": "einbehalt_gw_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "gewaehrleistung_monate": {
+          "name": "gewaehrleistung_monate",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abnahme_am": {
+          "name": "abnahme_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "handwerkervertrag_gewerk_id_gewerk_id_fk": {
+          "name": "handwerkervertrag_gewerk_id_gewerk_id_fk",
+          "tableFrom": "handwerkervertrag",
+          "tableTo": "gewerk",
+          "columnsFrom": [
+            "gewerk_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "handwerkervertrag_handwerker_id_geschaeftspartner_id_fk": {
+          "name": "handwerkervertrag_handwerker_id_geschaeftspartner_id_fk",
+          "tableFrom": "handwerkervertrag",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "handwerker_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kaufvertrag": {
+      "name": "kaufvertrag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "urkundennr": {
+          "name": "urkundennr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datum": {
+          "name": "datum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zahlungsanforderung_an": {
+          "name": "zahlungsanforderung_an",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erbbaurecht": {
+          "name": "erbbaurecht",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "vertrag_wirksam": {
+          "name": "vertrag_wirksam",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "vormerkung_eingetragen_am": {
+          "name": "vormerkung_eingetragen_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lastenfreistellung_gesichert": {
+          "name": "lastenfreistellung_gesichert",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "buergschaft_nach_7": {
+          "name": "buergschaft_nach_7",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "zahlungsziel_tage": {
+          "name": "zahlungsziel_tage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "verbraucher": {
+          "name": "verbraucher",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "verzugszins_prozent": {
+          "name": "verzugszins_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anforderungssperre": {
+          "name": "anforderungssperre",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "mahnsperre": {
+          "name": "mahnsperre",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "uebergabe_ist": {
+          "name": "uebergabe_ist",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gewaehrleistung_bis": {
+          "name": "gewaehrleistung_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "kaufvertrag_nr_je_projekt": {
+          "name": "kaufvertrag_nr_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "kaufvertrag_projekt_id_projekt_id_fk": {
+          "name": "kaufvertrag_projekt_id_projekt_id_fk",
+          "tableFrom": "kaufvertrag",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "kaufvertrag_zahlungsanforderung_an_geschaeftspartner_id_fk": {
+          "name": "kaufvertrag_zahlungsanforderung_an_geschaeftspartner_id_fk",
+          "tableFrom": "kaufvertrag",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "zahlungsanforderung_an"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kaufvertrag_einheit": {
+      "name": "kaufvertrag_einheit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "einheit_id": {
+          "name": "einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vk_brutto": {
+          "name": "vk_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "einheit_nur_ein_kaufvertrag": {
+          "name": "einheit_nur_ein_kaufvertrag",
+          "columns": [
+            {
+              "expression": "einheit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "kaufvertrag_einheit_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "kaufvertrag_einheit_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "kaufvertrag_einheit",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "kaufvertrag_einheit_einheit_id_einheit_id_fk": {
+          "name": "kaufvertrag_einheit_einheit_id_einheit_id_fk",
+          "tableFrom": "kaufvertrag_einheit",
+          "tableTo": "einheit",
+          "columnsFrom": [
+            "einheit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kaufvertrag_kaeufer": {
+      "name": "kaufvertrag_kaeufer",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "partner_id": {
+          "name": "partner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anteil_prozent": {
+          "name": "anteil_prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'100'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "kaufvertrag_kaeufer_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "kaufvertrag_kaeufer_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "kaufvertrag_kaeufer",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "kaufvertrag_kaeufer_partner_id_geschaeftspartner_id_fk": {
+          "name": "kaufvertrag_kaeufer_partner_id_geschaeftspartner_id_fk",
+          "tableFrom": "kaufvertrag_kaeufer",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "partner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mahnung": {
+      "name": "mahnung",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "zahlungsanforderung_id": {
+          "name": "zahlungsanforderung_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stufe": {
+          "name": "stufe",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datum": {
+          "name": "datum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "frist_bis": {
+          "name": "frist_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "offener_betrag": {
+          "name": "offener_betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verzugszinsen": {
+          "name": "verzugszinsen",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "mahngebuehr": {
+          "name": "mahngebuehr",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "erstellt_von": {
+          "name": "erstellt_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mahnung_stufe_je_anforderung": {
+          "name": "mahnung_stufe_je_anforderung",
+          "columns": [
+            {
+              "expression": "zahlungsanforderung_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "stufe",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "mahnung_zahlungsanforderung_id_zahlungsanforderung_id_fk": {
+          "name": "mahnung_zahlungsanforderung_id_zahlungsanforderung_id_fk",
+          "tableFrom": "mahnung",
+          "tableTo": "zahlungsanforderung",
+          "columnsFrom": [
+            "zahlungsanforderung_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mandant": {
+      "name": "mandant",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mangel": {
+      "name": "mangel",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "einheit_id": {
+          "name": "einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gewerk_id": {
+          "name": "gewerk_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handwerkervertrag_id": {
+          "name": "handwerkervertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handwerker_id": {
+          "name": "handwerker_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abnahme_id": {
+          "name": "abnahme_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eigentum": {
+          "name": "eigentum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'sonder'"
+        },
+        "festgestellt_am": {
+          "name": "festgestellt_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "festgestellt_durch": {
+          "name": "festgestellt_durch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "titel": {
+          "name": "titel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ort": {
+          "name": "ort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beschreibung": {
+          "name": "beschreibung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mangelart": {
+          "name": "mangelart",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wert_handwerker_brutto": {
+          "name": "wert_handwerker_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "wert_kunde_brutto": {
+          "name": "wert_kunde_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "einbehalt": {
+          "name": "einbehalt",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "angebotsanforderung_am": {
+          "name": "angebotsanforderung_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auftragserteilung_am": {
+          "name": "auftragserteilung_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ersatzvornahme_am": {
+          "name": "ersatzvornahme_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erledigt_am": {
+          "name": "erledigt_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erledigt_von": {
+          "name": "erledigt_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mangel_nr_je_projekt": {
+          "name": "mangel_nr_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "mangel_projekt_id_projekt_id_fk": {
+          "name": "mangel_projekt_id_projekt_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_einheit_id_einheit_id_fk": {
+          "name": "mangel_einheit_id_einheit_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "einheit",
+          "columnsFrom": [
+            "einheit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_gewerk_id_gewerk_id_fk": {
+          "name": "mangel_gewerk_id_gewerk_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "gewerk",
+          "columnsFrom": [
+            "gewerk_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_handwerkervertrag_id_handwerkervertrag_id_fk": {
+          "name": "mangel_handwerkervertrag_id_handwerkervertrag_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "handwerkervertrag",
+          "columnsFrom": [
+            "handwerkervertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_handwerker_id_geschaeftspartner_id_fk": {
+          "name": "mangel_handwerker_id_geschaeftspartner_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "geschaeftspartner",
+          "columnsFrom": [
+            "handwerker_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "mangel_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mangel_abnahme_id_abnahme_id_fk": {
+          "name": "mangel_abnahme_id_abnahme_id_fk",
+          "tableFrom": "mangel",
+          "tableTo": "abnahme",
+          "columnsFrom": [
+            "abnahme_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mangelvorlage": {
+      "name": "mangelvorlage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kategorie": {
+          "name": "kategorie",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gewerk_nr": {
+          "name": "gewerk_nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "titel": {
+          "name": "titel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "beschreibung": {
+          "name": "beschreibung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mangelvorlage_mandant_id_mandant_id_fk": {
+          "name": "mangelvorlage_mandant_id_mandant_id_fk",
+          "tableFrom": "mangelvorlage",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nachricht": {
+      "name": "nachricht",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "an": {
+          "name": "an",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betreff": {
+          "name": "betreff",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "html": {
+          "name": "html",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anlass": {
+          "name": "anlass",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bezug_id": {
+          "name": "bezug_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'wartend'"
+        },
+        "versuche": {
+          "name": "versuche",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "naechster_versuch_am": {
+          "name": "naechster_versuch_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "fehler": {
+          "name": "fehler",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gesendet_am": {
+          "name": "gesendet_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "nachricht_mandant_id_mandant_id_fk": {
+          "name": "nachricht_mandant_id_mandant_id_fk",
+          "tableFrom": "nachricht",
+          "tableTo": "mandant",
+          "columnsFrom": [
+            "mandant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nachtrag": {
+      "name": "nachtrag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "handwerkervertrag_id": {
+          "name": "handwerkervertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betrag_brutto": {
+          "name": "betrag_brutto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "nachtrag_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'angeboten'"
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "nachtrag_handwerkervertrag_id_handwerkervertrag_id_fk": {
+          "name": "nachtrag_handwerkervertrag_id_handwerkervertrag_id_fk",
+          "tableFrom": "nachtrag",
+          "tableTo": "handwerkervertrag",
+          "columnsFrom": [
+            "handwerkervertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nummernkreis": {
+      "name": "nummernkreis",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gesellschaft_id": {
+          "name": "gesellschaft_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jahr": {
+          "name": "jahr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "letzte": {
+          "name": "letzte",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "nummernkreis_eindeutig": {
+          "name": "nummernkreis_eindeutig",
+          "columns": [
+            {
+              "expression": "gesellschaft_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "art",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "jahr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "nummernkreis_gesellschaft_id_gesellschaft_id_fk": {
+          "name": "nummernkreis_gesellschaft_id_gesellschaft_id_fk",
+          "tableFrom": "nummernkreis",
+          "tableTo": "gesellschaft",
+          "columnsFrom": [
+            "gesellschaft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.portalzugang": {
+      "name": "portalzugang",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gueltig_bis": {
+          "name": "gueltig_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "widerrufen_am": {
+          "name": "widerrufen_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "letzter_zugriff_am": {
+          "name": "letzter_zugriff_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erstellt_von": {
+          "name": "erstellt_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "portalzugang_token": {
+          "name": "portalzugang_token",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "portalzugang_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "portalzugang_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "portalzugang",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.projekt": {
+      "name": "projekt",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gesellschaft_id": {
+          "name": "gesellschaft_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suchcode": {
+          "name": "suchcode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "strasse": {
+          "name": "strasse",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plz": {
+          "name": "plz",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ort": {
+          "name": "ort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art": {
+          "name": "art",
+          "type": "projektart",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bautraeger'"
+        },
+        "para13b_anwendbar": {
+          "name": "para13b_anwendbar",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "grundbuchamt": {
+          "name": "grundbuchamt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grundbuch_blatt": {
+          "name": "grundbuch_blatt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flurstueck": {
+          "name": "flurstueck",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kostenstelle": {
+          "name": "kostenstelle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "projektbeginn": {
+          "name": "projektbeginn",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baubeginn_soll": {
+          "name": "baubeginn_soll",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "baubeginn_ist": {
+          "name": "baubeginn_ist",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fertigstellung_soll": {
+          "name": "fertigstellung_soll",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fertigstellung_ist": {
+          "name": "fertigstellung_ist",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abgeschlossen": {
+          "name": "abgeschlossen",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "wahlfelder": {
+          "name": "wahlfelder",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "projekt_nr_je_gesellschaft": {
+          "name": "projekt_nr_je_gesellschaft",
+          "columns": [
+            {
+              "expression": "gesellschaft_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "projekt_gesellschaft_id_gesellschaft_id_fk": {
+          "name": "projekt_gesellschaft_id_gesellschaft_id_fk",
+          "tableFrom": "projekt",
+          "tableTo": "gesellschaft",
+          "columnsFrom": [
+            "gesellschaft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rate": {
+      "name": "rate",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "typ": {
+          "name": "typ",
+          "type": "rate_typ",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'mabv'"
+        },
+        "abschnitte": {
+          "name": "abschnitte",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "prozent": {
+          "name": "prozent",
+          "type": "numeric(7, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zahlungsanforderung_id": {
+          "name": "zahlungsanforderung_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rate_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "rate_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "rate",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rate_zahlungsanforderung_id_zahlungsanforderung_id_fk": {
+          "name": "rate_zahlungsanforderung_id_zahlungsanforderung_id_fk",
+          "tableFrom": "rate",
+          "tableTo": "zahlungsanforderung",
+          "columnsFrom": [
+            "zahlungsanforderung_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ruege": {
+      "name": "ruege",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "mangel_id": {
+          "name": "mangel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stufe": {
+          "name": "stufe",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "geruegt_am": {
+          "name": "geruegt_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "frist_bis": {
+          "name": "frist_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nachfrist_bis": {
+          "name": "nachfrist_bis",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bemerkung": {
+          "name": "bemerkung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ruege_stufe_je_mangel": {
+          "name": "ruege_stufe_je_mangel",
+          "columns": [
+            {
+              "expression": "mangel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "stufe",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ruege_mangel_id_mangel_id_fk": {
+          "name": "ruege_mangel_id_mangel_id_fk",
+          "tableFrom": "ruege",
+          "tableTo": "mangel",
+          "columnsFrom": [
+            "mangel_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vorgang": {
+      "name": "vorgang",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "projekt_id": {
+          "name": "projekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bezeichnung": {
+          "name": "bezeichnung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gewerk_ids": {
+          "name": "gewerk_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::uuid[]"
+        },
+        "mabv_abschnitt": {
+          "name": "mabv_abschnitt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beginn": {
+          "name": "beginn",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ende": {
+          "name": "ende",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ende_ist": {
+          "name": "ende_ist",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "vorgang_abschnitt_je_projekt": {
+          "name": "vorgang_abschnitt_je_projekt",
+          "columns": [
+            {
+              "expression": "projekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "mabv_abschnitt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"vorgang\".\"mabv_abschnitt\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "vorgang_projekt_id_projekt_id_fk": {
+          "name": "vorgang_projekt_id_projekt_id_fk",
+          "tableFrom": "vorgang",
+          "tableTo": "projekt",
+          "columnsFrom": [
+            "projekt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zahlungsanforderung": {
+      "name": "zahlungsanforderung",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rechnungsnr": {
+          "name": "rechnungsnr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "angefordert_am": {
+          "name": "angefordert_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "faellig_am": {
+          "name": "faellig_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mahnstufe": {
+          "name": "mahnstufe",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "letzte_mahnung_am": {
+          "name": "letzte_mahnung_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "zahlungsanforderung_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "zahlungsanforderung_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "zahlungsanforderung",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zahlungsausgang": {
+      "name": "zahlungsausgang",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "eingangsrechnung_id": {
+          "name": "eingangsrechnung_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "zahlungslauf_id": {
+          "name": "zahlungslauf_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datum": {
+          "name": "datum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skonto": {
+          "name": "skonto",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "bauabzugsteuer": {
+          "name": "bauabzugsteuer",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "zahlungsausgang_eingangsrechnung_id_eingangsrechnung_id_fk": {
+          "name": "zahlungsausgang_eingangsrechnung_id_eingangsrechnung_id_fk",
+          "tableFrom": "zahlungsausgang",
+          "tableTo": "eingangsrechnung",
+          "columnsFrom": [
+            "eingangsrechnung_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "zahlungsausgang_zahlungslauf_id_zahlungslauf_id_fk": {
+          "name": "zahlungsausgang_zahlungslauf_id_zahlungslauf_id_fk",
+          "tableFrom": "zahlungsausgang",
+          "tableTo": "zahlungslauf",
+          "columnsFrom": [
+            "zahlungslauf_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zahlungseingang": {
+      "name": "zahlungseingang",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "zahlungsanforderung_id": {
+          "name": "zahlungsanforderung_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kaufvertrag_id": {
+          "name": "kaufvertrag_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datum": {
+          "name": "datum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "betrag": {
+          "name": "betrag",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verwendungszweck": {
+          "name": "verwendungszweck",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "zahlungseingang_zahlungsanforderung_id_zahlungsanforderung_id_fk": {
+          "name": "zahlungseingang_zahlungsanforderung_id_zahlungsanforderung_id_fk",
+          "tableFrom": "zahlungseingang",
+          "tableTo": "zahlungsanforderung",
+          "columnsFrom": [
+            "zahlungsanforderung_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "zahlungseingang_kaufvertrag_id_kaufvertrag_id_fk": {
+          "name": "zahlungseingang_kaufvertrag_id_kaufvertrag_id_fk",
+          "tableFrom": "zahlungseingang",
+          "tableTo": "kaufvertrag",
+          "columnsFrom": [
+            "kaufvertrag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.zahlungslauf": {
+      "name": "zahlungslauf",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "gesellschaft_id": {
+          "name": "gesellschaft_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nr": {
+          "name": "nr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ausfuehrung_am": {
+          "name": "ausfuehrung_am",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anzahl": {
+          "name": "anzahl",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summe": {
+          "name": "summe",
+          "type": "numeric(14, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xml": {
+          "name": "xml",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erstellt_von": {
+          "name": "erstellt_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "angelegt_am": {
+          "name": "angelegt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "geaendert_am": {
+          "name": "geaendert_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "zahlungslauf_gesellschaft_id_gesellschaft_id_fk": {
+          "name": "zahlungslauf_gesellschaft_id_gesellschaft_id_fk",
+          "tableFrom": "zahlungslauf",
+          "tableTo": "gesellschaft",
+          "columnsFrom": [
+            "gesellschaft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.einheit_typ": {
+      "name": "einheit_typ",
+      "schema": "public",
+      "values": [
+        "wohnung",
+        "stellplatz",
+        "gewerbe",
+        "hobbyraum",
+        "sonstiges"
+      ]
+    },
+    "public.nachtrag_status": {
+      "name": "nachtrag_status",
+      "schema": "public",
+      "values": [
+        "angeboten",
+        "beauftragt",
+        "abgelehnt",
+        "abgerechnet"
+      ]
+    },
+    "public.partner_rolle": {
+      "name": "partner_rolle",
+      "schema": "public",
+      "values": [
+        "kunde",
+        "interessent",
+        "handwerker",
+        "lieferant",
+        "notar",
+        "makler",
+        "bank",
+        "sonstige"
+      ]
+    },
+    "public.projektart": {
+      "name": "projektart",
+      "schema": "public",
+      "values": [
+        "bautraeger",
+        "werkvertrag",
+        "gemischt"
+      ]
+    },
+    "public.rate_typ": {
+      "name": "rate_typ",
+      "schema": "public",
+      "values": [
+        "mabv",
+        "zusatzleistung",
+        "gutschrift"
+      ]
+    },
+    "public.rechnung_status": {
+      "name": "rechnung_status",
+      "schema": "public",
+      "values": [
+        "erfasst",
+        "sachlich_geprueft",
+        "rechnerisch_geprueft",
+        "freigegeben",
+        "bezahlt"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -13,7 +13,7 @@ Fachkonzept: [Bauträger-Plattform – Fachkonzept](https://claude.ai/code/artif
 | `packages/db` | PostgreSQL-Schema (Drizzle), Migrationen, Demodaten |
 | `apps/api` | REST-API (NestJS): Stammdaten, Verkauf (Kaufverträge, Bautenstand, Zahlungsanforderungen, offene Posten), Kosten (Gewerke, Handwerkerverträge, Nachträge, Eingangsrechnungen), Mängel (Rügen, Fristen), Dokumente, Änderungsprotokoll, DATEV-Export |
 | `apps/mcp` | MCP-Server (stdio und Streamable HTTP) mit Tools für KI-Assistenten |
-| `apps/web` | Weboberfläche (Next.js): Cockpit (Aufgaben aus allen Bereichen), Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Käuferportal für Mängelanzeigen (ohne Konto, mobil), Auswertungen (Liquidität, Liquiditätsplan nach KW, MaBV-Prüfbericht, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
+| `apps/web` | Weboberfläche (Next.js): Cockpit (Aufgaben aus allen Bereichen), Projekte (Einheiten, Bautenstand-Raster, Bauzeitenplan als Gantt, Dokumente), Verkauf (Kaufverträge, Raten, Zahlungsanforderung als Druck/PDF, offene Posten), Kosten (Kostenkontrolle je Gewerk, Handwerkerverträge, Rechnungsprüfung mit Prüfkette, Rechnungseingangsbuch), Zahlungsläufe (SEPA), Bürgschaften, Mängel (mobile Erfassung mit Fotos, Rügeschreiben), Abnahmen (Protokoll zum Unterschreiben, Standardmängel), Käuferportal für Mängelanzeigen (ohne Konto, mobil), E-Mail-Benachrichtigungen (Outlook/SMTP, Postausgang), Auswertungen (Liquidität, Liquiditätsplan nach KW, MaBV-Prüfbericht, Controlling, Kostenreport, Projektbericht – Druck A4 quer und Excel), Geschäftspartner, Gesellschaften |
 | `docs/` | Anleitungen: [Deployment auf dem vServer](docs/deployment.md), [Microsoft-Entra-App-Registrierung](docs/microsoft-entra-app-registrierung.md) |
 | `deploy/`, `Dockerfile`, `docker-compose.prod.yml` | Produktivbetrieb: Caddy (HTTPS, Passwortschutz), PostgreSQL, tägliche Sicherungen, Update-Skript |
 
@@ -47,6 +47,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | Methode & Pfad | Zweck |
 | --- | --- |
 | `GET/POST/DELETE /api/kaufvertraege/:id/portal`, öffentlich: `GET /api/portal/:token`, `POST /api/portal/:token/maengel` | Käuferportal: persönlicher Link (nur Hash gespeichert), Mängelanzeige mit Fotos, Bearbeitungsstand |
+| `GET /api/benachrichtigungen`, `PUT …/einstellungen`, `POST …/test`, `POST …/aufgaben`, `POST …/nachrichten/:id/erneut` | E-Mail-Benachrichtigungen: Empfänger, Postausgang mit Wiederholungen, Versand über Microsoft 365 (Graph), SMTP oder nur Protokoll |
 | `GET /api/cockpit` | Aufgaben aus allen Bereichen nach Dringlichkeit und Kennzahlen für die Startseite |
 | `GET/POST /api/gesellschaften`, `GET/PUT /api/gesellschaften/:id` | Gesellschaften |
 | `GET /api/partner?suche=&rolle=`, `GET /api/partner/naechste-nr`, `POST`, `GET/PUT /api/partner/:id` | Geschäftspartner |

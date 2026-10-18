@@ -547,6 +547,38 @@ export const nummernkreis = pgTable(
 );
 
 /** GoBD-Änderungsprotokoll. */
+/** Postausgang für E-Mails (Versand durch einen Hintergrundlauf mit Wiederholungen). */
+export const nachricht = pgTable("nachricht", {
+  id: id(),
+  mandantId: uuid("mandant_id").notNull().references(() => mandant.id),
+  an: text("an").array().notNull(),
+  betreff: text("betreff").notNull(),
+  text: text("text").notNull(),
+  html: text("html"),
+  /** Anlass, z. B. "mangel_gemeldet", "mangel_status", "aufgaben", "test". */
+  anlass: text("anlass").notNull(),
+  bezugId: uuid("bezug_id"),
+  status: text("status", { enum: ["wartend", "gesendet", "fehler", "protokolliert"] }).notNull().default("wartend"),
+  versuche: integer("versuche").notNull().default(0),
+  naechsterVersuchAm: timestamp("naechster_versuch_am", { withTimezone: true }).notNull().defaultNow(),
+  fehler: text("fehler"),
+  gesendetAm: timestamp("gesendet_am", { withTimezone: true }),
+  ...zeitstempel,
+});
+
+/** Einstellungen je Mandant (Schlüssel/Wert). */
+export const einstellung = pgTable(
+  "einstellung",
+  {
+    id: id(),
+    mandantId: uuid("mandant_id").notNull().references(() => mandant.id),
+    schluessel: text("schluessel").notNull(),
+    wert: jsonb("wert").notNull(),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("einstellung_je_mandant").on(t.mandantId, t.schluessel)],
+);
+
 export const aenderungsprotokoll = pgTable("aenderungsprotokoll", {
   id: id(),
   tabelle: text("tabelle").notNull(),
