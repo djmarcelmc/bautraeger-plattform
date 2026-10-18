@@ -90,6 +90,16 @@ export default async function RechnungSeite({ params, searchParams }: { params: 
                 </span>
               </div>
             ) : null}
+            {r.budget.text && r.status !== "bezahlt" ? (
+              <div className={r.budget.stufe === "ueber" ? "fehlt" : "neutral"}>
+                <AlertTriangle size={16} />
+                <span>
+                  Gewerk {r.vertrag.gewerk.nr} {r.vertrag.gewerk.bezeichnung}
+                  {r.status === "erfasst" ? " (mit dieser Rechnung)" : ""}: {r.budget.text}{" "}
+                  <a href={`/gewerke/${r.vertrag.gewerk.id}?projekt=${r.vertrag.projekt.id}`}>Gewerk ansehen</a>
+                </span>
+              </div>
+            ) : null}
             {r.maengel.offen ? (
               <div className="fehlt">
                 <AlertTriangle size={16} />

@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { deZahl } from "@/lib/format";
 import { partnerName, type Kostenkontrolle, type Partner } from "@/lib/typen";
 import { Abweichung } from "../../kosten/Abweichung";
+import { BudgetHinweisGewerk } from "../../kosten/Budget";
 import { gewerkAendern, vertragAnlegen } from "../../kosten/aktionen";
 import { VertragFelder } from "../../kosten/VertragFelder";
 
@@ -59,6 +60,7 @@ export default async function GewerkSeite({ params, searchParams }: { params: Pr
           <small>geschätzt − Trend</small>
         </div>
       </div>
+      <BudgetHinweisGewerk b={g.budget} />
       <h2>Verträge</h2>
       <div className="karte ohne-innenabstand">
         <table>

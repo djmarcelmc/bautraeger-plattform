@@ -4,6 +4,7 @@ import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
 import type { Mangelvorlage } from "@/lib/typen";
+import { kostenEinstellungSpeichern } from "../kosten/aktionen";
 import { standardkatalogUebernehmen, vorlageAnlegen, vorlageLoeschen } from "../abnahmen/aktionen";
 import { basiszinsSpeichern } from "../verkauf/aktionen";
 import { EinstellungenReiter } from "./Reiter";
@@ -11,7 +12,11 @@ import { EinstellungenReiter } from "./Reiter";
 export const dynamic = "force-dynamic";
 
 export default async function Einstellungen() {
-  const [saetze, vorlagen] = await Promise.all([api<{ gueltigAb: string; satz: string }[]>("/basiszinssaetze"), api<Mangelvorlage[]>("/mangelvorlagen")]);
+  const [saetze, vorlagen, kosten] = await Promise.all([
+    api<{ gueltigAb: string; satz: string }[]>("/basiszinssaetze"),
+    api<Mangelvorlage[]>("/mangelvorlagen"),
+    api<{ budgetSchwelleProzent: number }>("/einstellungen/kosten"),
+  ]);
   const naechster = (() => {
     const jetzt = new Date();
     const j = jetzt.getFullYear();
@@ -61,6 +66,20 @@ export default async function Einstellungen() {
           <Formular aktion={basiszinsSpeichern} knopf="Speichern" className="formular">
             <Feld label="Gültig ab" name="gueltigAb" typ="date" wert={naechster} pflicht hinweis="01.01. oder 01.07." />
             <Feld label="Satz in %" name="satz" zahl pflicht hinweis="z. B. 1,52 oder -0,88" />
+          </Formular>
+        </section>
+      </div>
+
+      <h2 id="kosten">Kostenkontrolle</h2>
+      <div className="zweispaltig">
+        <section className="karte">
+          <h2>Budgetwarnung je Gewerk</h2>
+          <p className="hint">
+            Sobald die gebundenen Kosten eines Gewerks (Auftrag inkl. beauftragter Nachträge bzw. der höhere geprüfte Rechnungsstand) diesen Anteil der Schätzung
+            erreichen, erscheint ein Hinweis in der Kostenkontrolle, bei der Rechnungsprüfung und auf der Startseite. Über 100 % wird immer gewarnt.
+          </p>
+          <Formular aktion={kostenEinstellungSpeichern} knopf="Speichern" className="formular">
+            <Feld label="Hinweis ab % des Budgets" name="budgetSchwelleProzent" wert={String(kosten.budgetSchwelleProzent)} zahl pflicht hinweis="50 bis 100, Standard 90" />
           </Formular>
         </section>
       </div>

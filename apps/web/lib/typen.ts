@@ -248,6 +248,17 @@ export interface Kostenstand {
   bezahlt: string;
   trend: string;
   abweichung: string;
+  angeboten: string;
+}
+
+export interface BudgetStand {
+  stufe: "ok" | "nahe" | "ueber";
+  budget: string;
+  gebunden: string;
+  angeboten: string;
+  ueberschreitung: string;
+  auslastungProzent: number | null;
+  text: string | null;
 }
 
 export interface GewerkZeile {
@@ -257,6 +268,7 @@ export interface GewerkZeile {
   bezeichnung: string;
   geschaetztBrutto: string;
   stand: Kostenstand;
+  budget: BudgetStand;
   vertraege: {
     id: string;
     nrIntern: string | null;
@@ -269,6 +281,7 @@ export interface GewerkZeile {
 export interface Kostenkontrolle {
   gewerke: GewerkZeile[];
   summe: Kostenstand;
+  budgetSchwelleProzent: number;
 }
 
 export interface Rechnung {
@@ -327,6 +340,7 @@ export interface Handwerkervertrag {
 
 export interface RechnungDetail extends Rechnung {
   /** Kumulierter Betrag gegen Auftrag inkl. beauftragter Nachträge */
+  budget: BudgetStand;
   auftragsrahmen: { stufe: "ok" | "nahe" | "ueber"; auftrag: string; angeboten: string; ueberschreitung: string; auslastungProzent: number | null; text: string | null };
   handwerkervertragId: string;
   vertrag: {

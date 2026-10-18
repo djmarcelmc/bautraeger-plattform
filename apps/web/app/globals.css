@@ -3495,3 +3495,31 @@ table.saldentabelle tr.postenzeile ul {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ Budgetwarnung */
+.budget-hinweis {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-klein);
+  background: var(--warnung-weich);
+  color: var(--warnung);
+  font-size: 13.5px;
+}
+.budget-hinweis.ueber {
+  background: var(--gefahr-weich);
+  color: var(--gefahr);
+}
+.budget-hinweis svg {
+  flex: none;
+  margin-top: 1px;
+}
+.budget-hinweis a {
+  color: inherit;
+  text-decoration: underline;
+}
+.kostentabelle .badge.klein {
+  margin-left: 6px;
+}
