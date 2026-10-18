@@ -219,9 +219,9 @@ export class KostenService {
   }
 
   /** Verbucht die Zahlung (Zahlungsausgang, Status „bezahlt“, Protokoll). */
-  async zahlungBuchen(tx: DbOderTx, z: Awaited<ReturnType<KostenService["zahlbetrag"]>>, datum: string, benutzer: string, zahlungslaufId?: string) {
+  async zahlungBuchen(tx: DbOderTx, z: Awaited<ReturnType<KostenService["zahlbetrag"]>>, datum: string, benutzer: string, zahlungslaufId?: string, empfaengerIban?: string | null) {
     const { r, e } = z;
-    await tx.insert(za).values({ eingangsrechnungId: r.id, datum, betrag: e.auszahlung!, skonto: e.skonto!, bauabzugsteuer: e.bauabzugsteuer!, zahlungslaufId });
+    await tx.insert(za).values({ eingangsrechnungId: r.id, datum, betrag: e.auszahlung!, skonto: e.skonto!, bauabzugsteuer: e.bauabzugsteuer!, zahlungslaufId, empfaengerIban: empfaengerIban ?? null });
     await tx.update(er).set({ status: "bezahlt", pruefergebnis: e, geaendertAm: new Date() }).where(eq(er.id, r.id));
     await protokollieren(tx, {
       tabelle: "eingangsrechnung",

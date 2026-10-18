@@ -71,6 +71,9 @@ von der Plattform selbst berechnet und geprüft werden:
       Weg für die Belege abstimmen (ZIP „mit Belegen“ → DATEV Unternehmen online „Belege hochladen“). Rechnungsscans
       an der Eingangsrechnung ablegen, damit sie im Paket landen
 - [ ] SEPA-Datei einmal im Onlinebanking der Hausbank einlesen (ohne Ausführung)
+- [ ] Ablauf bei IBAN-Hinweisen im Zahlungslauf festlegen: Rückruf beim Handwerker nur unter der bekannten
+      Telefonnummer (nicht der aus der Mail/Rechnung), Bestätigung im Zahlungslauf; IBAN-Änderungen möglichst nur
+      durch eine Person, die keine Zahlungsläufe erstellt
 - [ ] IBAN je Gesellschaft eintragen und einen Kontoauszug (CAMT.053, sonst MT940) im **Bankabgleich** einlesen; Zuordnung mit den offenen Posten vergleichen
 
 ## 7. Umstellung

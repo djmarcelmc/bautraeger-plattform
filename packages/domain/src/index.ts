@@ -24,3 +24,4 @@ export * from "./buchhaltung.js";
 export * from "./bankabgleich.js";
 export * from "./saldenliste.js";
 export * from "./rechnungseingang.js";
+export * from "./zahlungspruefung.js";

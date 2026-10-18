@@ -8,6 +8,8 @@ import { datumPlusTage } from "./verkauf.js";
 export const ZahlungslaufEingabe = z.object({
   rechnungIds: z.preprocess((v) => (v === undefined || v === "" ? [] : Array.isArray(v) ? v : [v]), z.array(z.uuid()).min(1, "Mindestens eine Rechnung auswählen")),
   ausfuehrungAm: datum().refine((d) => !!d, "Ausführungsdatum angeben").transform((d) => d!),
+  /** Rechnungen, deren IBAN-Hinweise (z. B. nach Rückruf) bestätigt wurden */
+  ibanBestaetigt: z.preprocess((v) => (v === undefined || v === "" ? [] : Array.isArray(v) ? v : [v]), z.array(z.uuid())).default([]),
 });
 
 const UMLAUTE: Record<string, string> = { ä: "ae", ö: "oe", ü: "ue", Ä: "Ae", Ö: "Oe", Ü: "Ue", ß: "ss", "&": "+", "–": "-", "—": "-" };

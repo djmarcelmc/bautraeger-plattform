@@ -569,6 +569,8 @@ export interface ZahlungsvorschlagRechnung {
   bauabzugsteuer: string;
   zahlbar: boolean;
   hinweise: string[];
+  /** IBAN-Prüfung (geänderte Bankverbindung, Abweichung zur Rechnung, erste Zahlung an diese IBAN) */
+  ibanPruefung: { hinweise: { stufe: "kritisch" | "hinweis"; text: string }[]; bestaetigungNoetig: boolean; gesperrt: string | null } | null;
 }
 
 export interface Zahlungsvorschlag {
