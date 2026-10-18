@@ -34,6 +34,8 @@ import { BriefbogenController } from "./gesellschaften/briefbogen.controller.js"
 import { BauabzugService } from "./bauabzug/bauabzug.service.js";
 import { BankabgleichController } from "./bankabgleich/bankabgleich.controller.js";
 import { BankabgleichService } from "./bankabgleich/bankabgleich.service.js";
+import { IbanController } from "./sepa/iban.controller.js";
+import { IbanService } from "./sepa/iban.service.js";
 import { Abruflauf, RechnungseingangController } from "./rechnungseingang/rechnungseingang.controller.js";
 import { RechnungseingangService } from "./rechnungseingang/rechnungseingang.service.js";
 import { POSTFACH, postfachAusUmgebung } from "./rechnungseingang/postfach.js";
@@ -69,6 +71,7 @@ class HealthController {
     ImportController,
     BauabzugController,
     BankabgleichController,
+    IbanController,
     RechnungseingangController,
     BuchhaltungController,
     SonderwuenscheController,
@@ -106,6 +109,7 @@ class HealthController {
     CockpitService,
     BauabzugService,
     BankabgleichService,
+    IbanService,
     RechnungseingangService,
     Abruflauf,
     { provide: POSTFACH, useFactory: () => postfachAusUmgebung() },

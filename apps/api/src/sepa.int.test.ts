@@ -144,6 +144,32 @@ describe.skipIf(!url)("Zahlungslauf und Bürgschaften (Integration)", () => {
     expect(d.zahlungen).toHaveLength(1);
   });
 
+  it("dokumentierter Rückruf ersetzt die Bestätigung im Zahlungslauf und erledigt die Cockpit-Aufgabe", async () => {
+    const partner = ((await http.get("/api/partner")).body as { id: string; nr: number }[]).find((x) => x.nr === 70001)!;
+    const pp = (await http.get(`/api/partner/${partner.id}`)).body;
+    await als(http.put(`/api/partner/${partner.id}`)).send({ nr: 70001, suchcode: pp.suchcode, firma: pp.firma, rollen: pp.rollen, freistellungGueltigBis: pp.freistellungGueltigBis, iban: "DE89370400440532013000" });
+    let st = (await http.get(`/api/partner/${partner.id}/iban`)).body;
+    expect(st.offen).toMatchObject({ von: "buchhaltung@example.com" });
+    const aufgabe = () => http.get("/api/cockpit").then((r) => r.body.aufgaben.find((x: { titel: string }) => x.titel.startsWith("IBAN von Rohbau")));
+    expect(await aufgabe()).toMatchObject({ dringlichkeit: "hoch", link: `/partner/${partner.id}#bankverbindung` });
+
+    expect((await als(http.post(`/api/partner/${partner.id}/iban/rueckruf`)).send({ rueckrufAm: tagePlus(1), gespraechspartner: "Hr. Größer" })).status).toBe(400);
+    const rr = await als(http.post(`/api/partner/${partner.id}/iban/rueckruf`)).send({ rueckrufAm: tagePlus(0), gespraechspartner: "Hr. Größer", telefon: "0711 123456" });
+    expect(rr.status).toBe(201);
+    st = (await http.get(`/api/partner/${partner.id}/iban`)).body;
+    expect(st.offen).toBeNull();
+    expect(st.bestaetigungen[0]).toMatchObject({ iban: "DE89370400440532013000", gespraechspartner: "Hr. Größer", telefon: "0711 123456" });
+    expect(await aufgabe()).toBeUndefined();
+
+    const projekt = ((await http.get("/api/projekte")).body as { id: string; nr: number }[]).find((x) => x.nr === 101)!;
+    const { r } = await rechnung(projekt.id, 341, partner.id, "AR-RR");
+    const v = (await http.get(`/api/zahlungslaeufe/vorschlag?ausfuehrungAm=${tagePlus(1)}`)).body;
+    const ip = v.gesellschaften[0].rechnungen.find((x: { id: string }) => x.id === r).ibanPruefung;
+    expect(ip.bestaetigungNoetig).toBe(false);
+    expect(ip.hinweise.map((h: { text: string }) => h.text).join(" | ")).toMatch(/Rückruf am .* mit Hr\. Größer dokumentiert/);
+    expect((await als(http.post("/api/zahlungslaeufe")).send({ rechnungIds: [r], ausfuehrungAm: tagePlus(1) })).status).toBe(201);
+  });
+
   it("verwaltet Bürgschaften mit Status und Rückgabefälligkeit", async () => {
     expect((await als(http.post("/api/buergschaften")).send({ richtung: "erhalten", art: "gewaehrleistung", betrag: "2500" })).status).toBe(400);
     const gw = await als(http.post("/api/buergschaften")).send({ richtung: "erhalten", art: "gewaehrleistung", handwerkervertragId: v1, buergeId: bank, nr: "GB-123", betrag: "2.500,00", gueltigBis: "" });

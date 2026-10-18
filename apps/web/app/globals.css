@@ -3306,3 +3306,18 @@ table.saldentabelle tr.postenzeile ul {
   background: var(--gefahr-weich);
   font-size: 13px;
 }
+
+.bankverbindung .hinweisbox.gefahr {
+  background: var(--gefahr-weich);
+  border-color: color-mix(in srgb, var(--gefahr) 35%, var(--linie));
+}
+.bankverbindung .hinweisbox.gefahr svg {
+  color: var(--gefahr);
+}
+.rueckrufe {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13.5px;
+}

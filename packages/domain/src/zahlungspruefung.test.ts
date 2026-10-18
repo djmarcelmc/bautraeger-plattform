@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ibanPruefen } from "./zahlungspruefung.js";
+import { ibanPruefen, rueckrufOffen } from "./zahlungspruefung.js";
 
 const IBAN = "DE02120300000000202051";
 const ALT = "DE89370400440532013000";
@@ -33,5 +33,27 @@ describe("ibanPruefen", () => {
   });
   it("ohne IBAN keine Prüfung", () => {
     expect(ibanPruefen({ ...basis, iban: null }).hinweise).toEqual([]);
+  });
+});
+
+describe("dokumentierter Rückruf", () => {
+  const aenderungen = [{ am: "2026-10-10T09:00:00.000Z", von: "a@x.de", alt: ALT, neu: IBAN }];
+  const rueckruf = { iban: IBAN, am: "2026-10-11T08:00:00.000Z", von: "b@x.de", gespraechspartner: "Hr. Kaiser" };
+  it("entschärft Änderung und neue IBAN, nicht aber die Abweichung zur Rechnung", () => {
+    const r = ibanPruefen({ ...basis, aenderungen, bisherGezahlt: [ALT], bestaetigungen: [rueckruf], benutzer: "c@x.de" });
+    expect(r.bestaetigungNoetig).toBe(false);
+    expect(r.hinweise.at(-1)!.text).toBe("Rückruf am 11.10.2026 mit Hr. Kaiser dokumentiert (b@x.de)");
+    expect(ibanPruefen({ ...basis, aenderungen, bisherGezahlt: [ALT], bestaetigungen: [rueckruf], rechnungsIban: "DE12500105170648489890", benutzer: "c@x.de" }).bestaetigungNoetig).toBe(true);
+  });
+  it("gilt nicht, wenn der Änderer selbst dokumentiert, vor der Änderung liegt oder eine andere IBAN betrifft", () => {
+    const pruefe = (b: typeof rueckruf) => ibanPruefen({ ...basis, aenderungen, bisherGezahlt: [ALT], bestaetigungen: [b], benutzer: "c@x.de" }).bestaetigungNoetig;
+    expect(pruefe({ ...rueckruf, von: "a@x.de" })).toBe(true);
+    expect(pruefe({ ...rueckruf, am: "2026-10-09T08:00:00.000Z" })).toBe(true);
+    expect(pruefe({ ...rueckruf, iban: ALT })).toBe(true);
+  });
+  it("rueckrufOffen", () => {
+    expect(rueckrufOffen({ iban: IBAN, aenderungen, bestaetigungen: [], stichtag: "2026-10-18", vierAugen: true })).toMatchObject({ von: "a@x.de" });
+    expect(rueckrufOffen({ iban: IBAN, aenderungen, bestaetigungen: [rueckruf], stichtag: "2026-10-18", vierAugen: true })).toBeNull();
+    expect(rueckrufOffen({ iban: IBAN, aenderungen, bestaetigungen: [], stichtag: "2026-12-18", vierAugen: true })).toBeNull();
   });
 });
