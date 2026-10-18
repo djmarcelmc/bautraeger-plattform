@@ -156,6 +156,17 @@ Das Skript erstellt zuerst eine Sicherung, holt den neuen Stand, baut neu und st
   Storage Box oder ein NAS. Fällt der Server aus, sind sonst auch die Sicherungen weg.
 - Sofort sichern: `docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm -e BACKUP_EINMAL=1 backup`
 
+**Rücksicherung testen** (ohne Risiko – stellt in eine zweite Datenbank wieder her, der Betrieb läuft weiter):
+
+```bash
+C="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+D=$(ls backups/db_*.dump | tail -1)
+$C exec -T db psql -U bt -d postgres -c "drop database if exists ruecksicherung" -c "create database ruecksicherung"
+$C exec -T db pg_restore -U bt -d ruecksicherung --no-owner < "$D"
+$C exec -T db psql -U bt -d ruecksicherung -c "select nr, name from gesellschaft"   # Daten da?
+$C exec -T db psql -U bt -d postgres -c "drop database ruecksicherung"
+```
+
 **Wiederherstellen** (überschreibt die aktuelle Datenbank – vorher sichern!):
 
 ```bash
@@ -181,6 +192,7 @@ $C restart web        # einzelnen Dienst neu starten
 | --- | --- |
 | Zertifikat wird nicht ausgestellt | DNS zeigt noch nicht auf den Server oder Port 80/443 ist gesperrt → `dig`, Firewall des Hosters prüfen, `logs caddy` |
 | Passwortabfrage akzeptiert nichts | Hash in `.env.prod` nicht in einfachen Anführungszeichen → korrigieren, `up -d` |
+| Build bricht ab mit `429 Too Many Requests` (Docker Hub) | Zu viele anonyme Abrufe → in `.env.prod` einen Spiegel setzen: `NODE_IMAGE=mirror.gcr.io/library/node:22-bookworm-slim`, `POSTGRES_IMAGE=mirror.gcr.io/library/postgres:16`, `CADDY_IMAGE=mirror.gcr.io/library/caddy:2` – oder `docker login` |
 | Seite meldet „API nicht erreichbar“ | `logs api` – meist falsches `POSTGRES_PASSWORD` nach Änderung (Volume behält das alte Passwort) |
 
 ## 10. Sicherheit
