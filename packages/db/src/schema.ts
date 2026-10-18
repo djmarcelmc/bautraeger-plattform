@@ -161,6 +161,9 @@ export const kaufvertrag = pgTable("kaufvertrag", {
   lastenfreistellungGesichert: boolean("lastenfreistellung_gesichert").notNull().default(false),
   buergschaftNach7: boolean("buergschaft_nach_7").notNull().default(false),
   zahlungszielTage: integer("zahlungsziel_tage").notNull().default(10),
+  /** Käufer ist Verbraucher (Verzugszins Basiszins + 5 Pp.), sonst Unternehmer (+ 9 Pp.), § 288 BGB. */
+  verbraucher: boolean("verbraucher").notNull().default(true),
+  /** Fester Verzugszinssatz, falls vertraglich vereinbart (überschreibt Basiszins + Aufschlag). */
   verzugszinsProzent: prozent("verzugszins_prozent"),
   anforderungssperre: boolean("anforderungssperre").notNull().default(false),
   mahnsperre: boolean("mahnsperre").notNull().default(false),
@@ -213,6 +216,31 @@ export const zahlungsanforderung = pgTable("zahlungsanforderung", {
   betrag: geld("betrag").notNull(),
   mahnstufe: integer("mahnstufe").notNull().default(0),
   letzteMahnungAm: date("letzte_mahnung_am"),
+  ...zeitstempel,
+});
+
+/** Mahnung zu einer Zahlungsanforderung (Stufe 1 Zahlungserinnerung, 2 Mahnung, 3 letzte Mahnung). */
+export const mahnung = pgTable(
+  "mahnung",
+  {
+    id: id(),
+    zahlungsanforderungId: uuid("zahlungsanforderung_id").notNull().references(() => zahlungsanforderung.id),
+    stufe: integer("stufe").notNull(),
+    datum: date("datum").notNull(),
+    fristBis: date("frist_bis").notNull(),
+    offenerBetrag: geld("offener_betrag").notNull(),
+    verzugszinsen: geld("verzugszinsen").notNull().default("0"),
+    mahngebuehr: geld("mahngebuehr").notNull().default("0"),
+    erstelltVon: text("erstellt_von"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("mahnung_stufe_je_anforderung").on(t.zahlungsanforderungId, t.stufe)],
+);
+
+/** Basiszinssätze nach § 247 BGB (mandantenübergreifend). */
+export const basiszins = pgTable("basiszins", {
+  gueltigAb: date("gueltig_ab").primaryKey(),
+  satz: numeric("satz", { precision: 5, scale: 2, mode: "string" }).notNull(),
   ...zeitstempel,
 });
 

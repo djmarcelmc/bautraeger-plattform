@@ -154,6 +154,7 @@ export interface Anforderung {
   ueberfaellig: boolean;
   mahnstufe: number;
   raten: number[];
+  mahnungen: Mahnung[];
 }
 
 export interface VertragDetail {
@@ -168,6 +169,7 @@ export interface VertragDetail {
   lastenfreistellungGesichert: boolean;
   buergschaftNach7: boolean;
   zahlungszielTage: number;
+  verbraucher: boolean;
   verzugszinsProzent: string | null;
   anforderungssperre: boolean;
   mahnsperre: boolean;
@@ -423,4 +425,50 @@ export interface DokumentInfo {
   beschreibung: string | null;
   hochgeladenVon: string | null;
   angelegtAm: string;
+}
+
+// ---------------------------------------------------------------- Mahnwesen
+
+export interface Mahnung {
+  id: string;
+  zahlungsanforderungId: string;
+  stufe: number;
+  datum: string;
+  fristBis: string;
+  offenerBetrag: string;
+  verzugszinsen: string;
+  mahngebuehr: string;
+  erstelltVon: string | null;
+}
+
+export interface MahnPosten {
+  id: string;
+  rechnungsnr: string;
+  angefordertAm: string;
+  faelligAm: string;
+  betrag: string;
+  offen: string;
+  tageUeberfaellig: number;
+  mahnstufe: number;
+  letzteMahnung: Mahnung | null;
+  mahnungen: Mahnung[];
+  verzugszinsen: string;
+  zinsHinweis?: string;
+  vorschlag: { stufe: number | null; hinweis?: string };
+  vertrag: { id: string; nr: string; mahnsperre: boolean; verbraucher: boolean };
+  projekt: { id: string; nr: number; suchcode: string };
+  empfaenger: string | null;
+}
+
+export interface MahnungDruck extends Mahnung {
+  titel: string;
+  anforderung: { id: string; rechnungsnr: string; angefordertAm: string; faelligAm: string; betrag: string; raten: number[] };
+  zahlungen: { datum: string; betrag: string }[];
+  zinsperioden: { von: string; bis: string; tage: number; kapital: string; zinssatz: string; zinsen: string }[];
+  vertrag: { id: string; nr: string; urkundennr: string | null; datum: string | null; einheiten: { nr: string; typ: string }[]; verbraucher: boolean; verzugszinsProzent: string | null };
+  projekt: { suchcode: string; strasse: string | null; plz: string | null; ort: string | null };
+  gesellschaft: { name: string; anschrift: string | null };
+  empfaenger: Partner;
+  kaeufer: Partner[];
+  vorherige: Mahnung[];
 }

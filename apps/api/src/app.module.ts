@@ -14,6 +14,7 @@ import { GesellschaftenController } from "./gesellschaften/gesellschaften.contro
 import { KostenController } from "./kosten/kosten.controller.js";
 import { KostenService } from "./kosten/kosten.service.js";
 import { MabvController } from "./mabv/mabv.controller.js";
+import { MahnwesenController } from "./mahnwesen/mahnwesen.controller.js";
 import { MaengelController } from "./maengel/maengel.controller.js";
 import { MaengelService } from "./maengel/maengel.service.js";
 import { PartnerController } from "./partner/partner.controller.js";
@@ -42,6 +43,7 @@ class HealthController {
     ZahlungenController,
     KostenController,
     MaengelController,
+    MahnwesenController,
     DatevController,
   ],
   providers: [

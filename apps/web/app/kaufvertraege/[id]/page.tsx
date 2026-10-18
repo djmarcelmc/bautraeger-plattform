@@ -209,6 +209,15 @@ export default async function KaufvertragSeite({
                     <td>{deDatum(a.angefordertAm)}</td>
                     <td>
                       {deDatum(a.faelligAm)} {a.ueberfaellig ? <span className="badge gefahr">überfällig</span> : null}
+                      {a.mahnungen.length ? (
+                        <div>
+                          {a.mahnungen.map((m) => (
+                            <a key={m.id} href={`/mahnungen/druck?ids=${m.id}`} className="badge warnung klein" title={`vom ${deDatum(m.datum)}, Frist ${deDatum(m.fristBis)}`}>
+                              {m.stufe}. Mahnstufe
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="num">{deZahl(a.betrag)}</td>
                     <td className="num">{deZahl(a.bezahlt)}</td>
@@ -294,7 +303,8 @@ export default async function KaufvertragSeite({
               </select>
             </label>
             <Feld label="Zahlungsziel (Tage)" name="zahlungszielTage" wert={v.zahlungszielTage} zahl />
-            <Feld label="Verzugszins %" name="verzugszinsProzent" wert={deZahl(v.verzugszinsProzent)} zahl hinweis="leer = gesetzlich (§ 288 BGB)" />
+            <Feld label="Fester Verzugszins %" name="verzugszinsProzent" wert={deZahl(v.verzugszinsProzent)} zahl hinweis="leer = gesetzlich (§ 288 BGB)" />
+            <Haken label="Käufer ist Verbraucher (Basiszins + 5 Pp., sonst + 9 Pp.)" name="verbraucher" wert={v.verbraucher} />
           </Gruppe>
           <Gruppe titel="Fälligkeitsvoraussetzungen (§ 3 Abs. 1 MaBV)">
             <Haken label="Vertrag wirksam" name="vertragWirksam" wert={v.vertragWirksam} />
