@@ -145,7 +145,7 @@ export class CockpitController {
     // ---------------------------------------------------------------- Mängel
     const offeneMaengel = projektIds.length
       ? await this.db
-          .select({ id: m.id, nr: m.nr, titel: m.titel, projektId: m.projektId, festgestelltAm: m.festgestelltAm, erledigtAm: m.erledigtAm, handwerkerId: m.handwerkerId })
+          .select({ id: m.id, nr: m.nr, titel: m.titel, projektId: m.projektId, festgestelltAm: m.festgestelltAm, erledigtAm: m.erledigtAm, handwerkerId: m.handwerkerId, festgestelltDurch: m.festgestelltDurch, ort: m.ort })
           .from(m)
           .where(and(inArray(m.projektId, projektIds), isNull(m.erledigtAm)))
       : [];
@@ -166,7 +166,17 @@ export class CockpitController {
           projekt,
           link: `/maengel/${x.id}`,
         });
-      } else if (status === "neu" && x.festgestelltAm <= datumPlusTage(heute, -7)) ungeruegt.push(x);
+      } else if (status === "neu" && x.festgestelltDurch === "Käuferportal" && !x.handwerkerId)
+        aufgaben.push({
+          bereich: "maengel",
+          dringlichkeit: x.festgestelltAm <= datumPlusTage(heute, -3) ? "hoch" : "mittel",
+          titel: `Mängelanzeige vom Käufer: ${projekt.split(" ")[0]}-${x.nr}`,
+          text: `${x.titel}${x.ort ? ` (${x.ort})` : ""} – Handwerker zuordnen und rügen, Käufer sieht den Stand im Portal`,
+          datum: x.festgestelltAm,
+          projekt,
+          link: `/maengel/${x.id}`,
+        });
+      else if (status === "neu" && x.festgestelltAm <= datumPlusTage(heute, -7)) ungeruegt.push(x);
     }
     if (ungeruegt.length)
       aufgaben.push({

@@ -1,6 +1,8 @@
 import { EINHEIT_TYP_TEXT } from "@bt/domain";
 import { Check, Printer, X } from "lucide-react";
 import { BuergschaftenAbschnitt } from "@/components/Buergschaften";
+import { portalLinkErzeugen, portalLinkWiderrufen } from "../portal-aktionen";
+import { PortalLinkErzeugen } from "../PortalLink";
 import { Dokumente } from "@/components/Dokumente";
 import { Feld, Gruppe, Haken, Protokoll } from "@/components/Felder";
 import { Formular } from "@/components/Formular";
@@ -17,6 +19,7 @@ const REITER = [
   ["zahlungen", "Zahlungen"],
   ["konditionen", "Konditionen"],
   ["buergschaften", "Bürgschaften"],
+  ["portal", "Käuferportal"],
   ["dokumente", "Dokumente"],
   ["protokoll", "Protokoll"],
 ] as const;
@@ -329,6 +332,7 @@ export default async function KaufvertragSeite({
           hinweis="Bürgschaft nach § 7 MaBV: Sichert alle Zahlungen des Käufers; dann dürfen Raten auch ohne Vormerkung und Lastenfreistellung angefordert werden (Konditionen: „Bürgschaft nach § 7 MaBV“ anhaken)."
         />
       )}
+      {reiter === "portal" && <PortalReiter v={v} />}
       {reiter === "dokumente" && <Dokumente objektTyp="kaufvertrag" objektId={id} pfad={pfad} />}
       {reiter === "protokoll" && <ProtokollReiter id={id} />}
     </>
@@ -340,6 +344,49 @@ async function ProtokollReiter({ id }: { id: string }) {
   return (
     <div className="karte">
       <Protokoll eintraege={eintraege} />
+    </div>
+  );
+}
+
+async function PortalReiter({ v }: { v: VertragDetail }) {
+  const s = await api<{ aktiv: { gueltigBis: string; angelegtAm: string; erstelltVon: string | null; letzterZugriffAm: string | null; abgelaufen: boolean } | null; meldungen: number }>(`/kaufvertraege/${v.id}/portal`);
+  const empfaenger = v.kaeufer.find((k) => k.id === v.zahlungsanforderungAn) ?? v.kaeufer[0];
+  const anrede = empfaenger?.anrede === "Frau" ? `Sehr geehrte Frau ${empfaenger.nachname}` : empfaenger?.anrede === "Herr" ? `Sehr geehrter Herr ${empfaenger.nachname}` : "Sehr geehrte Damen und Herren";
+  return (
+    <div className="zweispaltig">
+      <section className="karte">
+        <h2>Mängelanzeige per Link</h2>
+        <p className="hint">
+          Der Käufer meldet Mängel ohne eigenes Konto über einen persönlichen Link – mit Fotos – und sieht dort den Bearbeitungsstand (eingegangen, in Bearbeitung, erledigt). Interne
+          Angaben wie Handwerker, Rügen oder Kosten sind nicht sichtbar. Neue Meldungen erscheinen im Cockpit.
+        </p>
+        <dl className="datenliste">
+          <dt>Status</dt>
+          <dd>{s.aktiv ? (s.aktiv.abgelaufen ? <span className="badge warnung">abgelaufen</span> : <span className="badge gut">aktiv</span>) : <span className="badge">kein Link</span>}</dd>
+          {s.aktiv && (
+            <>
+              <dt>gültig bis</dt>
+              <dd>{deDatum(s.aktiv.gueltigBis)}</dd>
+              <dt>erstellt</dt>
+              <dd>
+                {deDatum(s.aktiv.angelegtAm)} {s.aktiv.erstelltVon ? `von ${s.aktiv.erstelltVon}` : ""}
+              </dd>
+              <dt>zuletzt geöffnet</dt>
+              <dd>{s.aktiv.letzterZugriffAm ? new Date(s.aktiv.letzterZugriffAm).toLocaleString("de-DE", { timeZone: "Europe/Berlin" }) : "noch nie"}</dd>
+            </>
+          )}
+          <dt>Meldungen</dt>
+          <dd>
+            {s.meldungen} über das Portal{s.meldungen ? <> · <a href="/maengel?status=alle">in der Mängelliste</a></> : null}
+          </dd>
+        </dl>
+        {s.aktiv && <Formular aktion={portalLinkWiderrufen.bind(null, v.id)} knopf="Link widerrufen" knopfArt="gefahr" bestaetigen="Link sofort ungültig machen?" className="formular rechts" />}
+      </section>
+      <section className="karte">
+        <h2>{s.aktiv ? "Neuen Link erzeugen" : "Link erzeugen"}</h2>
+        <p className="hint">Aus Sicherheitsgründen wird der Link nur einmal angezeigt (gespeichert ist nur eine Prüfsumme). Ist er verloren, einfach einen neuen erzeugen – der alte wird dabei ungültig.</p>
+        <PortalLinkErzeugen aktion={portalLinkErzeugen.bind(null, v.id)} vorhanden={!!s.aktiv} email={empfaenger?.email ?? null} anrede={anrede} />
+      </section>
     </div>
   );
 }

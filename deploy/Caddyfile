@@ -13,8 +13,18 @@
 		-Server
 	}
 
+	# Käuferportal: ohne Passwort erreichbar (Zugang über persönlichen Token-Link),
+	# aber keine Server Actions über diesen Pfad – die Middleware der Weboberfläche prüft das zusätzlich.
+	@portalaktion {
+		path /portal /portal/*
+		header Next-Action *
+	}
+	respond @portalaktion 403
+
+	@intern not path /portal/* /_next/static/* /favicon.ico
+
 	# Übergangsschutz, bis die Microsoft-Anmeldung eingebaut ist
-	basic_auth {
+	basic_auth @intern {
 		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
 	}
 
