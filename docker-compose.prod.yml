@@ -30,6 +30,13 @@ services:
     environment:
       DATABASE_URL: postgres://bt:${POSTGRES_PASSWORD}@db:5432/bautraeger
       MIGRATE_ON_START: "true"
+      PUBLIC_URL: https://${DOMAIN}
+      # E-Mail-Versand (leer = nur protokollieren), siehe docs/deployment.md
+      MAIL_ABSENDER: ${MAIL_ABSENDER:-}
+      MAIL_GRAPH_TENANT: ${MAIL_GRAPH_TENANT:-}
+      MAIL_GRAPH_CLIENT_ID: ${MAIL_GRAPH_CLIENT_ID:-}
+      MAIL_GRAPH_SECRET: ${MAIL_GRAPH_SECRET:-}
+      MAIL_SMTP_URL: ${MAIL_SMTP_URL:-}
     volumes:
       - dokumente:/data/dokumente
     depends_on:

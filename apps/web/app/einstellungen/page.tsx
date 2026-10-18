@@ -6,6 +6,7 @@ import { deDatum, deZahl } from "@/lib/format";
 import type { Mangelvorlage } from "@/lib/typen";
 import { standardkatalogUebernehmen, vorlageAnlegen, vorlageLoeschen } from "../abnahmen/aktionen";
 import { basiszinsSpeichern } from "../verkauf/aktionen";
+import { EinstellungenReiter } from "./Reiter";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function Einstellungen() {
           <p className="untertitel">Werte, die für alle Gesellschaften gelten</p>
         </div>
       </div>
+      <EinstellungenReiter aktiv="allgemein" />
       <div className="zweispaltig">
         <section className="karte">
           <h2>Basiszinssatz nach § 247 BGB</h2>

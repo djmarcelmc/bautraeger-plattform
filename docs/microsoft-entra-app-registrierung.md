@@ -55,7 +55,23 @@ Dafür wird eine App-Registrierung in eurem Mandanten benötigt.
 
 Anschließend **Administratorzustimmung für „<Mandant>“ erteilen** klicken.
 
-> **Später (Ausbaustufe Outlook):** zusätzlich delegiert `Mail.Send`, `Mail.ReadWrite`, `Calendars.ReadWrite`.
+### 4a. E-Mail-Versand der Plattform (Benachrichtigungen)
+
+Damit die Plattform Benachrichtigungen aus einem gemeinsamen Postfach (z. B. `bautraeger@…`) verschickt:
+
+1. **Berechtigung hinzufügen → Microsoft Graph → Anwendungsberechtigungen → `Mail.Send`**, danach Administratorzustimmung erteilen.
+2. **Unbedingt einschränken**, sonst dürfte die App aus *jedem* Postfach senden. In der Exchange Online PowerShell:
+
+   ```powershell
+   New-DistributionGroup -Name "Bautraeger-Plattform-Versand" -Type Security -Members bautraeger@ihre-domain.de
+   New-ApplicationAccessPolicy -AppId <Anwendungs-ID> -PolicyScopeGroupId "Bautraeger-Plattform-Versand" `
+     -AccessRight RestrictAccess -Description "Bauträger-Plattform darf nur aus diesem Postfach senden"
+   Test-ApplicationAccessPolicy -AppId <Anwendungs-ID> -Identity bautraeger@ihre-domain.de   # → Granted
+   ```
+3. In der Plattform: `MAIL_ABSENDER=bautraeger@ihre-domain.de`, `MAIL_GRAPH_TENANT=<Verzeichnis-ID>`,
+   `MAIL_GRAPH_CLIENT_ID=<Anwendungs-ID>`, `MAIL_GRAPH_SECRET=<Wert des Clientschlüssels>`.
+
+> **Später (Ausbaustufe Outlook):** zusätzlich delegiert `Mail.ReadWrite`, `Calendars.ReadWrite`.
 > Für ein zentrales Rechnungspostfach (z. B. rechnung@…) eine Anwendungsberechtigung `Mail.Read`, die per
 > Exchange-Online-Richtlinie **auf genau dieses Postfach beschränkt** wird. Das stimmen wir dann gesondert ab.
 

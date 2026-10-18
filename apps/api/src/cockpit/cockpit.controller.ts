@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from "@nestjs/common";
+import { Controller, Get, Inject, Injectable } from "@nestjs/common";
 import { schema } from "@bt/db";
 import {
   MABV_ABSCHNITTE,
@@ -26,9 +26,9 @@ const de = (iso: string) => iso.split("-").reverse().join(".");
 const eur = (v: string | number) => `${Number(v).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const ABSCHNITT = Object.fromEntries(MABV_ABSCHNITTE.map((a, i) => [a.key, `${i + 1}. ${a.bezeichnung}`]));
 
-/** Aufgaben aus allen Bereichen für die Startseite („Was ist heute zu tun?“). */
-@Controller("cockpit")
-export class CockpitController {
+/** Aufgaben aus allen Bereichen für die Startseite („Was ist heute zu tun?“) und die tägliche Übersicht. */
+@Injectable()
+export class CockpitService {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(KontextService) private readonly kontext: KontextService,
@@ -39,7 +39,6 @@ export class CockpitController {
     @Inject(BuergschaftenService) private readonly buergschaften: BuergschaftenService,
   ) {}
 
-  @Get()
   async cockpit() {
     const heute = new Date().toISOString().slice(0, 10);
     const mandantId = await this.kontext.mandantId();
@@ -286,5 +285,15 @@ export class CockpitController {
         offeneMaengel: offeneMaengel.length,
       },
     };
+  }
+}
+
+@Controller("cockpit")
+export class CockpitController {
+  constructor(@Inject(CockpitService) private readonly service: CockpitService) {}
+
+  @Get()
+  cockpit() {
+    return this.service.cockpit();
   }
 }

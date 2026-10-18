@@ -114,6 +114,21 @@ automatisch.
 
 Erste Schritte in der Oberfläche: Gesellschaft (mit DATEV-Nummern) anlegen → Projekt → Einheiten → Geschäftspartner.
 
+## 6a. E-Mail-Benachrichtigungen (optional)
+
+Die Plattform verschickt Benachrichtigungen (neue Mängelanzeigen an die Bauleitung, Eingangs- und Statusmeldungen an
+Käufer, tägliche Aufgabenübersicht um 7 Uhr). Ohne Konfiguration landen sie nur im **Postausgang** (Einstellungen →
+Benachrichtigungen). Für den Versand in `.env.prod` eintragen und `docker compose … up -d` ausführen:
+
+| Variante | Variablen | Hinweis |
+| --- | --- | --- |
+| **Microsoft 365 (Outlook)** | `MAIL_ABSENDER`, `MAIL_GRAPH_TENANT`, `MAIL_GRAPH_CLIENT_ID`, `MAIL_GRAPH_SECRET` | App-Berechtigung *Mail.Send*, auf das Absender-Postfach beschränkt (siehe [Entra-Anleitung](microsoft-entra-app-registrierung.md)); gesendete Mails liegen in „Gesendete Elemente“ |
+| SMTP | `MAIL_ABSENDER`, `MAIL_SMTP_URL` | z. B. `smtp://benutzer:passwort@smtp.example.de:587` |
+
+Danach unter **Einstellungen → Benachrichtigungen** die Empfänger eintragen und eine Testnachricht senden.
+Fehlgeschlagene Sendungen werden automatisch wiederholt (nach 1, 5, 30 Minuten, 2 und 12 Stunden) und im Postausgang
+mit Fehlertext angezeigt.
+
 ## 7. Updates
 
 ```bash

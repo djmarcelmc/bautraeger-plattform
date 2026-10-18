@@ -35,6 +35,7 @@ import { Benutzer, pruefe } from "../common/eingabe.js";
 import { protokollieren } from "../common/protokoll.js";
 import { DB, type Db } from "../db.provider.js";
 import { SPEICHER, type Speicher } from "../dokumente/speicher.js";
+import { NachrichtenService } from "../benachrichtigung/nachrichten.service.js";
 import { MaengelService } from "../maengel/maengel.service.js";
 import { VerkaufService } from "../verkauf/verkauf.service.js";
 
@@ -98,6 +99,7 @@ export class PortalController {
     @Inject(DB) private readonly db: Db,
     @Inject(SPEICHER) private readonly speicher: Speicher,
     @Inject(MaengelService) private readonly maengel: MaengelService,
+    @Inject(NachrichtenService) private readonly nachrichten: NachrichtenService,
   ) {}
 
   /** Gültiger Zugang → Kaufvertrag samt Mandant; sonst 404 (keine Unterscheidung, um nichts preiszugeben). */
@@ -184,7 +186,7 @@ export class PortalController {
         return { ...b, speicherKey, sha256: createHash("sha256").update(b.f.buffer).digest("hex") };
       }),
     );
-    return this.db.transaction(async (tx) => {
+    const ergebnis = await this.db.transaction(async (tx) => {
       const [x] = await tx.select({ n: max(m.nr) }).from(m).where(eq(m.projektId, z.projektId));
       const werte = {
         projektId: z.projektId,
@@ -209,7 +211,10 @@ export class PortalController {
           .returning({ id: schema.dokument.id });
         await protokollieren(tx, { tabelle: "dokument", id: d!.id, aktion: "insert", neu: { sha256: b.sha256, objektTyp: "mangel", objektId: neu!.id }, benutzer });
       }
-      return { nr: neu!.nr, fotos: gespeichert.length };
+      return { id: neu!.id, nr: neu!.nr, fotos: gespeichert.length };
     });
+    // Benachrichtigung darf die Meldung nie scheitern lassen
+    await this.nachrichten.mangelGemeldet(ergebnis.id, ergebnis.fotos).catch((e: Error) => console.error("Benachrichtigung:", e.message));
+    return { nr: ergebnis.nr, fotos: ergebnis.fotos };
   }
 }
