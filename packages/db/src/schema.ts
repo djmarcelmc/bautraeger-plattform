@@ -228,15 +228,19 @@ export const zahlungseingang = pgTable("zahlungseingang", {
 
 // ---------------------------------------------------------------- Kosten
 
-export const gewerk = pgTable("gewerk", {
-  id: id(),
-  projektId: uuid("projekt_id").notNull().references(() => projekt.id),
-  nr: integer("nr").notNull(),
-  gruppe: text("gruppe"),
-  bezeichnung: text("bezeichnung").notNull(),
-  geschaetztBrutto: geld("geschaetzt_brutto").notNull().default("0"),
-  ...zeitstempel,
-});
+export const gewerk = pgTable(
+  "gewerk",
+  {
+    id: id(),
+    projektId: uuid("projekt_id").notNull().references(() => projekt.id),
+    nr: integer("nr").notNull(),
+    gruppe: text("gruppe"),
+    bezeichnung: text("bezeichnung").notNull(),
+    geschaetztBrutto: geld("geschaetzt_brutto").notNull().default("0"),
+    ...zeitstempel,
+  },
+  (t) => [uniqueIndex("gewerk_nr_je_projekt").on(t.projektId, t.nr)],
+);
 
 export const handwerkervertrag = pgTable("handwerkervertrag", {
   id: id(),
@@ -251,7 +255,7 @@ export const handwerkervertrag = pgTable("handwerkervertrag", {
   skontoFristTage: integer("skonto_frist_tage"),
   zahlungsfristTage: integer("zahlungsfrist_tage"),
   /** Umlagen je Art in %: { wasser: 0.3, strom: 0.3, bauschutt: 0.5, … } */
-  umlagen: jsonb("umlagen").$type<Record<string, number>>().default({}),
+  umlagen: jsonb("umlagen").$type<Record<string, string | null>>().default({}),
   einbehaltVertragserfuellungProzent: prozent("einbehalt_ve_prozent").default("0"),
   einbehaltGewaehrleistungProzent: prozent("einbehalt_gw_prozent").default("0"),
   gewaehrleistungMonate: integer("gewaehrleistung_monate"),
@@ -291,6 +295,11 @@ export const eingangsrechnung = pgTable("eingangsrechnung", {
   /** Ergebnis der Prüfkette (Nachlass, Umlagen, Einbehalt, Skonto, Bauabzugsteuer, Auszahlung). */
   pruefergebnis: jsonb("pruefergebnis").$type<Record<string, string>>(),
   status: rechnungStatus("status").notNull().default("erfasst"),
+  bemerkung: text("bemerkung"),
+  geprueftAm: timestamp("geprueft_am", { withTimezone: true }),
+  geprueftVon: text("geprueft_von"),
+  freigegebenAm: timestamp("freigegeben_am", { withTimezone: true }),
+  freigegebenVon: text("freigegeben_von"),
   ...zeitstempel,
 });
 

@@ -13,6 +13,7 @@ const MELDUNGEN: Record<string, string> = {
   partner_nr_je_mandant: "Diese Geschäftspartnernummer ist bereits vergeben.",
   gesellschaft_nr_je_mandant: "Diese Gesellschaftsnummer ist bereits vergeben.",
   einheit_nur_ein_kaufvertrag: "Mindestens eine Einheit ist bereits verkauft.",
+  gewerk_nr_je_projekt: "Diese Gewerknummer ist im Projekt bereits vergeben.",
   kaufvertrag_nr_je_projekt: "Diese Kaufvertragsnummer ist im Projekt bereits vergeben.",
 };
 

@@ -28,7 +28,7 @@ const BEREICHE: { titel: string; eintraege: { href: string; text: string; icon: 
     titel: "Abwicklung",
     eintraege: [
       { href: "/verkauf", text: "Verkauf", icon: HandCoins },
-      { href: "#", text: "Kosten", icon: ClipboardList, bald: true },
+      { href: "/kosten", text: "Kosten", icon: ClipboardList },
       { href: "#", text: "Mängel", icon: Wrench, bald: true },
       { href: "#", text: "Auswertungen", icon: BarChart3, bald: true },
     ],
@@ -43,7 +43,9 @@ export function Navigation() {
       ? pfad === "/"
       : href === "/verkauf"
         ? ["/verkauf", "/kaufvertraege", "/zahlungsanforderungen"].some((x) => pfad.startsWith(x))
-        : pfad.startsWith(href);
+        : href === "/kosten"
+          ? ["/kosten", "/gewerke", "/handwerkervertraege", "/eingangsrechnungen"].some((x) => pfad.startsWith(x))
+          : pfad.startsWith(href);
   return (
     <aside className="seitenleiste">
       <a href="/" className="marke">

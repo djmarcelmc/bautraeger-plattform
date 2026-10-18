@@ -700,7 +700,7 @@ button.gefahr:hover {
 .filterleiste {
   display: flex;
   gap: 10px;
-  align-items: end;
+  align-items: flex-end;
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
@@ -749,6 +749,14 @@ button.gefahr:hover {
   color: var(--text-2);
   font-weight: 500;
 }
+.segment a {
+  display: block;
+  padding: 5px 12px;
+  border-radius: 6px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.segment a.aktiv,
 .segment input:checked + span {
   background: var(--flaeche);
   color: var(--text);
@@ -1150,6 +1158,158 @@ form.upload > .meldung {
   }
 }
 
+/* ------------------------------------------------------------------ Kosten */
+.kpi-aktiv {
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--akzent) 15%, transparent);
+}
+.badge.klein {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+.plus {
+  color: var(--gut);
+  font-weight: 600;
+}
+.minus {
+  color: var(--gefahr);
+  font-weight: 600;
+}
+table.kostentabelle td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+tr.gruppenzeile td {
+  background: var(--flaeche-2);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+table.pruefkette td,
+table.pruefkette th {
+  padding: 9px 18px;
+}
+table.pruefkette tr.abzug td:first-child {
+  color: var(--text-2);
+  font-weight: 400;
+}
+table.pruefkette tr.abzug td {
+  color: var(--text-2);
+  font-weight: 400;
+}
+table.pruefkette tr.summe td {
+  font-weight: 650;
+  border-top: 1px solid var(--linie-stark);
+}
+table.pruefkette tr:last-child td {
+  font-size: 15px;
+  background: var(--akzent-weich);
+}
+table.pruefkette .aktiv {
+  color: var(--text);
+}
+table.pruefkette th.aktiv {
+  color: var(--akzent);
+}
+.kettenfuss {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 12px 18px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  border-top: 1px solid var(--linie);
+}
+.zweispaltig.rechnung {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: start;
+}
+.aktionsspalte .karte h2 {
+  margin-top: 0;
+}
+.hinweise {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+.hinweise > div {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.hinweise .ok {
+  color: var(--gut);
+}
+.hinweise .fehlt {
+  color: var(--warnung);
+}
+.hinweise .neutral {
+  color: var(--text-2);
+}
+.schrittfolge {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  flex-wrap: wrap;
+}
+.schrittfolge li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 99px;
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  color: var(--text-3);
+  font-weight: 500;
+}
+.schrittfolge li span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--flaeche-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+.schrittfolge li.erledigt {
+  color: var(--gut);
+}
+.schrittfolge li.erledigt span {
+  background: var(--gut-weich);
+}
+.schrittfolge li.aktuell {
+  color: var(--akzent-text);
+  border-color: var(--akzent);
+}
+.schrittfolge li.aktuell span {
+  background: var(--akzent);
+  color: #fff;
+}
+form.zeilenformular {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+form.zeilenformular select {
+  width: auto;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+form.zeilenformular button {
+  min-height: 32px;
+  padding: 4px 12px;
+}
+
 /* ------------------------------------------------------------------ Mobil */
 @media (max-width: 860px) {
   .layout {
@@ -1199,6 +1359,9 @@ form.upload > .meldung {
     width: 100%;
   }
   form.upload {
+    grid-template-columns: 1fr;
+  }
+  .zweispaltig.rechnung {
     grid-template-columns: 1fr;
   }
   .navgruppe {

@@ -11,6 +11,8 @@ import { VerkaufService } from "./verkauf/verkauf.service.js";
 import { ZahlungenController } from "./verkauf/zahlungen.controller.js";
 import { EinheitenController } from "./einheiten/einheiten.controller.js";
 import { GesellschaftenController } from "./gesellschaften/gesellschaften.controller.js";
+import { KostenController } from "./kosten/kosten.controller.js";
+import { KostenService } from "./kosten/kosten.service.js";
 import { MabvController } from "./mabv/mabv.controller.js";
 import { PartnerController } from "./partner/partner.controller.js";
 import { ProjekteController } from "./projekte/projekte.controller.js";
@@ -36,12 +38,14 @@ class HealthController {
     DokumenteController,
     KaufvertraegeController,
     ZahlungenController,
+    KostenController,
     DatevController,
   ],
   providers: [
     dbProvider,
     KontextService,
     VerkaufService,
+    KostenService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],

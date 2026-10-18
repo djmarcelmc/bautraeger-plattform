@@ -6,7 +6,9 @@ import { MeldungZuruecknehmen } from "@/components/MeldungZuruecknehmen";
 import { Formular } from "@/components/Formular";
 import { api } from "@/lib/api";
 import { deDatum, deZahl } from "@/lib/format";
-import type { Gesellschaft, KaufvertragListe, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import type { Gesellschaft, KaufvertragListe, Kostenkontrolle, ProjektDetail, ProtokollEintrag } from "@/lib/typen";
+import { Abweichung } from "../../kosten/Abweichung";
+import { gewerkAnlegen, gewerkeplanAnlegen } from "../../kosten/aktionen";
 import { bautenstandMelden, bautenstandZuruecknehmen, sammelanforderung } from "../../verkauf/aktionen";
 import { EinheitFelder } from "../../einheiten/EinheitFelder";
 import { einheitAnlegen, projektAendern, projektKopieren } from "../aktionen";
@@ -42,6 +44,7 @@ const REITER = [
   ["einheiten", "Einheiten"],
   ["verkauf", "Verkauf"],
   ["bautenstand", "Bautenstand"],
+  ["kosten", "Kosten"],
   ["dokumente", "Dokumente"],
   ["stammdaten", "Stammdaten"],
   ["kopieren", "Projekt kopieren"],
@@ -53,10 +56,10 @@ export default async function ProjektSeite({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ reiter?: string }>;
+  searchParams: Promise<{ reiter?: string; nurVergeben?: string }>;
 }) {
   const { id } = await params;
-  const { reiter = "einheiten" } = await searchParams;
+  const { reiter = "einheiten", nurVergeben } = await searchParams;
   const p = await api<ProjektDetail>(`/projekte/${id}`);
   const summeVk = p.einheiten.reduce((s, e) => s + Number(e.vkBrutto ?? 0), 0);
   const verkauft = p.einheiten.filter((e) => e.verkauft).length;
@@ -181,6 +184,7 @@ export default async function ProjektSeite({
 
       {reiter === "verkauf" && <VerkaufReiter projektId={id} />}
       {reiter === "bautenstand" && <BautenstandReiter projektId={id} />}
+      {reiter === "kosten" && <KostenReiter projektId={id} nurVergeben={nurVergeben === "1"} />}
       {reiter === "dokumente" && <Dokumente objektTyp="projekt" objektId={id} pfad={`/projekte/${id}`} />}
       {reiter === "stammdaten" && <Stammdaten p={p} />}
 
@@ -331,6 +335,151 @@ async function BautenstandReiter({ projektId }: { projektId: string }) {
           </div>
         </div>
       </Formular>
+    </>
+  );
+}
+
+async function KostenReiter({ projektId, nurVergeben }: { projektId: string; nurVergeben: boolean }) {
+  const k = await api<Kostenkontrolle>(`/projekte/${projektId}/kosten`);
+  if (!k.gewerke.length)
+    return (
+      <div className="zweispaltig">
+        <section className="karte">
+          <h2>Gewerkeplan aus Vorlage</h2>
+          <p className="hint">Legt 65 Gewerke (DIN-276-Gruppen) an und verteilt das Budget nach den Standardanteilen. Alles ist danach anpassbar.</p>
+          <Formular aktion={gewerkeplanAnlegen.bind(null, projektId)} knopf="Gewerkeplan anlegen" className="formular">
+            <Feld label="Gesamtbudget brutto €" name="budgetBrutto" zahl pflicht />
+          </Formular>
+        </section>
+        <section className="karte">
+          <h2>Einzelnes Gewerk</h2>
+          <Formular aktion={gewerkAnlegen.bind(null, projektId)} knopf="Gewerk anlegen" className="formular">
+            <div className="raster">
+              <Feld label="Nr." name="nr" zahl pflicht />
+              <Feld label="Bezeichnung" name="bezeichnung" pflicht />
+              <Feld label="Geschätzt brutto €" name="geschaetztBrutto" zahl />
+            </div>
+          </Formular>
+        </section>
+      </div>
+    );
+  const s = k.summe;
+  const sichtbar = nurVergeben ? k.gewerke.filter((g) => g.vertraege.length) : k.gewerke;
+  const gruppen = [...new Set(sichtbar.map((g) => g.gruppe ?? "Ohne Gruppe"))];
+  return (
+    <>
+      <div className="kpis">
+        <div className="kpi">
+          <span>Geschätzt</span>
+          <b>{deZahl(s.geschaetzt, 0)} €</b>
+          <small>{k.gewerke.length} Gewerke</small>
+        </div>
+        <div className="kpi">
+          <span>Vergeben inkl. Nachträge</span>
+          <b>{deZahl(s.summeVergeben, 0)} €</b>
+          <small>Trend {deZahl(s.trend, 0)} €</small>
+        </div>
+        <div className="kpi">
+          <span>Berechnet / bezahlt</span>
+          <b>{deZahl(s.berechnet, 0)} €</b>
+          <small>abgegolten {deZahl(s.bezahlt, 0)} €</small>
+        </div>
+        <div className={`kpi${Number(s.abweichung) < 0 ? " kpi-warnung" : ""}`}>
+          <span>Abweichung</span>
+          <b>
+            <Abweichung wert={s.abweichung} /> €
+          </b>
+          <small>{Number(s.abweichung) >= 0 ? "Einsparung gegenüber Schätzung" : "Mehrkosten gegenüber Schätzung"}</small>
+        </div>
+      </div>
+      <div className="segment" style={{ marginBottom: 12 }}>
+        <a href="?reiter=kosten" className={nurVergeben ? undefined : "aktiv"}>
+          Alle Gewerke ({k.gewerke.length})
+        </a>
+        <a href="?reiter=kosten&nurVergeben=1" className={nurVergeben ? "aktiv" : undefined}>
+          Nur vergebene ({k.gewerke.filter((g) => g.vertraege.length).length})
+        </a>
+      </div>
+      <div className="karte ohne-innenabstand">
+        <table className="kostentabelle">
+          <thead>
+            <tr>
+              <th className="num">Nr.</th>
+              <th>Gewerk / Vertragspartner</th>
+              <th className="num">geschätzt</th>
+              <th className="num">vergeben</th>
+              <th className="num">Nachträge</th>
+              <th className="num">berechnet</th>
+              <th className="num">bezahlt</th>
+              <th className="num">Abweichung</th>
+            </tr>
+          </thead>
+          {gruppen.map((gr) => (
+            <tbody key={gr}>
+              <tr className="gruppenzeile">
+                <td colSpan={8}>{gr}</td>
+              </tr>
+              {sichtbar
+                .filter((g) => (g.gruppe ?? "Ohne Gruppe") === gr)
+                .map((g) => (
+                  <tr key={g.id} className="klickbar">
+                    <td className="num">{g.nr}</td>
+                    <td>
+                      <a href={`/gewerke/${g.id}?projekt=${projektId}`} className="zeilenlink">
+                        {g.bezeichnung}
+                      </a>
+                      {g.vertraege.length ? (
+                        <div className="hint">
+                          {g.vertraege.map((v) => v.handwerker?.firma ?? v.handwerker?.nachname ?? v.handwerker?.suchcode).join(", ")}
+                          {g.vertraege.some((v) => v.offeneRechnungen) ? <span className="badge warnung klein">Rechnung offen</span> : null}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="num">{deZahl(g.stand.geschaetzt)}</td>
+                    <td className="num">{Number(g.stand.vergeben) ? deZahl(g.stand.vergeben) : ""}</td>
+                    <td className="num">{Number(g.stand.nachtraege) ? deZahl(g.stand.nachtraege) : ""}</td>
+                    <td className="num">{Number(g.stand.berechnet) ? deZahl(g.stand.berechnet) : ""}</td>
+                    <td className="num">{Number(g.stand.bezahlt) ? deZahl(g.stand.bezahlt) : ""}</td>
+                    <td className="num">
+                      <Abweichung wert={g.stand.abweichung} />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          ))}
+          <tfoot>
+            <tr>
+              <td />
+              <td>
+                <b>Summe</b>
+              </td>
+              <td className="num">
+                <b>{deZahl(s.geschaetzt)}</b>
+              </td>
+              <td className="num">{deZahl(s.vergeben)}</td>
+              <td className="num">{deZahl(s.nachtraege)}</td>
+              <td className="num">{deZahl(s.berechnet)}</td>
+              <td className="num">{deZahl(s.bezahlt)}</td>
+              <td className="num">
+                <b>
+                  <Abweichung wert={s.abweichung} />
+                </b>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <details className="karte">
+        <summary>Weiteres Gewerk anlegen</summary>
+        <Formular aktion={gewerkAnlegen.bind(null, projektId)} knopf="Gewerk anlegen" className="formular">
+          <div className="raster">
+            <Feld label="Nr." name="nr" zahl pflicht />
+            <Feld label="Bezeichnung" name="bezeichnung" pflicht />
+            <Feld label="Gewerkegruppe" name="gruppe" />
+            <Feld label="Geschätzt brutto €" name="geschaetztBrutto" zahl />
+          </div>
+        </Formular>
+      </details>
     </>
   );
 }

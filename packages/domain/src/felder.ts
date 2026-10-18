@@ -18,7 +18,12 @@ export const pflichttext = (max = 200) => z.string().trim().min(1, "Pflichtfeld"
 export function normalisiereDezimal(eingabe: string): string | null {
   const s = eingabe.trim().replace(/\s|€/g, "");
   if (s === "") return null;
-  const n = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s;
+  // Komma = Dezimaltrennzeichen; ohne Komma gelten Punkte vor genau drei Ziffern als Tausenderpunkte („98.000“ = 98000)
+  const n = s.includes(",")
+    ? s.replace(/\./g, "").replace(",", ".")
+    : /^-?\d{1,3}(\.\d{3})+$/.test(s)
+      ? s.replace(/\./g, "")
+      : s;
   if (!/^-?\d+(\.\d+)?$/.test(n)) throw new Error(`„${eingabe}“ ist keine gültige Zahl`);
   return n;
 }

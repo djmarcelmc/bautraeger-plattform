@@ -132,6 +132,58 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
     },
   );
 
+  if (apiUrl)
+    server.registerTool(
+      "kostenstand",
+      {
+        title: "Kostenstand eines Projekts",
+        description:
+          "Kostenkontrolle je Projekt: Summen (geschätzt, vergeben inkl. Nachträge, berechnet, bezahlt, Trend, Abweichung), die vergebenen Gewerke mit Vertragspartnern sowie Eingangsrechnungen, die auf Prüfung, Freigabe oder Zahlung warten.",
+        inputSchema: { projektNr: z.number().int() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ projektNr }) => {
+        const projekte = await apiGet<{ id: string; nr: number; suchcode: string }[]>(`/projekte?abgeschlossen=alle&suche=${projektNr}`);
+        const projekt = projekte.find((x) => x.nr === projektNr);
+        if (!projekt) return text(`Projekt ${projektNr} nicht gefunden.`);
+        type Stand = Record<string, string>;
+        const [k, rechnungen] = await Promise.all([
+          apiGet<{
+            summe: Stand;
+            gewerke: { nr: number; bezeichnung: string; stand: Stand; vertraege: { handwerker: { firma: string | null; nachname: string | null; suchcode: string } | null }[] }[];
+          }>(`/projekte/${projekt.id}/kosten`),
+          apiGet<{ rechnungsnr: string; status: string; handwerker: string | null; gewerk: string; betragBrutto: string; geprueftKumuliert: string | null; eingangAm: string }[]>(
+            `/eingangsrechnungen?projektId=${projekt.id}&status=erfasst,sachlich_geprueft,rechnerisch_geprueft,freigegeben`,
+          ),
+        ]);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        const schritt: Record<string, string> = { erfasst: "zu prüfen", sachlich_geprueft: "freizugeben", rechnerisch_geprueft: "freizugeben", freigegeben: "zu zahlen" };
+        return json({
+          projekt: `${projekt.nr} ${projekt.suchcode}`,
+          summe: Object.fromEntries(Object.entries(k.summe).map(([key, v]) => [key, euro(v)])),
+          vergebeneGewerke: k.gewerke
+            .filter((g) => g.vertraege.length)
+            .map((g) => ({
+              gewerk: `${g.nr} ${g.bezeichnung}`,
+              vertragspartner: g.vertraege.map((v) => v.handwerker?.firma ?? v.handwerker?.nachname ?? v.handwerker?.suchcode).join(", "),
+              geschaetzt: euro(g.stand.geschaetzt!),
+              vergebenInklNachtraege: euro(g.stand.summeVergeben!),
+              berechnet: euro(g.stand.berechnet!),
+              bezahlt: euro(g.stand.bezahlt!),
+              abweichung: euro(g.stand.abweichung!),
+            })),
+          offeneRechnungen: rechnungen.map((r) => ({
+            rechnung: r.rechnungsnr,
+            handwerker: r.handwerker,
+            gewerk: r.gewerk,
+            schritt: schritt[r.status] ?? r.status,
+            betragKumuliert: euro(r.geprueftKumuliert ?? r.betragBrutto),
+            eingang: r.eingangAm,
+          })),
+        });
+      },
+    );
+
   if (!db) return server;
 
   server.registerTool(
