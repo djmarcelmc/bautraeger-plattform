@@ -3,6 +3,8 @@ import { APP_FILTER } from "@nestjs/core";
 import { DbFehlerFilter } from "./common/db-fehler.filter.js";
 import { KontextService } from "./common/kontext.service.js";
 import { dbProvider } from "./db.provider.js";
+import { AuswertungenController } from "./auswertungen/auswertungen.controller.js";
+import { AuswertungenService } from "./auswertungen/auswertungen.service.js";
 import { DatevController } from "./datev/datev.controller.js";
 import { DokumenteController } from "./dokumente/dokumente.controller.js";
 import { LokalerSpeicher, SPEICHER } from "./dokumente/speicher.js";
@@ -44,6 +46,7 @@ class HealthController {
     KostenController,
     MaengelController,
     MahnwesenController,
+    AuswertungenController,
     DatevController,
   ],
   providers: [
@@ -52,6 +55,7 @@ class HealthController {
     VerkaufService,
     KostenService,
     MaengelService,
+    AuswertungenService,
     { provide: SPEICHER, useFactory: () => new LokalerSpeicher() },
     { provide: APP_FILTER, useClass: DbFehlerFilter },
   ],

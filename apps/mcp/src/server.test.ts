@@ -89,4 +89,21 @@ describe("MCP-Server", () => {
     const d = JSON.parse((res.content as { text: string }[])[0]!.text);
     expect(d[0]).toMatchObject({ mangel: "382-1", einheit: "Gemeinschaft", status: "Frist überschritten", ruegen: 3 });
   });
+
+  it("liefert die Liquiditätsbetrachtung je Projekt", async () => {
+    const b = (t: string, a: string, z: string, o: string) => ({ trend: t, angefordert: a, bezahlt: z, offen: o });
+    const zeile = { erloese: b("330000", "93000", "50000", "43000"), kosten: b("180000", "50000", "50000", "0"), saldo: b("150000", "43000", "0", "43000") };
+    vi.stubGlobal("fetch", async (url: string) => {
+      expect(new URL(url).searchParams.get("projekte")).toBe("alle");
+      return new Response(
+        JSON.stringify({ gesellschaften: [{ gesellschaft: { name: "Muster Wohnbau GmbH" }, projekte: [{ projekt: { nr: 101, suchcode: "LINDENWEG" }, ...zeile }], summe: zeile }], gesamt: zeile, stand: "2026-10-18" }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "liquiditaet", arguments: { alleProjekte: true } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d.gesellschaften[0].projekte[0]).toMatchObject({ projekt: "101 LINDENWEG", saldo: { trend: "150.000,00 €" } });
+    expect(d.gesamt.erloese.offen).toBe("43.000,00 €");
+  });
 });
