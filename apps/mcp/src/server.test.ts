@@ -174,6 +174,30 @@ describe("MCP-Server", () => {
     expect(d[0].handwerker[0]).toMatchObject({ name: "Rohbau KG", finanzamt: "Stuttgart II", abzug: "1.800,00 €", stand: "anzumelden" });
   });
 
+  it("fasst das Buchungsjournal je Gesellschaft zusammen", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = new URL(url);
+      if (u.pathname.endsWith("/gesellschaften")) return new Response(JSON.stringify([{ id: "g1", nr: 3, name: "CUBI VIVIT" }, { id: "g2", nr: 2, name: "OSWA" }]), { status: 200 });
+      expect(u.searchParams.get("status")).toBe("neu");
+      expect(u.searchParams.get("gesellschaftId")).toBe("g1");
+      return new Response(
+        JSON.stringify({
+          gesellschaft: { datevBereit: true },
+          ohnePartner: [],
+          summen: { neu: 1, summeNeu: "29841.83", stornos: 1 },
+          zeilen: [{ belegdatum: "2026-10-18", belegnr: "AR-2", buchungstext: "Storno Zahlung Rohbau", konto: "70001", gegenkonto: "1200", betrag: "29841.83", sollHaben: "H" }],
+        }),
+        { status: 200 },
+      );
+    });
+    const client = await verbinde("http://api.test");
+    const res = await client.callTool({ name: "buchungsjournal", arguments: { gesellschaftNr: 3 } });
+    const d = JSON.parse((res.content as { text: string }[])[0]!.text);
+    expect(d).toHaveLength(1);
+    expect(d[0]).toMatchObject({ gesellschaft: "3 CUBI VIVIT", nichtExportiert: 1, umsatzNichtExportiert: "29.841,83 €", stornobuchungen: 1 });
+    expect(d[0].letzteBuchungen[0]).toMatchObject({ soll: "1200", haben: "70001" });
+  });
+
   it("listet Sonderwünsche mit Summen", async () => {
     vi.stubGlobal("fetch", async (url: string) => {
       expect(new URL(url).searchParams.get("status")).toBe("angebot");

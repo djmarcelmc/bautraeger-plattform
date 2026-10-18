@@ -405,6 +405,48 @@ export function erstelleServer(db?: Db, apiUrl = process.env.API_URL) {
 
   if (apiUrl)
     server.registerTool(
+      "buchungsjournal",
+      {
+        title: "Buchungsjournal (DATEV)",
+        description:
+          "Stand des automatisch befüllten Buchungsjournals je Gesellschaft: noch nicht an DATEV exportierte Buchungen (Anzahl, Umsatz, die letzten Buchungen mit Soll/Haben), Stornobuchungen und Vorgänge, die mangels Geschäftspartner nicht gebucht werden können.",
+        inputSchema: { gesellschaftNr: z.number().int().optional() },
+        annotations: { readOnlyHint: true },
+      },
+      async ({ gesellschaftNr }) => {
+        const gesellschaften = (await apiGet<{ id: string; nr: number; name: string }[]>("/gesellschaften")).filter((g) => gesellschaftNr === undefined || g.nr === gesellschaftNr);
+        const euro = (v: string) => `${formatDe(money(v))} €`;
+        const liste = [];
+        for (const g of gesellschaften) {
+          const j = await apiGet<{
+            gesellschaft: { datevBereit: boolean };
+            ohnePartner: unknown[];
+            summen: { neu: number; summeNeu: string; stornos: number };
+            zeilen: { belegdatum: string; belegnr: string | null; buchungstext: string | null; konto: string; gegenkonto: string; betrag: string; sollHaben: string }[];
+          }>(`/buchhaltung/journal?gesellschaftId=${g.id}&status=neu`);
+          liste.push({
+            gesellschaft: `${g.nr} ${g.name}`,
+            datevBereit: j.gesellschaft.datevBereit,
+            nichtExportiert: j.summen.neu,
+            umsatzNichtExportiert: euro(j.summen.summeNeu),
+            stornobuchungen: j.summen.stornos,
+            nichtBuchbar: j.ohnePartner.length,
+            letzteBuchungen: j.zeilen.slice(-20).map((z) => ({
+              datum: z.belegdatum,
+              beleg: z.belegnr,
+              text: z.buchungstext,
+              soll: z.sollHaben === "S" ? z.konto : z.gegenkonto,
+              haben: z.sollHaben === "S" ? z.gegenkonto : z.konto,
+              betrag: euro(z.betrag),
+            })),
+          });
+        }
+        return json(liste);
+      },
+    );
+
+  if (apiUrl)
+    server.registerTool(
       "sonderwuensche",
       {
         title: "Sonderwünsche",

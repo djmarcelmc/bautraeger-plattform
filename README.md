@@ -75,6 +75,7 @@ TEST_DATABASE_URL=postgres://bt:bt@localhost:5432/bautraeger_test pnpm test
 | `GET /api/sonderwuensche?projektId=&status=`, `POST /api/kaufvertraege/:id/sonderwuensche`, `GET/PUT/DELETE /api/sonderwuensche/:id`, `POST …/:id/beauftragen`, `…/ablehnen`, `…/zuruecksetzen` | Sonderwünsche und Gutschriften: Angebot, Beauftragung legt eine Rate an (sofort oder mit einem MaBV-Abschnitt anforderbar), Gutschriften werden mit der Anforderung verrechnet |
 | `GET /api/schreiben/:art/:id`, `POST /api/schreiben/:art/:id/versenden`, Sammelversand: `GET /api/schreiben/:art?ids=`, `POST …/:id/versenden-standard` | Zahlungsanforderung, Mahnung oder Sonderwunsch-Angebot als PDF per E-Mail an die Käufer (Vorschlag für Empfänger und Text, Ablage am Kaufvertrag unter „Schriftverkehr“, Versandvermerk) |
 | `GET /api/bauabzug?monate=`, `GET /api/bauabzug/beleg?gesellschaftId=&handwerkerId=&monat=`, `POST /api/bauabzug/anmeldungen`, `DELETE /api/bauabzug/anmeldungen/:id` | Bauabzugsteuer (§ 48a EStG): Monatsübersicht je Handwerker mit Termin, Abrechnungsbeleg und Angaben für die Anmeldung, Erfassung von Anmeldung/Abführung |
+| `GET /api/buchhaltung/journal?gesellschaftId=&von=&bis=&status=neu\|exportiert&quelle=`, `POST /api/buchhaltung/abgleich`, `POST /api/buchhaltung/export`, `GET/PUT/DELETE /api/buchhaltung/kontierung/:gesellschaftId` | Buchungsjournal: wird automatisch aus Zahlungsanforderungen, Zahlungseingängen, freigegebenen Rechnungen, Zahlungen (inkl. Skonto und Bauabzugsteuer) und abgeführter Bauabzugsteuer befüllt; DATEV-Buchungsstapel (EXTF) schreibt die Buchungen fest, spätere Änderungen werden storniert und neu gebucht; Kontenzuordnung je Gesellschaft |
 | `GET/POST /api/buergschaften?status=offen\|handlung&richtung=`, `GET/PUT/DELETE /api/buergschaften/:id` | Bürgschaften (erhalten/§ 7 MaBV) mit Ablauf- und Rückgabeüberwachung |
 | `GET /api/abnahmen?projektId=`, `POST /api/projekte/:id/abnahmen`, `GET/PUT/DELETE /api/abnahmen/:id`, `POST …/:id/maengel`, `POST …/:id/abschliessen` | Abnahmen (Sondereigentum, Gemeinschaftseigentum, Handwerker) mit Mängeln, Zählerständen, Schlüsseln; Abschluss setzt Übergabe/Abnahme und Gewährleistung |
 | `GET/POST /api/mangelvorlagen`, `POST /api/mangelvorlagen/standard`, `PUT/DELETE /api/mangelvorlagen/:id` | Standardmängel-Katalog |
@@ -109,7 +110,7 @@ DATABASE_URL=... node apps/mcp/dist/index.js --http   # http://localhost:3002/mc
 ```
 
 Tools: `mabv_ratenplan_berechnen`, `handwerker_pruefkette`, `projekte_auflisten`, `offene_zahlungsanforderungen`
-(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften`, `bauabzugsteuer`, `sonderwuensche`, `mabv_pruefbericht` und `aufgaben` (über die REST-API, wenn
+(direkt aus der Datenbank, wenn `DATABASE_URL` gesetzt ist) sowie `anforderbare_raten`, `kostenstand`, `maengel_offen`, `liquiditaet`, `liquiditaetsplan`, `buergschaften`, `bauabzugsteuer`, `buchungsjournal`, `sonderwuensche`, `mabv_pruefbericht` und `aufgaben` (über die REST-API, wenn
 `API_URL` gesetzt ist – dort gelten dieselben Prüfregeln wie in der Oberfläche).
 
 Dokumente werden lokal unter `DOKUMENTE_PFAD` (Standard `data/dokumente`) abgelegt; eine S3-Ablage kann über die
@@ -137,4 +138,4 @@ Der HTTP-Endpunkt hat noch keine Authentifizierung – vor jedem Betrieb außerh
 7. ~~Mahnwesen für den Verkauf~~ ✓ – Verzugsbeginn (Tag nach Fälligkeit) und Mahntexte bitte juristisch prüfen lassen
 8. ~~Auswertungen: Liquidität, Controlling, Kostenreport, Projektbericht (Bildschirm, PDF, Excel)~~ ✓ – MaBV-Prüfbericht (§ 16) ✓
 9. ~~Bauzeitenplan (Gantt, MaBV-Meilensteine) und Liquiditätsplan nach Kalenderwochen~~ ✓ – Abhängigkeiten und kritischer Pfad ✓, Einbehalte und Skonto im Liquiditätsplan ✓
-10. Buchungsjournal automatisch aus Verkauf und Kosten befüllen
+10. ~~Buchungsjournal automatisch aus Verkauf und Kosten befüllen~~ ✓ – DATEV-Export mit Festschreibung und Storno, Kontenzuordnung je Gesellschaft (mit Steuerberater abstimmen)
